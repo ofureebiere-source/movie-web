@@ -234,3 +234,35 @@ The `?name=` param is only a fallback label while the fetch resolves.
 
 `app/api/image/route.ts` and `next.config.mjs` must both allow the Wikimedia
 hosts, or portraits 404.
+
+## Provider filter support (probed 2026-10-18 — do not assume symmetry)
+
+The film/series endpoints and the anime endpoints are **different upstreams**
+with different parameter names. Assuming they match produces controls that look
+applied and silently do nothing, which is worse than a missing control.
+
+| | film/series (`/api/discover`) | anime (`/anime/api/discover`) |
+|---|---|---|
+| genre | numeric TMDB id | **genre NAME** (`Action`) |
+| year | `year` | **`seasonYear`** — plain `year` is accepted and IGNORED |
+| sort | ignored | ignored |
+| country | ignored | ignored |
+
+Verified specifics:
+
+- `/anime/api/discover?year=2020` returns the unfiltered 22,513-title page.
+  `seasonYear=2020` narrows to 877. Sending `year` is the trap.
+- Every sort spelling tried (`sort`, `sort_by`, `order`, `sort_field`/`sort_type`,
+  `sortBy=SCORE_DESC|popularity|…`) returns an identically ordered page; `sort=…`
+  returns 400. There is **no server-side sort**, so the anime grid sorts the
+  loaded rows in the browser and says so in the tooltip.
+- There is no anime-only search: `/anime/api/search` 404s and the anime
+  `discover` ignores a query parameter. Search uses the shared `/api/search`
+  index, whose rows are keyed by TMDB id and resolve on the standard title
+  route — so every result is playable.
+- The unfiltered anime list is capped at 20 titles (`totalPages: 1`); it is
+  paginated only when a genre or year filter is present.
+
+`browseAnime` takes `{ genreSlug, year }` and does the slug→name mapping. The
+filter bar stores the **slug**; storing the name renders identically and filters
+nothing.
