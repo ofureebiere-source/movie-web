@@ -184,14 +184,30 @@ export function streamUrl(id: string, type: string, season?: number, episode?: n
   return `/api/stream?${params.toString()}`;
 }
 
-/** The provider's own player, used as the fallback iframe. */
+/**
+ * The provider's own player, used as the fallback iframe.
+ *
+ * The embed ships an ad-injection script (`im.frshery.com`) that it only arms
+ * when the frame's ancestors, referrer or parent origin are NOT its own host —
+ * i.e. exactly when a third-party site embeds it, which is our case. It reads
+ * a `no_ads=1` query flag before anything else and returns early, so every
+ * embed we build carries it. Without it the provider pop-unders the visitor
+ * out of the app.
+ *
+ * This is a request the provider honours, not something we can enforce: the
+ * frame is cross-origin, so if the flag is ever ignored the sandbox attribute
+ * in `vidsrc-player.tsx` is the backstop.
+ */
 export function embedUrl(id: string, type: string, season?: number, episode?: number): string {
   const base = 'https://framextv.xyz';
-  if (type === 'anime') return `${base}/embed/anime?id=${id}&type=anime&season=1&episode=${episode ?? 1}`;
-  if (type === 'tv' && season != null && episode != null) {
-    return `${base}/embed/tv/${id}/${season}/${episode}`;
+  const noAds = 'no_ads=1';
+  if (type === 'anime') {
+    return `${base}/embed/anime?id=${id}&type=anime&season=1&episode=${episode ?? 1}&${noAds}`;
   }
-  return `${base}/embed/${type}/${id}`;
+  if (type === 'tv' && season != null && episode != null) {
+    return `${base}/embed/tv/${id}/${season}/${episode}?${noAds}`;
+  }
+  return `${base}/embed/${type}/${id}?${noAds}`;
 }
 
 function toEpisode(

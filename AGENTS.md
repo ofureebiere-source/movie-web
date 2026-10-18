@@ -99,25 +99,31 @@ needs an adapter layer, which does not exist yet. Leave it at `phimapi.com`.
 
 ## Local build
 
-`lib/firebase-admin.ts` throws at build time without a valid
-`FIREBASE_CREDENTIALS_BASE64`, so a local `npm run build` needs one too. Generate
-a throwaway key (never commit it):
-
-```bash
-openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out /tmp/key.pem
-# base64 the JSON service-account with private_key set to the PEM contents
-```
+The app is **keyless**: no Firebase, no TMDB token, no service account. A
+checkout with an empty environment builds and runs (`npm ci && npm run build`).
+Titles come from the framextv catalogue, accounts are per-browser device
+identities, and comments/watch progress stay in the browser.
 
 ## Routes
 
-`app/[locale]/…` with `localePrefix: 'always'`; locales `vi` (default) and `en`.
-`/` redirects to a locale via `middleware.ts` `pickLocaleFromGeo` — **VN → `vi`,
-every other country → `en`**, so a non-VN client sees `/` → `/en`. There is no
+`app/[locale]/…` with `localePrefix: 'always'`; 14 locales, `vi` default. `/`
+redirects to a locale via `middleware.ts` `pickLocaleFromGeo` (country → locale,
+unlisted countries → `en`), so a non-VN client sees `/` → `/en`. There is no
 `/movies` index page (404 by design); the taxonomy roots are
 `/movies/format/{slug}`, `/movies/type/{slug}`, `/movies/country/{slug}`, plus
 `/movies/collection`, `/movies/recent`, `/movies/{slug}` and
 `/movies/watch/{slug}`. `app/maintenance/[locale]` renders outside the locale
-segment.
+segment. Locales in `RTL_LOCALES` (`ar`, `he`, `fa`, `ur`) render `dir="rtl"`.
+
+## Catalogue
+
+`services/framextv-api.ts` talks to the framextv backend; `lib/catalog-client.ts`
+fetches it **in the browser**, because the provider blocks datacenter IPs and the
+Vercel runtime is one. `NEXT_PUBLIC_CATALOG_API_BASE` (falling back to
+`CATALOG_API_BASE`) sets the base and must carry the `NEXT_PUBLIC_` prefix or
+Next will not inline it into the client bundle. `components/commons/prefetch-link.tsx`
+warms a browse page on hover/focus so it paints with rows instead of a skeleton.
+
 
 ## Images
 
