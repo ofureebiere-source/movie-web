@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../../lib/firebase';
+import { doc, updateDoc } from 'lib/local-db';
+import { db } from '../../lib/local-client';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../../redux/slices/user-slice';
 import { toast } from 'react-toastify';

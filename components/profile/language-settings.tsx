@@ -5,8 +5,8 @@ import { IoLanguage, IoCheckmark } from 'react-icons/io5';
 import { useLocale, useTranslations } from 'next-intl';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter, usePathname, type Locale } from 'i18n/routing';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from 'lib/firebase';
+import { doc, setDoc } from 'lib/local-db';
+import { db } from 'lib/local-client';
 
 interface Language {
   code: Locale;

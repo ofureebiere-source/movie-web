@@ -1,7 +1,7 @@
 /**
  * Display names for catalog taxonomy, keyed by slug.
  *
- * The slugs are the catalog's (`constants/catalog-taxonomy.ts`); this file turns
+ * The slugs are the catalog's (`constants/framextv-taxonomy.ts`); this file turns
  * them into words a person reads, in each locale. The catalog does send its own
  * Vietnamese names, but only Vietnamese, and a few of them are TMDB's English
  * genre names leaking through — so the site keeps its own.

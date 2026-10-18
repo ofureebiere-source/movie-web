@@ -1,9 +1,7 @@
 'use client';
-import AuthModal from '@/components/auth/auth-modal';
 import Layout from '@/components/layout';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import AuthModalProvider from '@/components/context/auth-modal-context';
 import { Provider } from 'react-redux';
 import { store } from '../redux/store';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -47,22 +45,19 @@ export default function Providers({
       <PersistGate persistor={persistor}></PersistGate>
       <PostHogProvider>
         <AuthProvider>
-          <AuthModalProvider>
-            <DisclaimerModalProvider initialAccepted={initialDisclaimerAccepted}>
-              <IntroGate>
-                <DisclaimerGuard>
-                  <HomePageLoadingProvider>
-                    <GlobalEffects />
-                    <AuthModal />
-                    <DropdownProvider>
-                      <Layout>{children}</Layout>
-                    </DropdownProvider>
-                    <ToastContainer />
-                  </HomePageLoadingProvider>
-                </DisclaimerGuard>
-              </IntroGate>
-            </DisclaimerModalProvider>
-          </AuthModalProvider>
+          <DisclaimerModalProvider initialAccepted={initialDisclaimerAccepted}>
+            <IntroGate>
+              <DisclaimerGuard>
+                <HomePageLoadingProvider>
+                  <GlobalEffects />
+                  <DropdownProvider>
+                    <Layout>{children}</Layout>
+                  </DropdownProvider>
+                  <ToastContainer />
+                </HomePageLoadingProvider>
+              </DisclaimerGuard>
+            </IntroGate>
+          </DisclaimerModalProvider>
         </AuthProvider>
       </PostHogProvider>
     </Provider>

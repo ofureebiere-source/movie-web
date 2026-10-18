@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { AiOutlineLike, AiFillLike } from 'react-icons/ai';
 import firebaseServices from 'services/firebase-services';
-import { useAuthModel } from '../context/auth-modal-context';
+import { useDeviceAuth } from '../context/auth-conext';
 import IComment from 'types/comment';
 import DetailMovie from 'types/detail-movie';
 import { useTranslations } from 'next-intl';
@@ -23,7 +23,7 @@ export default function CommentLikeButton({
 }) {
   const t = useTranslations('comment');
   const user = useSelector((state: any) => state.auth.user);
-  const { openAuthModal } = useAuthModel();
+  const { ensureRegistered } = useDeviceAuth();
   const [isLiked, setIsLiked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(0);
 
@@ -34,7 +34,7 @@ export default function CommentLikeButton({
 
   const handleToggleLike = async () => {
     if (!user) {
-      openAuthModal();
+      ensureRegistered();
       return;
     }
 

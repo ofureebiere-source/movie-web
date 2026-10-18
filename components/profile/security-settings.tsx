@@ -1,295 +1,194 @@
 'use client';
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { getFirebaseAuth } from '../../lib/firebase';
+import { useEffect, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { toast } from 'react-toastify';
-import LoadingSpinerBtn from '../loading/loading-spiner-btn';
-import { IoShieldCheckmark, IoEye, IoEyeOff, IoCheckmark, IoClose } from 'react-icons/io5';
+import { removeUser } from '../../redux/slices/user-slice';
+import { forgetDevice } from '../../lib/device';
+import { useDeviceAuth } from '../context/auth-conext';
+import { IoShieldCheckmark, IoFingerPrint, IoTrash, IoCheckmark, IoClose } from 'react-icons/io5';
 
-interface SecuritySettingsProps {
+/**
+ * "This device" — what replaced the account-security screen.
+ *
+ * There is no password to change and no second factor to enable, because
+ * there is no account: the app identifies the browser. What is genuinely
+ * useful here is showing WHICH identity is in use, letting the viewer rename
+ * it, and offering the one destructive action that exists — forgetting the
+ * device, which discards the id and with it the collection, comments and
+ * watch history.
+ */
+
+interface DeviceSettingsProps {
   user: any;
 }
 
-interface PasswordFormData {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
+export default function SecuritySettings({ user }: DeviceSettingsProps) {
+  const dispatch = useDispatch();
+  const { rename } = useDeviceAuth();
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [isConfirmingForget, setIsConfirmingForget] = useState(false);
+  const [draftName, setDraftName] = useState('');
 
-export default function SecuritySettings({ user }: SecuritySettingsProps) {
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPasswords, setShowPasswords] = useState({
-    current: false,
-    new: false,
-    confirm: false,
-  });
+  useEffect(() => {
+    setDraftName(user?.name ?? '');
+  }, [user?.name]);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-    watch,
-  } = useForm<PasswordFormData>();
+  const deviceId: string = user?.device?.id ?? user?.id ?? '';
+  const createdAt: number | undefined = user?.createdAt ?? user?.device?.createdAt;
 
-  const newPassword = watch('newPassword');
-
-  const handleChangePassword = () => {
-    setIsChangingPassword(true);
-    reset();
-  };
-
-  const handleCancel = () => {
-    setIsChangingPassword(false);
-    reset();
-    setShowPasswords({ current: false, new: false, confirm: false });
-  };
-
-  const togglePasswordVisibility = (field: keyof typeof showPasswords) => {
-    setShowPasswords((prev) => ({
-      ...prev,
-      [field]: !prev[field],
-    }));
-  };
-
-  const onSubmit = async (data: PasswordFormData) => {
-    if (data.newPassword !== data.confirmPassword) {
-      toast.error('Mật khẩu mới và xác nhận mật khẩu không khớp');
+  const handleSaveName = () => {
+    if (!draftName.trim()) {
+      toast.error('Tên thiết bị không được để trống');
       return;
     }
+    rename(draftName);
+    setIsRenaming(false);
+    toast.success('Đã lưu tên thiết bị');
+  };
 
-    setIsLoading(true);
-    try {
-      const [{ updatePassword, reauthenticateWithCredential, EmailAuthProvider }, auth] =
-        await Promise.all([import('firebase/auth'), getFirebaseAuth()]);
-
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        throw new Error('Không tìm thấy người dùng');
-      }
-
-      // Re-authenticate user before changing password
-      const credential = EmailAuthProvider.credential(user.email, data.currentPassword);
-      await reauthenticateWithCredential(currentUser, credential);
-
-      // Update password
-      await updatePassword(currentUser, data.newPassword);
-
-      toast.success('Đổi mật khẩu thành công');
-      setIsChangingPassword(false);
-      reset();
-      setShowPasswords({ current: false, new: false, confirm: false });
-    } catch (error: any) {
-      console.error('Error changing password:', error);
-
-      let errorMessage = 'Có lỗi xảy ra khi đổi mật khẩu';
-      if (error.code === 'auth/invalid-credential') {
-        errorMessage = 'Mật khẩu hiện tại không chính xác';
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = 'Mật khẩu mới quá yếu';
-      } else if (error.code === 'auth/requires-recent-login') {
-        errorMessage = 'Vui lòng đăng nhập lại để thay đổi mật khẩu';
-      }
-
-      toast.error(errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleForget = () => {
+    forgetDevice();
+    dispatch(removeUser());
+    // Full reload: the device id is gone, so the app must re-register from a
+    // clean slate rather than keep rendering the old account from memory.
+    window.location.href = '/';
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-white">Bảo mật tài khoản</h2>
-        {!isChangingPassword && (
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <h2 className="text-xl font-semibold text-white">Thiết bị này</h2>
+        {!isRenaming && (
           <button
-            onClick={handleChangePassword}
-            className="px-4 py-2 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            onClick={() => setIsRenaming(true)}
+            className="self-start px-4 py-2 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
           >
-            Đổi mật khẩu
+            Đổi tên thiết bị
           </button>
         )}
       </div>
 
-      {/* Security Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      {/* Identity overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-8">
         <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
           <div className="flex items-center space-x-3 mb-2">
-            <IoShieldCheckmark className="text-green-400" size={20} />
-            <h3 className="text-white font-medium">Mật khẩu</h3>
+            <IoFingerPrint className="text-green-400" size={20} />
+            <h3 className="text-white font-medium">Mã thiết bị</h3>
           </div>
-          <p className="text-gray-400 text-sm">Mật khẩu của bạn đã được bảo mật</p>
+          <p className="text-gray-400 text-xs sm:text-sm break-all font-mono">{deviceId}</p>
         </div>
 
         <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
           <div className="flex items-center space-x-3 mb-2">
             <IoShieldCheckmark className="text-green-400" size={20} />
-            <h3 className="text-white font-medium">Xác thực 2 lớp</h3>
+            <h3 className="text-white font-medium">Trạng thái</h3>
           </div>
-          <p className="text-gray-400 text-sm">Chưa được kích hoạt</p>
+          <p className="text-gray-400 text-xs sm:text-sm">
+            Đã đăng ký tự động
+            {createdAt ? ` • ${new Date(createdAt).toLocaleDateString()}` : ''}
+          </p>
         </div>
       </div>
 
-      {/* Change Password Form */}
-      {isChangingPassword && (
+      {/* Rename */}
+      {isRenaming && (
         <div className="border-t border-gray-700 pt-6">
-          <h3 className="text-white font-medium mb-4">Thay đổi mật khẩu</h3>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Current Password */}
-            <div>
-              <label htmlFor="currentPassword" className="block text-gray-300 mb-2">
-                Mật khẩu hiện tại
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.current ? 'text' : 'password'}
-                  id="currentPassword"
-                  className={`w-full p-3 pr-12 border ${
-                    errors.currentPassword ? 'border-red-500' : 'border-gray-600'
-                  } bg-black text-white focus:outline-none focus:ring-2 ${
-                    errors.currentPassword ? 'focus:ring-red-500' : 'focus:ring-custome-red'
-                  } rounded-lg`}
-                  {...register('currentPassword', {
-                    required: 'Mật khẩu hiện tại là bắt buộc',
-                  })}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('current')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  {showPasswords.current ? <IoEyeOff size={20} /> : <IoEye size={20} />}
-                </button>
-              </div>
-              {errors.currentPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.currentPassword.message}</p>
-              )}
-            </div>
-
-            {/* New Password */}
-            <div>
-              <label htmlFor="newPassword" className="block text-gray-300 mb-2">
-                Mật khẩu mới
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.new ? 'text' : 'password'}
-                  id="newPassword"
-                  className={`w-full p-3 pr-12 border ${
-                    errors.newPassword ? 'border-red-500' : 'border-gray-600'
-                  } bg-black text-white focus:outline-none focus:ring-2 ${
-                    errors.newPassword ? 'focus:ring-red-500' : 'focus:ring-custome-red'
-                  } rounded-lg`}
-                  {...register('newPassword', {
-                    required: 'Mật khẩu mới là bắt buộc',
-                    minLength: {
-                      value: 6,
-                      message: 'Mật khẩu phải có ít nhất 6 ký tự',
-                    },
-                  })}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('new')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  {showPasswords.new ? <IoEyeOff size={20} /> : <IoEye size={20} />}
-                </button>
-              </div>
-              {errors.newPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.newPassword.message}</p>
-              )}
-            </div>
-
-            {/* Confirm Password */}
-            <div>
-              <label htmlFor="confirmPassword" className="block text-gray-300 mb-2">
-                Xác nhận mật khẩu mới
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.confirm ? 'text' : 'password'}
-                  id="confirmPassword"
-                  className={`w-full p-3 pr-12 border ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
-                  } bg-black text-white focus:outline-none focus:ring-2 ${
-                    errors.confirmPassword ? 'focus:ring-red-500' : 'focus:ring-custome-red'
-                  } rounded-lg`}
-                  {...register('confirmPassword', {
-                    required: 'Xác nhận mật khẩu là bắt buộc',
-                    validate: (value) => value === newPassword || 'Mật khẩu xác nhận không khớp',
-                  })}
-                />
-                <button
-                  type="button"
-                  onClick={() => togglePasswordVisibility('confirm')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  {showPasswords.confirm ? <IoEyeOff size={20} /> : <IoEye size={20} />}
-                </button>
-              </div>
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            {/* Password Requirements */}
-            <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
-              <h4 className="text-white font-medium mb-2">Yêu cầu mật khẩu:</h4>
-              <ul className="text-gray-400 text-sm space-y-1">
-                <li>• Ít nhất 6 ký tự</li>
-                <li>• Nên bao gồm chữ hoa, chữ thường và số</li>
-                <li>• Tránh sử dụng thông tin cá nhân</li>
-              </ul>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-3 pt-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex items-center space-x-2 px-6 py-3 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? (
-                  <LoadingSpinerBtn />
-                ) : (
-                  <>
-                    <IoCheckmark size={16} />
-                    <span>Đổi mật khẩu</span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <IoClose size={16} />
-                <span>Hủy</span>
-              </button>
-            </div>
-          </form>
+          <h3 className="text-white font-medium mb-4">Đổi tên thiết bị</h3>
+          <label htmlFor="deviceName" className="block text-gray-300 mb-2">
+            Tên hiển thị
+          </label>
+          <input
+            id="deviceName"
+            type="text"
+            value={draftName}
+            onChange={(e) => setDraftName(e.target.value)}
+            maxLength={40}
+            className="w-full p-3 border border-gray-600 bg-black text-white focus:outline-none focus:ring-2 focus:ring-custome-red rounded-lg"
+          />
+          <div className="flex flex-wrap items-center gap-3 pt-4">
+            <button
+              type="button"
+              onClick={handleSaveName}
+              className="flex items-center space-x-2 px-6 py-3 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <IoCheckmark size={16} />
+              <span>Lưu</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsRenaming(false);
+                setDraftName(user?.name ?? '');
+              }}
+              className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <IoClose size={16} />
+              <span>Hủy</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Security Tips */}
+      {/* Forget device */}
       <div className="border-t border-gray-700 pt-6 mt-8">
-        <h3 className="text-white font-medium mb-4">Mẹo bảo mật</h3>
+        <h3 className="text-white font-medium mb-2">Quên thiết bị</h3>
+        <p className="text-gray-400 text-sm mb-4">
+          Xóa danh sách phim, bình luận và lịch sử xem của thiết bị này. Hành động này không thể
+          hoàn tác.
+        </p>
+
+        {isConfirmingForget ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={handleForget}
+              className="flex items-center space-x-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <IoTrash size={16} />
+              <span>Xác nhận xóa</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsConfirmingForget(false)}
+              className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Hủy
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsConfirmingForget(true)}
+            className="flex items-center space-x-2 px-6 py-3 bg-transparent border border-red-600 text-red-400 rounded-lg hover:bg-red-600/10 transition-colors"
+          >
+            <IoTrash size={16} />
+            <span>Quên thiết bị này</span>
+          </button>
+        )}
+      </div>
+
+      {/* How it works */}
+      <div className="border-t border-gray-700 pt-6 mt-8">
+        <h3 className="text-white font-medium mb-4">Cách hoạt động</h3>
         <div className="space-y-3">
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-custome-red rounded-full mt-2"></div>
-            <p className="text-gray-400 text-sm">Không chia sẻ mật khẩu với bất kỳ ai</p>
+            <div className="w-2 h-2 bg-custome-red rounded-full mt-2 shrink-0"></div>
+            <p className="text-gray-400 text-sm">
+              Không cần đăng nhập hay mật khẩu. Trình duyệt này tự động được cấp một mã thiết bị.
+            </p>
           </div>
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-custome-red rounded-full mt-2"></div>
-            <p className="text-gray-400 text-sm">Đăng xuất khỏi các thiết bị công cộng</p>
+            <div className="w-2 h-2 bg-custome-red rounded-full mt-2 shrink-0"></div>
+            <p className="text-gray-400 text-sm">
+              Dữ liệu của bạn được lưu trên chính thiết bị này, không gửi lên máy chủ.
+            </p>
           </div>
           <div className="flex items-start space-x-3">
-            <div className="w-2 h-2 bg-custome-red rounded-full mt-2"></div>
-            <p className="text-gray-400 text-sm">Thay đổi mật khẩu định kỳ</p>
+            <div className="w-2 h-2 bg-custome-red rounded-full mt-2 shrink-0"></div>
+            <p className="text-gray-400 text-sm">
+              Xóa dữ liệu trình duyệt sẽ tạo một thiết bị mới và bạn sẽ mất dữ liệu cũ.
+            </p>
           </div>
         </div>
       </div>

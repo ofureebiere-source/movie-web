@@ -7,15 +7,24 @@ import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from './icons';
 
 /**
  * Stacked-panel settings menu. The gear icon opens a slide-up panel. Root level
- * shows three entries: Speed, Audio/Language, Auto-play next (toggle). Speed
- * and Audio open submenus that slide in from the right.
+ * lists every adjustable thing the player actually supports, and each entry
+ * opens a submenu that slides in from the right:
  *
- * Designed so adding new entries (subtitle styling, quality, etc.) means
- * adding one block to the root list and one panel — no architectural change.
+ *   Speed          playback rate
+ *   Quality        hls.js renditions (hidden when the manifest has one rung)
+ *   Audio track    hls.js alternate audio (hidden when there is one)
+ *   Subtitles      hls.js subtitle tracks + appearance (size, background, position)
+ *   Audio          equaliser + volume maximiser
+ *   Display        letterbox vs crop
+ *   Auto-play next toggle
+ *
+ * Entries whose backing data is absent are not rendered at all — a menu item
+ * that cannot do anything is worse than a missing one. Adding a panel means
+ * one block in the root list and one `<Panel>`; the shape is unchanged.
  */
 const RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
-type Panel = 'root' | 'speed' | 'language';
+type Panel = 'root' | 'speed' | 'language' | 'quality' | 'audioTrack' | 'subtitle' | 'audio' | 'fit';
 
 export interface SettingsMenuProps {
   open: boolean;
@@ -34,6 +43,12 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
     onSwitchLanguage,
     autoPlayNext,
     setAutoPlayNext,
+    hls,
+    fitMode,
+    setFitMode,
+    subtitleStyle,
+    setSubtitleStyle,
+    audio,
   } = usePlayer();
   const [panel, setPanel] = useState<Panel>('root');
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -105,12 +120,13 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
         onPointerDown={onClose}
       />
 
-      {/* Panel */}
+      {/* Panel. Width is capped to the viewport on phones (a fixed 288px
+          panel plus padding overflows a 320px screen) and grows from there. */}
       <div
         ref={rootRef}
         role="menu"
         aria-label="Settings"
-        className={`relative w-72 overflow-hidden rounded-xl bg-black/85 text-ink-primary shadow-custom backdrop-blur-md transition-all duration-250 ease-out-expo ${
+        className={`relative w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl bg-black/85 text-ink-primary shadow-custom backdrop-blur-md transition-all duration-250 ease-out-expo ${
           open ? 'pointer-events-auto translate-y-0 scale-100' : 'pointer-events-none translate-y-4 scale-95'
         }`}
       >
@@ -130,6 +146,54 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
               trailing={<ChevronRightIcon size={18} />}
             />
           )}
+          {hls.levels.length > 1 && (
+            <Row
+              label={t('settings.quality')}
+              value={
+                hls.currentLevel < 0
+                  ? 'Auto'
+                  : hls.levels.find((l) => l.id === hls.currentLevel)?.label ?? 'Auto'
+              }
+              onClick={() => setPanel('quality')}
+              trailing={<ChevronRightIcon size={18} />}
+            />
+          )}
+          {hls.audioTracks.length > 1 && (
+            <Row
+              label={t('settings.audioTrack')}
+              value={hls.audioTracks.find((a) => a.id === hls.currentAudioTrack)?.label ?? ''}
+              onClick={() => setPanel('audioTrack')}
+              trailing={<ChevronRightIcon size={18} />}
+            />
+          )}
+          {hls.subtitleTracks.length > 0 && (
+            <Row
+              label={t('settings.subtitle')}
+              value={
+                hls.currentSubtitleTrack < 0
+                  ? t('settings.subtitleOff')
+                  : hls.subtitleTracks.find((s) => s.id === hls.currentSubtitleTrack)?.label ?? ''
+              }
+              onClick={() => setPanel('subtitle')}
+              trailing={<ChevronRightIcon size={18} />}
+            />
+          )}
+          <Row
+            label={t('settings.audio')}
+            value={
+              audio.eqEnabled && audio.maximizerEnabled
+                ? `${t('settings.equalizer')} • ${Math.round(audio.maximizer * 100)}%`
+                : t('settings.maximizerOff')
+            }
+            onClick={() => setPanel('audio')}
+            trailing={<ChevronRightIcon size={18} />}
+          />
+          <Row
+            label={t('settings.fit')}
+            value={fitMode === 'cover' ? t('settings.fitCover') : t('settings.fitContain')}
+            onClick={() => setPanel('fit')}
+            trailing={<ChevronRightIcon size={18} />}
+          />
           <ToggleRow
             label={t('settings.autoPlayNext')}
             checked={autoPlayNext}
@@ -183,12 +247,201 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
             />
           ))}
         </Panel>
+
+        {/* Quality panel — hls.js renditions, "Auto" first. */}
+        <Panel active={panel === 'quality'} direction="right">
+          <BackHeader title={t('settings.quality')} onBack={() => setPanel('root')} />
+          <RadioRow
+            label="Auto"
+            selected={hls.currentLevel < 0}
+            onClick={() => hls.setLevel(-1)}
+          />
+          {[...hls.levels].reverse().map((lvl) => (
+            <RadioRow
+              key={lvl.id}
+              label={lvl.label}
+              selected={hls.currentLevel === lvl.id}
+              onClick={() => hls.setLevel(lvl.id)}
+            />
+          ))}
+        </Panel>
+
+        {/* Audio-track panel — alternate dubs in the manifest. */}
+        <Panel active={panel === 'audioTrack'} direction="right">
+          <BackHeader title={t('settings.audioTrack')} onBack={() => setPanel('root')} />
+          {hls.audioTracks.map((trk) => (
+            <RadioRow
+              key={trk.id}
+              label={trk.label}
+              selected={hls.currentAudioTrack === trk.id}
+              onClick={() => hls.setAudioTrack(trk.id)}
+            />
+          ))}
+        </Panel>
+
+        {/* Subtitle panel — track choice plus appearance sliders. */}
+        <Panel active={panel === 'subtitle'} direction="right">
+          <BackHeader title={t('settings.subtitle')} onBack={() => setPanel('root')} />
+          <RadioRow
+            label={t('settings.subtitleOff')}
+            selected={hls.currentSubtitleTrack < 0}
+            onClick={() => hls.setSubtitleTrack(-1)}
+          />
+          {hls.subtitleTracks.map((trk) => (
+            <RadioRow
+              key={trk.id}
+              label={trk.label}
+              selected={hls.currentSubtitleTrack === trk.id}
+              onClick={() => hls.setSubtitleTrack(trk.id)}
+            />
+          ))}
+          <Divider />
+          <SliderRow
+            label={t('settings.subScale')}
+            value={subtitleStyle.scale}
+            min={0.75}
+            max={2}
+            step={0.05}
+            format={(v) => `${Math.round(v * 100)}%`}
+            onChange={(v) => setSubtitleStyle({ scale: v })}
+          />
+          <SliderRow
+            label={t('settings.subBackground')}
+            value={subtitleStyle.background}
+            min={0}
+            max={1}
+            step={0.05}
+            format={(v) => `${Math.round(v * 100)}%`}
+            onChange={(v) => setSubtitleStyle({ background: v })}
+          />
+          <SliderRow
+            label={t('settings.subPosition')}
+            value={subtitleStyle.position}
+            min={0}
+            max={1}
+            step={0.05}
+            format={(v) => `${Math.round(v * 100)}%`}
+            onChange={(v) => setSubtitleStyle({ position: v })}
+          />
+        </Panel>
+
+        {/* Audio panel. The equaliser itself lives on the player surface
+            (EqualizerPanel) because tuning bands wants the picture visible;
+            this entry only carries the on/off state and points there. */}
+        <Panel active={panel === 'audio'} direction="right">
+          <BackHeader title={t('settings.audio')} onBack={() => setPanel('root')} />
+          {!audio.available ? (
+            <p className="px-4 py-3 text-xs text-ink-secondary">{t('settings.eqUnavailable')}</p>
+          ) : (
+            <>
+              <ToggleRow
+                label={t('settings.equalizer')}
+                checked={audio.eqEnabled}
+                onChange={audio.setEqEnabled}
+              />
+              <p className="px-4 pb-3 text-[11px] leading-relaxed text-ink-secondary">
+                {t('settings.eqHint')}
+              </p>
+              <Divider />
+              <ToggleRow
+                label={t('settings.maximizer')}
+                checked={audio.maximizerEnabled}
+                onChange={audio.setMaximizerEnabled}
+              />
+              <SliderRow
+                label={t('settings.maximizer')}
+                value={audio.maximizer}
+                min={0}
+                max={1}
+                step={0.05}
+                format={(v) => (v <= 0 ? t('settings.maximizerOff') : `${Math.round(v * 100)}%`)}
+                onChange={audio.setMaximizer}
+              />
+              {/* Peak-reduction meter: shows the compressor working. */}
+              <div className="flex items-center gap-2 px-4 pb-4">
+                <span className="text-[11px] text-ink-secondary">{t('settings.reduction')}</span>
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/15">
+                  <div
+                    className="h-full rounded-full bg-brand transition-[width] duration-200"
+                    style={{ width: `${Math.min(100, (audio.reduction / 24) * 100)}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-[11px] tabular-nums text-ink-secondary">
+                  {audio.reduction.toFixed(1)} dB
+                </span>
+              </div>
+            </>
+          )}
+        </Panel>
+
+        {/* Display panel — letterbox vs crop. */}
+        <Panel active={panel === 'fit'} direction="right">
+          <BackHeader title={t('settings.fit')} onBack={() => setPanel('root')} />
+          <RadioRow
+            label={t('settings.fitContain')}
+            selected={fitMode === 'contain'}
+            onClick={() => {
+              setFitMode('contain');
+              setPanel('root');
+            }}
+          />
+          <RadioRow
+            label={t('settings.fitCover')}
+            selected={fitMode === 'cover'}
+            onClick={() => {
+              setFitMode('cover');
+              setPanel('root');
+            }}
+          />
+        </Panel>
       </div>
     </div>
   );
 }
 
 // ---- Building blocks ----
+
+/** Section separator inside a panel. */
+function Divider() {
+  return <div className="my-1 border-t border-white/10" />;
+}
+
+/** Horizontal 0–1 slider with a right-aligned readout. */
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  format,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  format: (v: number) => string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className="flex items-center gap-3 px-4 py-2.5">
+      <span className="w-20 shrink-0 text-sm font-medium text-ink-primary">{label}</span>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/25 accent-[var(--brand)]"
+      />
+      <span className="w-12 shrink-0 text-right text-xs tabular-nums text-ink-secondary">
+        {format(value)}
+      </span>
+    </label>
+  );
+}
 
 function Panel({
   active,

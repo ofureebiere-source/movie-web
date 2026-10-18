@@ -275,18 +275,9 @@ export function useVideoProgress({
       const time = playbackRef.current?.currentTime ?? 0;
       if (time <= 0) return;
 
-      if (currentUser) {
-        const payload = JSON.stringify({
-          userId: currentUser.id,
-          movie: buildRecentMovieEntry(time),
-        });
-        navigator.sendBeacon(
-          '/api/progress/sync',
-          new Blob([payload], { type: 'application/json' })
-        );
-      } else {
-        saveRecentMovie(buildRecentMovieEntry(time));
-      }
+      // Local-first for everyone now: the account store lives in this browser
+      // too, so there is no remote to beacon to. `sendBeacon` went with it.
+      saveRecentMovie(buildRecentMovieEntry(time));
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);

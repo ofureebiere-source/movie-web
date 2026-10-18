@@ -2,6 +2,8 @@
 
 import { createContext, useContext } from 'react';
 import type { PlayerActions, PlayerState } from 'hooks/usePlayerState';
+import type { HlsController } from 'hooks/useHlsController';
+import type { AudioController } from 'hooks/useAudioProcessing';
 
 /**
  * Local PlayerContext — scoped INSIDE <VideoPlayer>. Lives and dies with the
@@ -32,6 +34,19 @@ export interface NextEpisodePreview {
   thumbnail: string;
 }
 
+/** How the video fills the player box. */
+export type FitMode = 'contain' | 'cover';
+
+/** Subtitle appearance, applied to the native cue box via CSS variables. */
+export interface SubtitleStyle {
+  /** Font scale, 0.75–2. */
+  scale: number;
+  /** Cue background strength, 0–1. */
+  background: number;
+  /** Vertical position, 0 (bottom) – 1 (top). */
+  position: number;
+}
+
 export interface PlayerContextValue {
   state: PlayerState;
   actions: PlayerActions;
@@ -57,6 +72,28 @@ export interface PlayerContextValue {
   // ---- Phase 2: lock screen ----
   isLocked: boolean;
   setIsLocked: (v: boolean) => void;
+
+  // ---- Phase 3: quality / tracks / fit / subtitles ----
+  /**
+   * hls.js's own rendition + track lists. Empty for native HLS and the backup
+   * iframe, which is what the settings menu uses to decide whether to offer
+   * the panels at all.
+   */
+  hls: HlsController;
+  /** How the video fills the box: letterboxed (`contain`) or cropped (`cover`). */
+  fitMode: FitMode;
+  setFitMode: (mode: FitMode) => void;
+  /** Subtitle appearance, shared with the CSS applied to the cue box. */
+  subtitleStyle: SubtitleStyle;
+  setSubtitleStyle: (style: Partial<SubtitleStyle>) => void;
+  /** Skip the intro/recap, when the title declares one. Null hides the button. */
+  skipSegment: { label: string; end: number } | null;
+  /** Live one-line status for screen readers (announces state changes). */
+  liveMessage: string;
+
+  // ---- Phase 3: audio processing (equaliser + loudness) ----
+  /** Graphic EQ + volume maximiser, driven by the Web Audio graph. */
+  audio: AudioController;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);

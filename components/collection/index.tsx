@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'i18n/routing';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from 'lib/firebase';
+import { doc, getDoc } from 'lib/local-db';
+import { db } from 'lib/local-client';
 import MovieCollection from 'types/movie-collection';
 import RegularMovieItem from '../commons/regular-movie-item';
 import LoadingSpinner from '../loading/loading-spinner';

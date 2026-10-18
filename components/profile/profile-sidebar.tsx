@@ -1,16 +1,11 @@
 'use client';
 
 import { ProfileSection } from './index';
-import { IoPerson, IoShieldCheckmark, IoLanguage, IoHelpCircle, IoLogOut } from 'react-icons/io5';
+import { IoPerson, IoFingerPrint, IoLanguage, IoHelpCircle, IoTrash } from 'react-icons/io5';
 import { useDispatch } from 'react-redux';
 import { removeUser } from '../../redux/slices/user-slice';
-import AuthServices from 'services/auth-services';
-import { getFirebaseAuth } from '../../lib/firebase';
 import { useState } from 'react';
-import LoadingSpinerBtn from '../loading/loading-spiner-btn';
-import { toast } from 'react-toastify';
-import { analytics } from 'lib/posthog/events';
-
+import { forgetDevice } from '../../lib/device';
 interface ProfileSidebarProps {
   activeSection: ProfileSection;
   onSectionChange: (section: ProfileSection) => void;
@@ -25,8 +20,8 @@ const menuItems = [
   },
   {
     id: 'security' as ProfileSection,
-    label: 'Bảo mật',
-    icon: IoShieldCheckmark,
+    label: 'Thiết bị',
+    icon: IoFingerPrint,
   },
   {
     id: 'language' as ProfileSection,
@@ -46,22 +41,16 @@ export default function ProfileSidebar({
   user,
 }: ProfileSidebarProps) {
   const dispatch = useDispatch();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isConfirmingForget, setIsConfirmingForget] = useState(false);
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      analytics.authLogout();
-      await AuthServices.removeAuthCookie();
-      const [{ signOut }, auth] = await Promise.all([import('firebase/auth'), getFirebaseAuth()]);
-      await signOut(auth);
-      dispatch(removeUser());
-      toast.success('Đăng xuất thành công');
-    } catch (error) {
-      toast.error('Có lỗi xảy ra khi đăng xuất');
-    } finally {
-      setIsLoggingOut(false);
+  const handleForgetDevice = () => {
+    if (!isConfirmingForget) {
+      setIsConfirmingForget(true);
+      return;
     }
+    forgetDevice();
+    dispatch(removeUser());
+    window.location.href = '/';
   };
 
   return (
@@ -74,13 +63,13 @@ export default function ProfileSidebar({
               <img src={user.photo} alt="Avatar" className="w-12 h-12 rounded-full object-cover" />
             ) : (
               <span className="text-white font-semibold text-lg">
-                {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+                {user.name?.charAt(0)?.toUpperCase() || 'D'}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-sm truncate" data-private>{user.name || 'User'}</p>
-            <p className="text-gray-400 text-xs truncate" data-private>{user.email}</p>
+            <p className="text-white font-semibold text-sm truncate" data-private>{user.name || 'Thiết bị'}</p>
+            <p className="text-gray-400 text-xs truncate font-mono" data-private>{(user.device?.id ?? user.id ?? '').slice(0, 12)}</p>
           </div>
         </div>
       </div>
@@ -108,16 +97,15 @@ export default function ProfileSidebar({
         })}
       </nav>
 
-      {/* Logout Button */}
+      {/* Forget device */}
       <div className="border-t border-gray-700 pt-4">
         <button
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          className="w-full flex items-center space-x-3 px-3 py-3 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+          onClick={handleForgetDevice}
+          className="w-full flex items-center space-x-3 px-3 py-3 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors"
         >
-          <IoLogOut size={18} />
+          <IoTrash size={18} />
           <span className="text-sm font-medium">
-            {isLoggingOut ? <LoadingSpinerBtn /> : 'Đăng xuất'}
+            {isConfirmingForget ? 'Nhấn lần nữa để xóa' : 'Quên thiết bị này'}
           </span>
         </button>
       </div>

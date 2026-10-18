@@ -113,7 +113,32 @@
         "speed": "Playback speed",
         "language": "Audio / Language",
         "autoPlayNext": "Auto-play next episode",
-        "normal": "Normal"
+        "normal": "Normal",
+        "quality": "Quality",
+        "subtitle": "Subtitles",
+        "subtitleOff": "Off",
+        "fit": "Display mode",
+        "fitContain": "Fit to frame",
+        "fitCover": "Fill screen",
+        "audio": "Audio",
+        "equalizer": "Equalizer",
+        "maximizer": "Volume maximiser",
+        "maximizerOff": "Off",
+        "eqPreset": "Preset",
+        "eqCustom": "Custom",
+        "eqFlat": "Flat",
+        "eqBass": "Bass boost",
+        "eqVocal": "Vocal",
+        "eqCinema": "Cinema",
+        "eqNight": "Night",
+        "eqUnavailable": "This device does not support audio tuning.",
+        "reduction": "Peak reduction",
+        "subScale": "Text size",
+        "subBackground": "Background",
+        "subPosition": "Position",
+        "skipIntro": "Skip intro",
+        "audioTrack": "Audio track",
+        "eqHint": "The equalizer opens on the player — tap the EQ button in the bottom bar."
       },
       "nextEpisode": {
         "upNext": "Up next",
@@ -253,7 +278,9 @@
     "collection": "Collection",
     "recent": "Recently watched",
     "profile": "Profile",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "forgetDevice": "Forget this device",
+    "confirmForget": "Tap again to erase"
   },
   "collection": {
     "title": "Your movie collection"

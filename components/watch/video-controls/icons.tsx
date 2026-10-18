@@ -209,3 +209,72 @@ export const SparklesIcon = ({ size = 24, ...rest }: IconProps) => (
     <circle cx="5" cy="17" r="1" fill="currentColor" />
   </svg>
 );
+
+export const SubtitleIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+    <path
+      d="M6.5 14h5M14 14h3.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const QualityIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.8" />
+    <path
+      d="M8 15V9m0 3h4m0 3V9M16 15V9"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const EqualizerIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <path
+      d="M6 20V10M12 20V4M18 20v-6"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+    />
+    <circle cx="6" cy="8" r="1.8" fill="currentColor" />
+    <circle cx="12" cy="2.6" r="1.8" fill="currentColor" />
+    <circle cx="18" cy="12" r="1.8" fill="currentColor" />
+  </svg>
+);
+
+export const MaximizeAudioIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <path
+      d="M4 10V7a3 3 0 0 1 3-3h3M20 10V7a3 3 0 0 0-3-3h-3M4 14v3a3 3 0 0 0 3 3h3M20 14v3a3 3 0 0 1-3 3h-3"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+    />
+    <path
+      d="M9 12h.01M12 10v4M15 12h.01"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const FitIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.8" />
+    <rect x="7" y="8" width="10" height="8" rx="1" fill="currentColor" opacity="0.9" />
+  </svg>
+);
+
+export const SkipSegmentIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <path d="M5 6l9 6-9 6V6z" fill="currentColor" />
+    <rect x="16" y="6" width="2.6" height="12" rx="1" fill="currentColor" />
+  </svg>
+);

@@ -5,7 +5,7 @@ import NotificationMobile from './notification-mobile';
 import { INotification, INotificationDropdownState } from 'types/notification';
 import { useSelector } from 'react-redux';
 import firebaseServices from 'services/firebase-services';
-import { Unsubscribe } from 'firebase/auth';
+import { Unsubscribe } from 'lib/local-db';
 
 export default function Notification({
   isOnFixedHeader,

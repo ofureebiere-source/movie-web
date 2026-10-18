@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import AccountDefaultImg from '../../public/account-default-img.jpg';
-import { useAuthModel } from '../context/auth-modal-context';
+import { useDeviceAuth } from '../context/auth-conext';
 import firebaseServices from 'services/firebase-services';
 import { useRef, useState } from 'react';
 import IComment from 'types/comment';
@@ -24,7 +24,7 @@ export default function CommentInput({
   const t = useTranslations('comment');
   const [commentText, setCommentText] = useState<string>('');
   const [isFocused, setIsFocused] = useState<boolean>(false);
-  const { openAuthModal } = useAuthModel();
+  const { ensureRegistered } = useDeviceAuth();
   const [isSubmitingComment, setIsSubmitingComment] = useState<boolean>(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -42,8 +42,10 @@ export default function CommentInput({
   };
 
   const handleSubmitComment = () => {
+    // The device registers itself on first load; this only covers the
+    // instant before that lands.
     if (authenticatedUser === null) {
-      openAuthModal();
+      ensureRegistered();
       return;
     }
     if (commentText.trim() === '') return;

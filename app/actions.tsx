@@ -4,7 +4,7 @@ import NewlyMovie from 'types/newly-movie';
 import DetailMovie from 'types/detail-movie';
 import { getLocale } from 'next-intl/server';
 import { localizeMovieContentsBatch } from 'services/movie-content-localizer';
-import { fetchMovieLogoUrl } from 'utils/tmdb-logo';
+import { fetchMovieLogoUrl } from 'utils/movie-logo';
 import type { Locale } from 'i18n/routing';
 import {
   browseByFormat,

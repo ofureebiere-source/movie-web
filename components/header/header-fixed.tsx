@@ -3,7 +3,6 @@ import Image from 'next/image';
 import { IoSearch } from 'react-icons/io5';
 import SubType from './sub-type';
 import SubCountries from './sub-countries';
-import LoginSignUpIcon from '../auth/login-signup-icon';
 import { useSelector } from 'react-redux';
 import AccountProfileIcon from '../account/account-profile-icon';
 import { useEffect, useState } from 'react';
@@ -100,12 +99,9 @@ export default function HeaderFixed({
           <Link className="cursor-pointer hover:text-custome-red" href="/search">
             <IoSearch size={25} />
           </Link>
-          {!loading &&
-              (authenticatedUser ? (
-                <AccountProfileIcon authenticatedUser={authenticatedUser} isOnFixedHeader={true} />
-              ) : (
-                <LoginSignUpIcon />
-              ))}
+          {authenticatedUser && (
+            <AccountProfileIcon authenticatedUser={authenticatedUser} isOnFixedHeader={true} />
+          )}
           <div className={`relative h-full flex items-center`}>
             {!loading && authenticatedUser && (
               <Notification

@@ -6,6 +6,8 @@ import VideoControlsOverlay from './video-controls';
 import ProgresswatchNotification from './progress-watch-notification';
 import { isTouchDevice, requestVideoFullscreen } from 'utils/mobile-fullscreen';
 import { createAdFilteringPlaylistLoader } from 'lib/hls-ad-filter';
+import { useHlsController } from 'hooks/useHlsController';
+import { useAudioProcessing } from 'hooks/useAudioProcessing';
 import type {
   NextEpisodePreview,
   PlayerMeta,
@@ -72,6 +74,10 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
   ) => {
     const overlay = useRef<HTMLDivElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    // Quality / audio-track / subtitle-track lists, read straight off hls.js.
+    const hls = useHlsController();
+    // Equaliser + loudness maximiser, on the Web Audio graph.
+    const audio = useAudioProcessing(videoRef as React.RefObject<HTMLVideoElement | null>);
     const [isCanPlay, setIsCanPlay] = useState<boolean>(false);
     // Becomes true on first user interaction with the pre-play poster. Until
     // then, the custom controls overlay stays disabled so the poster + FaPlay
@@ -83,6 +89,11 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const getVideo = useCallback(() => {
       return videoRef && 'current' in videoRef ? videoRef.current : null;
     }, [videoRef]);
+
+    // Stable identity for `hls.attach`, so the HLS-init effect does not tear
+    // down and rebuild the stream on every render.
+    const hlsRef = useRef(hls.attach);
+    hlsRef.current = hls.attach;
 
     // Initialize HLS — reruns only when videoUrl changes (not tied to videoProgress)
     useEffect(() => {
@@ -98,11 +109,13 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       overlay.current?.classList.remove('hidden');
 
       let hls: Hls | null = null;
+      let detachHls: (() => void) | null = null;
       const onNativeError = () => onFatalErrorRef.current?.('native media error');
       if (Hls.isSupported()) {
         // The catalog splices a video ad into its playlists; the custom playlist
         // loader cuts it out before hls.js parses them (lib/hls-ad-filter).
         hls = new Hls({ pLoader: AdFilteringPlaylistLoader });
+        detachHls = hlsRef.current(hls);
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (!data.fatal) return;
           if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
@@ -122,6 +135,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       return () => {
         video.removeEventListener('error', onNativeError);
+        detachHls?.();
         hls?.destroy();
         if (video.src || hls) {
           video.pause();
@@ -201,6 +215,8 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onSwitchLanguage={onSwitchLanguage}
           nextEpisode={nextEpisode}
           onNextEpisode={onNextEpisode}
+          hls={hls}
+          audio={audio}
           disabled={!hasStarted}
         />
 

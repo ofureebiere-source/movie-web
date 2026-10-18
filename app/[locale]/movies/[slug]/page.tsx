@@ -4,7 +4,7 @@ import { Metadata } from 'next';
 import { setRequestLocale } from 'next-intl/server';
 import { getLocalizedMovieContent } from 'services/movie-content-localizer';
 import { preferredTitle } from 'constants/i18n-mappings';
-import { fetchMovieLogoUrl } from 'utils/tmdb-logo';
+import { fetchMovieLogoUrl } from 'utils/movie-logo';
 import {
   getTitleDetail,
   getRelatedTitles,

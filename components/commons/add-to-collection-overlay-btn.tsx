@@ -9,12 +9,12 @@ import {
   setDoc,
   updateDoc,
   arrayUnion,
-} from 'firebase/firestore';
+} from 'lib/local-db';
 import { toast } from 'react-toastify';
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { db } from 'lib/firebase';
-import { useAuthModel } from '../context/auth-modal-context';
+import { db } from 'lib/local-client';
+import { useDeviceAuth } from '../context/auth-conext';
 import LoadingSpinerBtn from '../loading/loading-spiner-btn';
 import {
   addToCollection,
@@ -50,7 +50,7 @@ export default function AddToCollectionOverlayBtn({ collectionItem }: Props) {
     )
   );
   const dispatch = useDispatch();
-  const { openAuthModal } = useAuthModel();
+  const { ensureRegistered } = useDeviceAuth();
   const [isHandling, setIsHandling] = useState(false);
 
   const handleClick = async (e: React.MouseEvent) => {
@@ -58,7 +58,7 @@ export default function AddToCollectionOverlayBtn({ collectionItem }: Props) {
     e.stopPropagation();
 
     if (!user) {
-      openAuthModal();
+      ensureRegistered();
       return;
     }
     if (isHandling) return;

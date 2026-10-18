@@ -14,7 +14,7 @@ import {
   IoSwapVertical,
 } from 'react-icons/io5';
 import { localizedCategory, localizedCountry } from 'constants/i18n-mappings';
-import { BROWSE_GENRE_SLUGS, COUNTRY_SLUGS } from 'constants/catalog-taxonomy';
+import { BROWSE_GENRE_SLUGS, COUNTRY_SLUGS } from 'constants/framextv-taxonomy';
 import type { Locale } from 'i18n/routing';
 
 export type FilterDimension = 'category' | 'country' | 'year' | 'lang';

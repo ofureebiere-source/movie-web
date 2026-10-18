@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from 'lib/firebase';
+import { doc, getDoc } from 'lib/local-db';
+import { db } from 'lib/local-client';
 import {
   setCollection,
   clearCollection,

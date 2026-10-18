@@ -5,53 +5,48 @@ import type Credit from 'types/credit';
 import type MovieImage from 'types/movie-image';
 import type SeasonLink from 'types/season-link';
 import type { MovieFilters } from 'types/movie-filters';
-import { parseSlug } from 'lib/media-key';
 import {
-  getLatest,
-  listByFormat,
-  listByGenre,
-  listByCountry,
-  search,
-  getTitle,
-  getTitleByTmdb,
-  getImages,
-  getPeoples,
+  discover,
+  searchTitles as apiSearch,
+  getHome,
+  getDetail,
+  getSeason,
   CatalogApiError,
-  type ApiPage,
-  type ApiListParams,
-} from 'services/catalog-api';
-import { trending } from 'services/tmdb-catalog-service';
-import { enrichDetail } from 'services/tmdb-enrichment';
+  type FxItem,
+} from 'services/framextv-api';
 import {
-  adaptListItems,
-  adaptDetail,
-  adaptPeoples,
-  adaptImages,
-} from 'lib/catalog-adapter';
-import {
+  GENRE_ID,
+  FORMAT_SPEC,
   isBrowsableGenre,
   isKnownCountry,
-  isLangFilter,
-  sortParams,
-} from 'constants/catalog-taxonomy';
+  isKnownFormat,
+  resolveFormat,
+} from 'constants/framextv-taxonomy';
+import {
+  adaptItem,
+  adaptItems,
+  adaptDetail,
+  buildSeasons,
+  buildMovieEpisodes,
+  parseMintedSlug,
+  tmdbPathFromUrl,
+} from 'lib/framextv-adapter';
 
 export type { MovieFilters };
 
 /**
- * The catalog, as the rest of the app sees it.
+ * The catalogue, as the rest of the app sees it.
  *
  * Everything below this module works in `NewlyMovie` / `DetailMovie`; pages
  * and server actions call only this file, so the provider behind it can
- * change without touching the UI. It changed twice already: the v1 provider → TMDB +
- * vidsrc (v2.0.0) → the current catalog API with TMDB as an extra (v3).
+ * change without touching the UI — it has now changed three times, and this
+ * is the third.
  *
- * The catalog hosts the streams for everything it lists, so — unlike the vidsrc
- * era — there is no availability filter: a page of 30 is 30 playable titles,
- * and the totals it reports are true.
+ * The provider is keyless: no token, no project, no account. That is why the
+ * app builds and runs with no credentials at all.
  *
- * Failure is still a value on the home page (a dead rail renders as no
- * rail) and still an exception on browse and detail, where the failure IS
- * the page.
+ * Failure is still a value on the home page (a dead rail renders as no rail)
+ * and still an exception on browse and detail, where the failure IS the page.
  */
 
 export interface CatalogPage {
@@ -68,36 +63,41 @@ const BROWSE_PAGE_SIZE = 30;
 const RAIL_SIZE = 14;
 const HERO_SIZE = 5;
 
-function adaptPage(page: ApiPage, locale: string): NewlyMovie[] {
-  return adaptListItems(page.items, { locale, imageCdn: page.imageCdn });
-}
-
-function toCatalogPage(page: ApiPage, locale: string): CatalogPage {
-  return {
-    items: adaptPage(page, locale),
-    totalItems: page.totalItems,
-    hasMore: page.page < page.totalPages,
-  };
+function toPage(items: FxItem[], locale: string, totalItems: number, hasMore: boolean): CatalogPage {
+  return { items: adaptItems(items, { locale }), totalItems, hasMore };
 }
 
 /**
- * Filter-bar state → the catalog list params.
+ * The provider has no unfiltered list and no country filter, so a browse
+ * that wants "everything" (or a country page, which cannot filter at all)
+ * merges the film and series catalogues.
  *
- * Unknown genre/country slugs are dropped rather than forwarded: The catalog
- * answers an unknown `category` with an empty list, which would read as
- * "nothing matches" when the real problem is a stale link.
+ * The two lists are interleaved rather than concatenated so a page is not
+ * "all films then all series" — the top of a genre page should look like the
+ * genre, not like one media type.
  */
-function filterParams(filters: MovieFilters | undefined, page: number): ApiListParams {
-  const year = filters?.year && /^\d{4}(,\d{4})?$/.test(filters.year) ? filters.year : undefined;
-  return {
-    page,
-    limit: BROWSE_PAGE_SIZE,
-    category: isBrowsableGenre(filters?.category) ? filters!.category : undefined,
-    country: isKnownCountry(filters?.country) ? filters!.country : undefined,
-    year,
-    sort_lang: isLangFilter(filters?.lang) ? filters!.lang : undefined,
-    ...sortParams(filters?.sort),
-  };
+async function mergedBrowse(
+  params: { page: number; genre?: number; year?: number },
+  locale: string
+): Promise<CatalogPage> {
+  const [movies, tvs] = await Promise.all([
+    discover('movie', { page: params.page, genre: params.genre, year: params.year }),
+    discover('tv', { page: params.page, genre: params.genre, year: params.year }),
+  ]);
+
+  const merged: FxItem[] = [];
+  const max = Math.max(movies.items.length, tvs.items.length);
+  for (let i = 0; i < max; i++) {
+    if (movies.items[i]) merged.push(movies.items[i]);
+    if (tvs.items[i]) merged.push(tvs.items[i]);
+  }
+
+  return toPage(
+    merged.slice(0, BROWSE_PAGE_SIZE),
+    locale,
+    movies.totalItems + tvs.totalItems,
+    params.page < Math.max(movies.totalPages, tvs.totalPages)
+  );
 }
 
 // ============================================================================
@@ -117,19 +117,29 @@ async function safeRail(load: () => Promise<NewlyMovie[]>): Promise<NewlyMovie[]
   }
 }
 
+/** Rails the provider curates on its home payload. */
+const HOME_RAIL = {
+  newest: 'new_releases',
+  trending: 'trending_movies',
+} as const;
+
+async function homeRail(name: string): Promise<FxItem[]> {
+  const home = await getHome();
+  return home.rails?.[name]?.results ?? [];
+}
+
 /**
- * "Mới cập nhật" — the catalog's own newest-first feed, plus the number of titles
- * it says were updated today (drives the daily banner). Never throws.
+ * "Mới cập nhật" — the provider's curated newest-release rail.
+ *
+ * The provider reports no "updated today" count, so the daily banner stays
+ * hidden rather than showing a number the site cannot stand behind.
  */
 export async function getNewlyAddedFeed(
   locale: string
 ): Promise<{ items: NewlyMovie[]; updatedToday: number }> {
   try {
-    const page = await getLatest(1);
-    return {
-      items: adaptPage(page, locale).slice(0, RAIL_SIZE),
-      updatedToday: page.updatedToday ?? 0,
-    };
+    const items = adaptItems(await homeRail(HOME_RAIL.newest), { locale }).slice(0, RAIL_SIZE);
+    return { items, updatedToday: 0 };
   } catch (err) {
     console.warn('[catalog] latest feed failed:', err instanceof Error ? err.message : err);
     return { items: [], updatedToday: 0 };
@@ -140,13 +150,22 @@ export async function getNewlyAddedRail(locale: string): Promise<NewlyMovie[]> {
   return (await getNewlyAddedFeed(locale)).items;
 }
 
-/** A curated list rail: `phim-le`, `phim-bo`, `hoat-hinh`, `tv-shows`, `phim-chieu-rap`, … */
+/** A curated list rail: `phim-le`, `phim-bo`, `hoat-hinh`, `phim-chieu-rap`, … */
 export async function getFormatRail(
   formatSlug: string,
   locale: string,
   limit = RAIL_SIZE
 ): Promise<NewlyMovie[]> {
-  return safeRail(async () => adaptPage(await listByFormat(formatSlug, { limit }), locale));
+  return safeRail(async () => {
+    const spec = FORMAT_SPEC[formatSlug];
+    if (!spec) return [];
+    const page = await discover(spec.type, {
+      page: 1,
+      genre: spec.genre,
+      year: spec.year === 'current' ? new Date().getFullYear() : undefined,
+    });
+    return adaptItems(page.items, { locale }).slice(0, limit);
+  });
 }
 
 export async function getGenreRail(
@@ -154,60 +173,48 @@ export async function getGenreRail(
   locale: string,
   limit = RAIL_SIZE
 ): Promise<NewlyMovie[]> {
-  return safeRail(async () => adaptPage(await listByGenre(genreSlug, { limit }), locale));
+  return safeRail(async () => {
+    const genre = GENRE_ID[genreSlug];
+    if (!genre) return [];
+    const page = await discover('movie', { page: 1, genre });
+    return adaptItems(page.items, { locale }).slice(0, limit);
+  });
 }
 
 /**
- * The hero: what the world is watching this week, limited to what the catalog
- * can play.
+ * The hero: the provider's own hero row plus its trending rail.
  *
- * The catalog has no popularity signal, so the ranking comes from TMDB's weekly
- * trending list and each row is looked up on the catalog by TMDB id. That lookup
- * misses often — a fifth of the catalog has no TMDB id, and the newest releases
- * aren't uploaded yet — so more candidates are tried than slides shown.
- * When too few land (or TMDB is down), the newest theatrical releases fill
- * the rest: the hero should never open on a hole.
- *
- * A series resolves to its latest season, which is the one a trending list
- * means anyway.
+ * No lookup dance is needed here — unlike the previous provider, this one
+ * curates the rail itself, so every row is already a real, playable title.
+ * The fallback chain is only for an outage.
  */
 export async function getTrendingRail(locale: string, limit = HERO_SIZE): Promise<NewlyMovie[]> {
   return safeRail(async () => {
     const picked: NewlyMovie[] = [];
     const seen = new Set<string>();
 
-    try {
-      const res = await trending('all', locale);
-      const candidates = res.results
-        .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
-        .slice(0, limit * 3);
+    const push = (item: FxItem | undefined) => {
+      if (!item?.id || picked.length >= limit) return;
+      const movie = adaptItem(item, { locale });
+      if (seen.has(movie._id) || !movie.poster_url) return;
+      seen.add(movie._id);
+      picked.push(movie);
+    };
 
-      const settled = await Promise.allSettled(
-        candidates.map((r) => getTitleByTmdb(r.media_type as 'movie' | 'tv', r.id))
-      );
-      for (let i = 0; i < settled.length; i++) {
-        const result = settled[i];
-        if (result.status !== 'fulfilled' || !result.value) continue;
-        const { movie } = adaptDetail(result.value, { locale });
-        if (seen.has(movie._id) || !movie.poster_url) continue;
-        seen.add(movie._id);
-        // The trending row already carries TMDB's primary backdrop (textless
-        // for every title sampled) — a sharp hero image at no extra request.
-        if (candidates[i].backdrop_path) movie.tmdb_backdrop = candidates[i].backdrop_path!;
-        picked.push(movie);
-        if (picked.length >= limit) break;
-      }
+    try {
+      const home = await getHome();
+      push(home.hero);
+      for (const item of home.rails?.[HOME_RAIL.trending]?.results ?? []) push(item);
     } catch (err) {
-      console.warn('[catalog] TMDB trending unavailable:', err instanceof Error ? err.message : err);
+      console.warn('[catalog] home unavailable:', err instanceof Error ? err.message : err);
     }
 
     if (picked.length < limit) {
-      const fill = adaptPage(await listByFormat('phim-chieu-rap', { limit: limit * 2 }), locale);
-      for (const movie of fill) {
-        if (picked.length >= limit) break;
-        if (seen.has(movie._id) || !movie.poster_url) continue;
-        seen.add(movie._id);
-        picked.push(movie);
+      try {
+        const page = await discover('movie', { page: 1 });
+        for (const item of page.items) push(item);
+      } catch {
+        // Nothing left to try; the hero simply renders fewer slides.
       }
     }
 
@@ -226,8 +233,8 @@ export async function browseByGenre(
   locale: string
 ): Promise<CatalogPage> {
   if (!isBrowsableGenre(genreSlug)) return EMPTY_PAGE;
-  const { category: _ignored, ...params } = filterParams(filters, page);
-  return toCatalogPage(await listByGenre(genreSlug, params), locale);
+  const year = /^\d{4}$/.test(filters?.year ?? '') ? Number(filters!.year) : undefined;
+  return mergedBrowse({ page, genre: GENRE_ID[genreSlug], year }, locale);
 }
 
 export async function browseByCountry(
@@ -237,8 +244,10 @@ export async function browseByCountry(
   locale: string
 ): Promise<CatalogPage> {
   if (!isKnownCountry(countrySlug)) return EMPTY_PAGE;
-  const { country: _ignored, ...params } = filterParams(filters, page);
-  return toCatalogPage(await listByCountry(countrySlug, params), locale);
+  // The provider ignores every country parameter, so the page shows the
+  // catalogue rather than pretending to filter — see `framextv-taxonomy`.
+  const year = /^\d{4}$/.test(filters?.year ?? '') ? Number(filters!.year) : undefined;
+  return mergedBrowse({ page, year }, locale);
 }
 
 export async function browseByFormat(
@@ -247,17 +256,26 @@ export async function browseByFormat(
   filters: MovieFilters | undefined,
   locale: string
 ): Promise<CatalogPage> {
-  return toCatalogPage(await listByFormat(formatSlug, filterParams(filters, page)), locale);
+  if (!isKnownFormat(formatSlug)) return EMPTY_PAGE;
+  const spec = resolveFormat(formatSlug) as (typeof FORMAT_SPEC)[string] & { yearValue?: number };
+  if (!spec) return EMPTY_PAGE;
+
+  const year = /^\d{4}$/.test(filters?.year ?? '') ? Number(filters!.year) : spec.yearValue;
+  const genre = isBrowsableGenre(filters?.category) ? GENRE_ID[filters!.category!] : spec.genre;
+
+  const result = await discover(spec.type, { page, genre, year });
+  return toPage(result.items, locale, result.totalItems, page < result.totalPages);
 }
 
 // ============================================================================
 // SEARCH
 // ============================================================================
 
-/** Matches Vietnamese titles and original titles alike. */
+/** Keyword search. Matches titles in either language the provider indexes. */
 export async function searchTitles(query: string, locale: string, page = 1): Promise<CatalogPage> {
   if (!query.trim()) return EMPTY_PAGE;
-  return toCatalogPage(await search(query, { page, limit: BROWSE_PAGE_SIZE }), locale);
+  const result = await apiSearch(query, page);
+  return toPage(result.items, locale, result.totalItems, page < result.totalPages);
 }
 
 // ============================================================================
@@ -265,103 +283,139 @@ export async function searchTitles(query: string, locale: string, page = 1): Pro
 // ============================================================================
 
 /**
+ * Load one title's full detail, seasons and all.
+ *
+ * The provider keeps a series' seasons inside the title, so the watch page's
+ * season selector is filled from here rather than by looking up sibling
+ * titles — which is what the previous provider required.
+ */
+async function loadDetail(id: string, type: string, locale: string): Promise<DetailMovie | null> {
+  const detail = await getDetail(id, type);
+  if (!detail) return null;
+
+  const mediaType = type === 'anime' || detail.type === 'anime' ? 'anime' : detail.type === 'tv' || type === 'tv' ? 'tv' : 'movie';
+
+  if (mediaType === 'tv') {
+    const seasons = (detail.seasons ?? []).filter((s) => (s.season_number ?? 0) > 0);
+    const withEpisodes = await Promise.all(
+      seasons.map(async (season) => ({
+        season,
+        episodes: await getSeason(id, season.season_number),
+      }))
+    );
+    const episodes = buildSeasons(id, 'tv', withEpisodes);
+    // A series with no reachable episodes still renders its detail page; the
+    // watch page then offers the provider's own player instead.
+    return adaptDetail(
+      detail,
+      episodes.length ? episodes : buildMovieEpisodes(id, 'tv', detail.runtime),
+      { locale }
+    );
+  }
+
+  return adaptDetail(detail, buildMovieEpisodes(id, mediaType, detail.runtime), { locale });
+}
+
+/**
  * Resolve a URL slug to a full title.
  *
- * Two slug shapes are accepted:
- *  - a catalog slug (`nha-ngoai-giao-phan-4`) — the canonical form;
- *  - a v2.0.0 slug (`…-movie-68721` / `…-tv-1399`), from bookmarks, watch
- *    history and search engines. It is mapped by TMDB id, which works for
- *    most titles and always lands on the latest season of a series. Pages
- *    compare `detail.movie.slug` with the requested slug and redirect, so
- *    the old URL never becomes canonical.
+ * The canonical form is a slug this app minted (`the-odyssey-movie-1368337`),
+ * whose tail carries the provider id and type. A slug that does not parse —
+ * a legacy URL from an earlier provider, or a hand-typed one — is resolved by
+ * searching for its words and taking the best hit, so old links land on
+ * something real instead of a 404.
  *
- * The result is enriched from TMDB (`services/tmdb-enrichment`).
- *
- * Returns null when neither resolves. A timeout or 5xx still throws: "the
- * provider is down" must not look like "this title does not exist".
+ * Returns null only when nothing resolves. A timeout or 5xx still throws:
+ * "the provider is down" must not look like "this title does not exist".
  */
 export async function getTitleDetail(slug: string, locale: string): Promise<DetailMovie | null> {
   if (!slug) return null;
 
-  let raw = await getTitle(slug);
-  if (!raw) {
-    const legacy = parseSlug(slug);
-    if (legacy) raw = await getTitleByTmdb(legacy.type, legacy.id);
-  }
-  if (!raw) return null;
+  const minted = parseMintedSlug(slug);
+  if (minted) return loadDetail(minted.id, minted.type, locale);
 
-  // TMDB fills what the catalog lacks (id, English text, rating, trailer);
-  // time-boxed, and a no-op when TMDB is slow or down.
-  return enrichDetail(adaptDetail(raw, { locale }), locale);
+  const words = slug.replace(/-/g, ' ').trim();
+  if (!words) return null;
+  try {
+    const found = await apiSearch(words, 1);
+    const hit = found.items[0];
+    if (!hit) return null;
+    return loadDetail(hit.id, hit.type ?? 'movie', locale);
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Cast and gallery for the detail page.
  *
- * The catalog mirrors both from TMDB per slug, so this works even for titles
- * whose own `tmdb.id` is empty. Either half failing just hides its section.
+ * The provider carries cast on the detail payload and no separate images
+ * endpoint, so the gallery is built from the backdrops it does have: the
+ * title's own, then its recommendations'. Either half failing just hides its
+ * section.
  */
 export async function getTitleExtras(
   slug: string
 ): Promise<{ credit: Credit | undefined; images: MovieImage[] }> {
-  const [peoples, images] = await Promise.all([getPeoples(slug), getImages(slug)]);
-  const cast = adaptPeoples(peoples);
-  return {
-    credit: cast.length ? { id: slug, cast } : undefined,
-    images: adaptImages(images)
-      .filter((img) => img.type === 'backdrop')
-      .slice(0, 12),
-  };
-}
-
-
-/** "Nhà Ngoại Giao (Phần 4)" → { base: "Nhà Ngoại Giao", season: 4 }. */
-function splitSeason(name: string): { base: string; season: number } | null {
-  const match = /^(.*?)\s*\((?:Phần|Season|Mùa)\s+(\d+)\)\s*$/i.exec(name.trim());
-  return match ? { base: match[1].trim(), season: parseInt(match[2], 10) } : null;
-}
-
-/**
- * The other seasons of a series.
- *
- * The catalog lists every season as its own title ("Nhà Ngoại Giao (Phần 1)" …
- * "(Phần 4)") with no link between them, so siblings are found by
- * searching the shared name and keeping rows with the same "(Phần N)"
- * stem — plus the same TMDB id when both sides have one, which stops "The
- * Office (US)" from collecting "The Office (UK)". Sorted by season number.
- * Empty for films and single-season titles.
- */
-export async function getOtherSeasons(detail: DetailMovie): Promise<SeasonLink[]> {
-  const own = splitSeason(detail.movie.name);
-  if (!own) return [];
+  const minted = parseMintedSlug(slug);
+  if (!minted) return { credit: undefined, images: [] };
 
   try {
-    const res = await search(own.base, { limit: 30 });
-    const ownTmdb = detail.movie.tmdb?.id;
-    const seasons = new Map<number, SeasonLink>();
+    const detail = await getDetail(minted.id, minted.type);
+    if (!detail) return { credit: undefined, images: [] };
 
-    for (const item of res.items) {
-      const parts = splitSeason(item.name);
-      if (!parts || parts.base.toLowerCase() !== own.base.toLowerCase()) continue;
-      const itemTmdb = item.tmdb?.id ? String(item.tmdb.id) : null;
-      if (ownTmdb && itemTmdb && itemTmdb !== ownTmdb) continue;
-      if (!seasons.has(parts.season)) {
-        seasons.set(parts.season, { slug: item.slug, name: item.name, season: parts.season });
-      }
-    }
+    const cast = (detail.cast ?? [])
+      .filter((c) => c.name)
+      .slice(0, 20)
+      .map((c, order) => ({
+        adult: false,
+        gender: 0,
+        id: c.id ?? order,
+        known_for_department: 'Acting',
+        name: c.name,
+        original_name: c.name,
+        popularity: 0,
+        profile_path: tmdbPathFromUrl(c.profile ?? c.profile_path) ?? null,
+        cast_id: 0,
+        character: c.character ?? '',
+        credit_id: '',
+        order,
+      }));
 
-    // Always include the current title, even if search ranked it out.
-    seasons.set(own.season, { slug: detail.movie.slug, name: detail.movie.name, season: own.season });
-    return seasons.size > 1 ? Array.from(seasons.values()).sort((a, b) => a.season - b.season) : [];
+    const paths = [detail.backdrop, ...(detail.recommendations ?? []).map((r) => r.backdrop)]
+      .map((url) => tmdbPathFromUrl(url))
+      .filter((p): p is string => !!p);
+
+    const images: MovieImage[] = paths.slice(0, 12).map((file_path) => ({
+      width: 1280,
+      height: 720,
+      aspect_ratio: 1.778,
+      type: 'backdrop',
+      file_path,
+      iso_639_1: '',
+    }));
+
+    return { credit: cast.length ? { id: slug, cast } : undefined, images };
   } catch {
-    return [];
+    return { credit: undefined, images: [] };
   }
 }
 
 /**
- * "More like this" — newest titles sharing the first genre, same country
- * when there is one, minus the title itself. Best-effort: an empty array
- * hides the rail.
+ * Sibling seasons of a series.
+ *
+ * Always empty: this provider keeps every season inside one title, so the
+ * watch page's own season selector already covers them. Returning links would
+ * offer the visitor the same show twice by two different routes.
+ */
+export async function getOtherSeasons(_detail: DetailMovie): Promise<SeasonLink[]> {
+  return [];
+}
+
+/**
+ * "More like this" — the provider's own recommendations, minus the title
+ * itself. Falls back to the first genre when it has none. Best-effort: an
+ * empty array hides the rail.
  */
 export async function getRelatedTitles(
   detail: DetailMovie,
@@ -369,25 +423,29 @@ export async function getRelatedTitles(
   limit = 10
 ): Promise<NewlyMovie[]> {
   return safeRail(async () => {
-    const genreSlug = detail.movie.category?.[0]?.slug;
-    if (!genreSlug) return [];
+    const minted = parseMintedSlug(detail.movie.slug);
+    if (minted) {
+      const raw = await getDetail(minted.id, minted.type);
+      const rows = (raw?.recommendations?.length ? raw.recommendations : raw?.similar) ?? [];
+      const items = adaptItems(rows, { locale })
+        .filter((m) => m._id !== detail.movie._id)
+        .slice(0, limit);
+      if (items.length) return items;
+    }
 
-    const page = await listByGenre(genreSlug, {
-      limit: limit + 6,
-      country: detail.movie.country?.[0]?.slug,
-    });
-    const own = splitSeason(detail.movie.name)?.base;
-    return adaptPage(page, locale)
+    const genreSlug = detail.movie.category?.[0]?.slug;
+    const genre = genreSlug ? GENRE_ID[genreSlug] : undefined;
+    if (!genre) return [];
+    const page = await discover('movie', { page: 1, genre });
+    return adaptItems(page.items, { locale })
       .filter((m) => m._id !== detail.movie._id)
-      // Other seasons of the same show have their own row on the page.
-      .filter((m) => !own || splitSeason(m.name)?.base !== own)
       .slice(0, limit);
   });
 }
 
 /**
  * Same-genre titles for a slug from watch history ("because you watched").
- * Old v2.0.0 slugs resolve through `getTitleDetail`'s TMDB mapping.
+ * Legacy slugs resolve through `getTitleDetail`'s search fallback.
  */
 export async function getBecauseYouWatchedTitles(
   slug: string,

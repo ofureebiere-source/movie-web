@@ -113,7 +113,32 @@
         "speed": "Tốc độ phát",
         "language": "Âm thanh / Ngôn ngữ",
         "autoPlayNext": "Tự động phát tập tiếp theo",
-        "normal": "Bình thường"
+        "normal": "Bình thường",
+        "quality": "Chất lượng",
+        "subtitle": "Phụ đề",
+        "subtitleOff": "Tắt",
+        "fit": "Chế độ hiển thị",
+        "fitContain": "Vừa khung",
+        "fitCover": "Tràn viền",
+        "audio": "Âm thanh",
+        "equalizer": "Bộ chỉnh âm (EQ)",
+        "maximizer": "Tăng âm lượng",
+        "maximizerOff": "Tắt",
+        "eqPreset": "Bộ chỉnh sẵn",
+        "eqCustom": "Tùy chỉnh",
+        "eqFlat": "Phẳng",
+        "eqBass": "Tăng bass",
+        "eqVocal": "Giọng nói",
+        "eqCinema": "Rạp phim",
+        "eqNight": "Ban đêm",
+        "eqUnavailable": "Thiết bị này không hỗ trợ chỉnh âm.",
+        "reduction": "Giảm đỉnh",
+        "subScale": "Cỡ chữ",
+        "subBackground": "Nền chữ",
+        "subPosition": "Vị trí",
+        "skipIntro": "Bỏ qua mở đầu",
+        "audioTrack": "Track âm thanh",
+        "eqHint": "Bộ chỉnh âm mở ngay trên màn hình phim — bấm nút EQ ở thanh dưới."
       },
       "nextEpisode": {
         "upNext": "Tập tiếp theo",
@@ -253,7 +278,9 @@
     "collection": "Bộ sưu tập",
     "recent": "Phim xem gần đây",
     "profile": "Thông tin cá nhân",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "forgetDevice": "Quên thiết bị này",
+    "confirmForget": "Nhấn lần nữa để xóa"
   },
   "collection": {
     "title": "Bộ sưu tập phim của bạn"

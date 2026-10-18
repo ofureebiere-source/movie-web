@@ -1,4 +1,4 @@
-import { BROWSE_COUNTRY_SLUGS } from 'constants/catalog-taxonomy';
+import { BROWSE_COUNTRY_SLUGS } from 'constants/framextv-taxonomy';
 import { COUNTRY_MAP } from 'constants/i18n-mappings';
 
 /**

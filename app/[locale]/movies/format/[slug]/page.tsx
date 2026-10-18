@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { browseMetadata } from 'lib/browse-metadata';
 import MovieFormatPage from "@/components/movie-format"
 import { notFound } from 'next/navigation';
-import { isKnownFormat } from 'constants/catalog-taxonomy';
+import { isKnownFormat } from 'constants/framextv-taxonomy';
 
 export async function generateMetadata({
   params,

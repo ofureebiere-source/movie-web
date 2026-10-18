@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { browseMetadata } from 'lib/browse-metadata';
 import MovieTypePage from '@/components/move-type';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { LEGACY_GENRE_REDIRECTS, isBrowsableGenre } from 'constants/catalog-taxonomy';
+import { LEGACY_GENRE_REDIRECTS, isBrowsableGenre } from 'constants/framextv-taxonomy';
 import { queryString } from 'utils/query-string';
 
 export async function generateMetadata({

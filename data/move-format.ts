@@ -1,4 +1,4 @@
-import { BROWSE_FORMAT_SLUGS } from 'constants/catalog-taxonomy';
+import { BROWSE_FORMAT_SLUGS } from 'constants/framextv-taxonomy';
 import { FORMAT_MAP } from 'constants/i18n-mappings';
 
 /**

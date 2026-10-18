@@ -12,13 +12,22 @@ import {
   FullscreenExitIcon,
   SettingsIcon,
   PipIcon,
+  EqualizerIcon,
 } from './icons';
 
 export interface BottomBarProps {
   onOpenSettings: () => void;
+  /** Toggles the on-player equaliser panel. */
+  onToggleEqualizer: () => void;
+  /** Whether the equaliser panel is currently open (drives the button state). */
+  equalizerOpen: boolean;
 }
 
-export default function BottomBar({ onOpenSettings }: BottomBarProps) {
+export default function BottomBar({
+  onOpenSettings,
+  onToggleEqualizer,
+  equalizerOpen,
+}: BottomBarProps) {
   const { state, actions, containerRef, videoRef } = usePlayer();
   const PlayPauseIcon = state.isPlaying ? PauseIcon : PlayIcon;
   const FsIcon = state.isFullscreen ? FullscreenExitIcon : FullscreenEnterIcon;
@@ -86,6 +95,15 @@ export default function BottomBar({ onOpenSettings }: BottomBarProps) {
                 <PipIcon className={iconClass} />
               </button>
             )}
+            <button
+              type="button"
+              onClick={onToggleEqualizer}
+              aria-label="Equalizer"
+              aria-pressed={equalizerOpen}
+              className={`${btnClass} ${equalizerOpen ? 'text-brand' : ''}`}
+            >
+              <EqualizerIcon className={iconClass} />
+            </button>
             <button
               type="button"
               onClick={onOpenSettings}

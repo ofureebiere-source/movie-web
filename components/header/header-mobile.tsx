@@ -6,7 +6,6 @@ import { IoSearch, IoMenu, IoClose, IoChevronDown, IoChevronUp } from 'react-ico
 import { Link } from 'i18n/routing';
 import { usePathname } from 'i18n/routing';
 import { useSelector } from 'react-redux';
-import LoginSignUpIcon from '../auth/login-signup-icon';
 import AccountProfileIcon from '../account/account-profile-icon';
 import AccountProfileMobile from '../account/account-profile-mobile';
 import Notification from '../notification';
@@ -94,7 +93,7 @@ export default function HeaderMobile({
 
           {/* Logo */}
           <Link className="block" href="/" onClick={closeMobileMenu}>
-            <Image src={logo} alt="Movie Web Logo" className="w-24 h-auto" />
+            <Image src={logo} alt="Logo" className="w-24 h-auto" />
           </Link>
 
           {/* Right side actions: language + search */}
@@ -120,7 +119,7 @@ export default function HeaderMobile({
           >
             {/* Menu Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <Image src={logo} alt="Movie Web Logo" className="w-20 h-auto" />
+              <Image src={logo} alt="Logo" className="w-20 h-auto" />
               <button
                 onClick={closeMobileMenu}
                 className="text-white hover:text-custome-red transition-colors"
@@ -256,27 +255,24 @@ export default function HeaderMobile({
 
                 {/* User Section */}
                 <div className="border-t border-gray-800 pt-4">
-                  {!loading &&
-                    (authenticatedUser ? (
-                      <div className="space-y-4">
-                        {/* Mobile Account Profile */}
-                        <AccountProfileMobile
-                          authenticatedUser={authenticatedUser}
-                          onCloseMenu={closeMobileMenu}
-                        />
+                  {authenticatedUser && (
+                    <div className="space-y-4">
+                      {/* Mobile Account Profile */}
+                      <AccountProfileMobile
+                        authenticatedUser={authenticatedUser}
+                        onCloseMenu={closeMobileMenu}
+                      />
 
-                        {/* Notification */}
-                        <Notification
-                          isOnFixedHeader={false}
-                          notificationDropdownState={notificationDropdownState}
-                          setNotificationDropdownState={setNotificationDropdownState}
-                          isMobile={true}
-                          onCloseMenu={closeMobileMenu}
-                        />
-                      </div>
-                    ) : (
-                      <LoginSignUpIcon />
-                    ))}
+                      {/* Notification */}
+                      <Notification
+                        isOnFixedHeader={false}
+                        notificationDropdownState={notificationDropdownState}
+                        setNotificationDropdownState={setNotificationDropdownState}
+                        isMobile={true}
+                        onCloseMenu={closeMobileMenu}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

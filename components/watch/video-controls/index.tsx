@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlayerState } from 'hooks/usePlayerState';
 import { useAutoHideControls } from 'hooks/useAutoHideControls';
 import { useKeyboardShortcuts } from 'hooks/useKeyboardShortcuts';
@@ -8,10 +8,14 @@ import { usePlayerPersistence } from 'hooks/usePlayerPersistence';
 import { useMobileGestures } from 'hooks/useMobileGestures';
 import {
   PlayerProvider,
+  type FitMode,
   type NextEpisodePreview,
   type PlayerMeta,
   type PlayerServer,
+  type SubtitleStyle,
 } from './player-context';
+import type { HlsController } from 'hooks/useHlsController';
+import type { AudioController } from 'hooks/useAudioProcessing';
 import TopBar from './top-bar';
 import CenterControls from './center-controls';
 import BottomBar from './bottom-bar';
@@ -20,7 +24,9 @@ import SettingsMenu from './settings-menu';
 import NextEpisodeCard from './next-episode-card';
 import LockScreen from './lock-screen';
 import KeyboardHint from './keyboard-hint';
+import EqualizerPanel from './equalizer-panel';
 import { formatTime } from './progress-bar';
+import { SkipSegmentIcon } from './icons';
 
 const DOUBLE_TAP_MS = 280;
 const SEEK_FEEDBACK_MS = 600;
@@ -36,6 +42,11 @@ export interface VideoControlsOverlayProps {
   onSwitchLanguage: (newServerIndex: number) => void;
   nextEpisode: NextEpisodePreview | null;
   onNextEpisode: () => void;
+
+  /** hls.js rendition / track lists, for the quality and subtitle panels. */
+  hls: HlsController;
+  /** Equaliser + loudness maximiser controller. */
+  audio: AudioController;
 
   /** When true (initial state before stream is ready), overlay sits dormant. */
   disabled?: boolean;
@@ -59,6 +70,8 @@ export default function VideoControlsOverlay({
   onSwitchLanguage,
   nextEpisode,
   onNextEpisode,
+  hls,
+  audio,
   disabled = false,
 }: VideoControlsOverlayProps) {
   const { state, actions } = usePlayerState(videoRef);
@@ -68,12 +81,77 @@ export default function VideoControlsOverlay({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  // The EQ lives on the player surface, not in the settings menu.
+  const [eqOpen, setEqOpen] = useState(false);
+
+  // ---- Fit mode (letterbox vs crop) --------------------------------------
+  // `cover` is for the phone case: a 16:9 box on a 20:9 screen wastes a lot of
+  // height on black bars, and viewers would rather lose the edges. Persisted
+  // because it is a per-person taste, not a per-title one.
+  const [fitMode, setFitModeState] = useState<FitMode>('contain');
+  useEffect(() => {
+    const saved = window.localStorage.getItem('mw_player_fit');
+    if (saved === 'contain' || saved === 'cover') setFitModeState(saved);
+  }, []);
+  const setFitMode = useCallback((mode: FitMode) => {
+    setFitModeState(mode);
+    try {
+      window.localStorage.setItem('mw_player_fit', mode);
+    } catch {
+      /* private mode */
+    }
+  }, []);
+
+  // ---- Subtitle appearance ------------------------------------------------
+  const [subtitleStyle, setSubtitleStyleState] = useState<SubtitleStyle>({
+    scale: 1,
+    background: 0.55,
+    position: 0,
+  });
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('mw_player_subs');
+      if (raw) setSubtitleStyleState((prev) => ({ ...prev, ...JSON.parse(raw) }));
+    } catch {
+      /* ignore malformed */
+    }
+  }, []);
+  const setSubtitleStyle = useCallback((patch: Partial<SubtitleStyle>) => {
+    setSubtitleStyleState((prev) => {
+      const next = { ...prev, ...patch };
+      try {
+        window.localStorage.setItem('mw_player_subs', JSON.stringify(next));
+      } catch {
+        /* private mode */
+      }
+      return next;
+    });
+  }, []);
+
+  // ---- Skip-intro ---------------------------------------------------------
+  // Titles do not declare intro ranges in the catalogue, so the window is a
+  // conservative heuristic: offer the skip between 20s and 2m30s in, and only
+  // on multi-minute content. Wrong guesses are worse than no button, so it
+  // errs on the narrow side.
+  const skipSegment =
+    state.duration > 300 && state.currentTime >= 20 && state.currentTime <= 150
+      ? { label: 'Bỏ qua mở đầu', end: 90 }
+      : null;
+
+  // Announce only transitions a screen-reader user needs, not every tick.
+  const liveMessage = !state.isPlaying
+    ? 'Tạm dừng'
+    : state.isBuffering
+      ? 'Đang tải'
+      : state.isEnded
+        ? 'Đã kết thúc'
+        : `Đang phát ${formatTime(state.currentTime)} trên ${formatTime(state.duration)}`;
 
   const { visible, bindContainer } = useAutoHideControls({
     isPlaying: state.isPlaying,
     isBuffering: state.isBuffering,
     isEnded: state.isEnded,
-    forceVisible: settingsOpen || helpOpen,
+    forceVisible: settingsOpen || helpOpen || eqOpen,
   });
 
   useKeyboardShortcuts({
@@ -98,6 +176,15 @@ export default function VideoControlsOverlay({
     if (!v) return;
     v.style.filter = brightness === 1 ? '' : `brightness(${brightness})`;
   }, [brightness, videoRef]);
+
+  // Fit mode is applied to the element rather than through a wrapper class,
+  // because the <video> is rendered by the parent and the overlay must not
+  // take over its markup (the progress/analytics hooks key on its identity).
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.style.objectFit = fitMode;
+  }, [fitMode, videoRef]);
 
   // Honor preferred-server-name once on mount: if it matches a server name and
   // differs from current, switch automatically. Saves the user from manually
@@ -209,15 +296,50 @@ export default function VideoControlsOverlay({
     setAutoPlayNext,
     isLocked,
     setIsLocked,
+    hls,
+    fitMode,
+    setFitMode,
+    subtitleStyle,
+    setSubtitleStyle,
+    skipSegment,
+    liveMessage,
+    audio,
   };
 
   return (
     <PlayerProvider value={contextValue}>
+      {/* Applies the viewer's subtitle sizing/placement to the native cue box.
+          CSS variables on the container are the only lever the spec gives for
+          styling ::cue from outside a stylesheet. */}
+      <style>{`
+        .nw-player video::cue {
+          font-size: ${Math.round(subtitleStyle.scale * 100)}%;
+          background-color: rgba(0, 0, 0, ${subtitleStyle.background});
+          line-height: 1.35;
+        }
+      `}</style>
       <div
         className="absolute inset-0 z-10 select-none"
         onPointerDown={handleTapSurface}
         {...bindContainer}
       >
+        {/* Screen-reader status. Visually hidden but always mounted, so the
+            announcement is not swallowed by a late mount. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {liveMessage}
+        </p>
+
+        {/* Skip-intro, when the heuristic fires. Bottom-right, above the bar. */}
+        {skipSegment && !isLocked && (
+          <button
+            type="button"
+            onClick={() => actions.seek(skipSegment.end)}
+            className="pointer-events-auto absolute bottom-24 right-4 z-20 flex items-center gap-2 rounded-md border border-white/25 bg-black/75 px-3 py-2 text-sm font-semibold text-ink-primary backdrop-blur-sm transition-colors hover:bg-black/90 lg:bottom-28 lg:right-6"
+          >
+            <SkipSegmentIcon size={16} />
+            {skipSegment.label}
+          </button>
+        )}
         {/* Mobile gesture HUD */}
         {hud && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -267,7 +389,17 @@ export default function VideoControlsOverlay({
           {/* Center controls hidden during buffering so the spinner has the
               stage to itself (and not behind the play button). */}
           {!state.isBuffering && (!state.isPlaying || visible) && <CenterControls />}
-          <BottomBar onOpenSettings={() => setSettingsOpen(true)} />
+          <BottomBar
+            onOpenSettings={() => {
+              setEqOpen(false);
+              setSettingsOpen(true);
+            }}
+            onToggleEqualizer={() => {
+              setSettingsOpen(false);
+              setEqOpen((v) => !v);
+            }}
+            equalizerOpen={eqOpen}
+          />
         </div>
 
         {/* Buffering spinner rendered AFTER the chrome so it sits on top in
@@ -275,6 +407,7 @@ export default function VideoControlsOverlay({
         <BufferingSpinner />
 
         <NextEpisodeCard />
+        <EqualizerPanel open={eqOpen} onClose={() => setEqOpen(false)} />
         <SettingsMenu
           open={settingsOpen}
           onClose={() => setSettingsOpen(false)}

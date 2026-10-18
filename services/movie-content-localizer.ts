@@ -1,42 +1,80 @@
 import 'server-only';
 import { cache } from 'react';
 import { createHash } from 'crypto';
-import { translateMovieContent, translateMovieContentsBatch } from './groq-translation-service';
-import { getCachedTranslation, saveCachedTranslation } from './firebase-translation-service';
 
 /**
  * Resolve a title's synopsis in the active locale.
  *
- * TMDB supplies the synopsis already localized for most well-known titles.
- * For the long tail it answers a vi-VN request with an empty overview, and
- * the catalog falls back to the English text — marking it via `content_lang`.
- * This module is what turns that English text into Vietnamese, cached in
- * Firestore so each title is translated once.
+ * The provider supplies English synopses. For a Vietnamese page that is the
+ * wrong language, so it needs translating — but translation is the one part
+ * of this app that cannot be keyless: a machine-translation call needs a
+ * provider and a key. So it is OPTIONAL by design.
  *
- * Direction note: this used to run Vietnamese → English, because the old
- * provider was a Vietnamese catalog. It now runs English → Vietnamese. The
- * practical consequence is that the ENGLISH site needs no translation at all
- * and the Vietnamese one carries the quota.
+ *  - `GROQ_API_KEY` set  → English synopses are translated to Vietnamese,
+ *                          memoized in-process for the life of the server.
+ *  - not set (default)   → the English synopsis is shown as-is.
  *
- * Every failure path returns the source text. A synopsis in the wrong
- * language is a much smaller problem than a page that won't render.
+ * Nothing else in the app depends on translation, and the fallback is the
+ * source text rather than an error, so a keyless deploy renders every page.
+ * The earlier design cached translations in Firestore; that is gone with the
+ * rest of Firebase, which means a cold server retranslates — acceptable, and
+ * the reason the in-process cache exists.
  */
 
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+const CACHE_MAX = 500;
+
+interface CacheEntry {
+  content: string;
+  sourceHash: string;
+  at: number;
+}
+
+/** In-process memo, keyed `${movieId}:${locale}`. */
+const memo = new Map<string, CacheEntry>();
+
 /**
- * Short digest of the source text, used to invalidate a cached translation
- * when the upstream synopsis is rewritten. 16 hex chars is ample: a
- * collision would reuse one title's translation for a rewrite of the same
- * title, and the cost of that is one slightly stale paragraph.
+ * Short digest of the source text, so a rewritten synopsis does not keep
+ * serving the old translation. 16 hex chars is ample: a collision would reuse
+ * one title's translation for a rewrite of the same title.
  */
 function hashSource(content: string): string {
   return createHash('sha1').update(content).digest('hex').slice(0, 16);
 }
 
+function readMemo(key: string, sourceHash: string): string | null {
+  const entry = memo.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.at > CACHE_TTL_MS || entry.sourceHash !== sourceHash) {
+    memo.delete(key);
+    return null;
+  }
+  return entry.content;
+}
+
+function writeMemo(key: string, sourceHash: string, content: string): void {
+  if (memo.size >= CACHE_MAX) {
+    // Oldest-first eviction; Map preserves insertion order.
+    const oldest = memo.keys().next().value;
+    if (oldest !== undefined) memo.delete(oldest);
+  }
+  memo.set(key, { content, sourceHash, at: Date.now() });
+}
+
+async function translate(
+  movieId: string,
+  content: string,
+  locale: string
+): Promise<string> {
+  // Imported lazily so a build with no GROQ_API_KEY never constructs a client.
+  const { translateMovieContent } = await import('./groq-translation-service');
+  return translateMovieContent(movieId, content, locale, 'en');
+}
+
 /**
  * Wrapped in React `cache()` so multiple callers within a single render
- * (e.g. `generateMetadata` AND the page component asking for the same
- * title) share ONE underlying promise. Without it, a cache miss would fire
- * a second Groq call before the first Firestore write landed.
+ * (e.g. `generateMetadata` AND the page component asking for the same title)
+ * share ONE underlying promise.
  */
 export const getLocalizedMovieContent = cache(async function getLocalizedMovieContent(
   movieId: string,
@@ -45,39 +83,32 @@ export const getLocalizedMovieContent = cache(async function getLocalizedMovieCo
   contentLang: string = 'en'
 ): Promise<string> {
   if (!movieId || !content) return content;
-  // Already in the right language — the overwhelmingly common case, since
-  // TMDB translates the popular catalog itself.
   if (contentLang === locale) return content;
 
+  const key = `${movieId}:${locale}`;
   const sourceHash = hashSource(content);
 
+  const cached = readMemo(key, sourceHash);
+  if (cached) return cached;
+
   try {
-    const cached = await getCachedTranslation(movieId, locale);
-    if (cached && cached.sourceHash === sourceHash) return cached.content;
-
-    const translated = await translateMovieContent(movieId, content, locale, contentLang);
-
-    // Best-effort cache write — a failure here just means the next reader
-    // pays for the translation again.
-    saveCachedTranslation(movieId, locale, {
-      content: translated,
-      translatedAt: Date.now(),
-      sourceHash,
-      sourceLang: contentLang,
-    });
-
+    const translated = await translate(movieId, content, locale);
+    writeMemo(key, sourceHash, translated);
     return translated;
-  } catch (err: any) {
+  } catch (err) {
+    // No key, quota exhausted, provider down — show the source text. A
+    // synopsis in the wrong language is a much smaller problem than a page
+    // that won't render.
     console.warn(
-      `[movie-content-localizer] failed for ${movieId}/${locale}, falling back to source:`,
-      err.message
+      `[movie-content-localizer] ${movieId}/${locale} left untranslated:`,
+      err instanceof Error ? err.message : err
     );
     return content;
   }
 });
 
 // ============================================================================
-// BATCH LOCALIZATION (saves Groq RPM by combining multiple titles in 1 call)
+// BATCH LOCALIZATION
 // ============================================================================
 
 export interface BatchLocalizeItem {
@@ -88,16 +119,11 @@ export interface BatchLocalizeItem {
 }
 
 /**
- * Localize many synopses at once, minimizing Groq calls.
+ * Localize many synopses at once, minimizing provider calls.
  *
- *   1. Parallel Firestore cache reads.
- *   2. Fresh hits are used as-is.
- *   3. Everything else goes to Groq in ONE batched prompt.
- *   4. New translations are written back in parallel.
- *
- * Degrades in every direction: items already in the target language never
- * leave step 0, a Groq failure yields the source text, and an unreachable
- * Firestore only costs a repeated translation.
+ * Memo hits are used as-is; everything else goes to the provider in ONE
+ * batched prompt. Any failure yields the source text per item, so the caller
+ * always gets a complete map.
  */
 export async function localizeMovieContentsBatch(
   items: BatchLocalizeItem[],
@@ -106,61 +132,44 @@ export async function localizeMovieContentsBatch(
   const result = new Map<string, string>();
   if (items.length === 0) return result;
 
-  const pending: (BatchLocalizeItem & { sourceHash: string; sourceLang: string })[] = [];
+  const pending: BatchLocalizeItem[] = [];
 
-  const lookups = await Promise.all(
-    items.map(async (item) => {
-      const sourceLang = item.contentLang ?? 'en';
-      if (!item.movieId || !item.content || sourceLang === locale) {
-        return { item, sourceLang, cached: null, skip: true as const };
-      }
-      const cached = await getCachedTranslation(item.movieId, locale);
-      return { item, sourceLang, cached, skip: false as const };
-    })
-  );
-
-  for (const { item, sourceLang, cached, skip } of lookups) {
-    if (skip) {
+  for (const item of items) {
+    const sourceLang = item.contentLang ?? 'en';
+    if (!item.movieId || !item.content || sourceLang === locale) {
       result.set(item.movieId, item.content);
       continue;
     }
-    const sourceHash = hashSource(item.content);
-    if (cached && cached.sourceHash === sourceHash) {
-      result.set(item.movieId, cached.content);
+    const cached = readMemo(`${item.movieId}:${locale}`, hashSource(item.content));
+    if (cached) {
+      result.set(item.movieId, cached);
       continue;
     }
-    pending.push({ ...item, sourceHash, sourceLang });
+    pending.push(item);
   }
 
   if (pending.length === 0) return result;
 
   try {
-    const translatedMap = await translateMovieContentsBatch(
+    const { translateMovieContentsBatch } = await import('./groq-translation-service');
+    const translated = await translateMovieContentsBatch(
       pending.map((it) => ({ id: it.movieId, content: it.content })),
       locale,
-      pending[0].sourceLang
+      pending[0].contentLang ?? 'en'
     );
-
-    await Promise.all(
-      pending.map((it) => {
-        const translated = translatedMap.get(it.movieId);
-        if (!translated) {
-          result.set(it.movieId, it.content);
-          return Promise.resolve();
-        }
-        result.set(it.movieId, translated);
-        return saveCachedTranslation(it.movieId, locale, {
-          content: translated,
-          translatedAt: Date.now(),
-          sourceHash: it.sourceHash,
-          sourceLang: it.sourceLang,
-        });
-      })
-    );
-  } catch (err: any) {
+    for (const item of pending) {
+      const value = translated.get(item.movieId);
+      if (value) {
+        result.set(item.movieId, value);
+        writeMemo(`${item.movieId}:${locale}`, hashSource(item.content), value);
+      } else {
+        result.set(item.movieId, item.content);
+      }
+    }
+  } catch (err) {
     console.warn(
-      '[movie-content-localizer] batch translation failed, falling back to sources:',
-      err.message
+      '[movie-content-localizer] batch translation unavailable:',
+      err instanceof Error ? err.message : err
     );
     pending.forEach((it) => {
       if (!result.has(it.movieId)) result.set(it.movieId, it.content);

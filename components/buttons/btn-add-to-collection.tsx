@@ -3,10 +3,10 @@
 import { FaPlus } from 'react-icons/fa';
 import { TiTick } from 'react-icons/ti';
 import { useDispatch, useSelector } from 'react-redux';
-import { useAuthModel } from '../context/auth-modal-context';
+import { useDeviceAuth } from '../context/auth-conext';
 import DetailMovie from 'types/detail-movie';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { db } from '../../lib/firebase'; // Đường dẫn đến tệp firebase của bạn
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'lib/local-db';
+import { db } from '../../lib/local-client'; // Đường dẫn đến tệp firebase của bạn
 import { toast } from 'react-toastify';
 import { useEffect, useState } from 'react';
 import LoadingSpinerBtn from '../loading/loading-spiner-btn';
@@ -28,14 +28,14 @@ export default function BtnAddToCollection({ variant, detailMovie }: BtnAddToCol
   const tAccount = useTranslations('accountMenu');
   const user = useSelector((state: any) => state.auth.user);
   const dispatch = useDispatch();
-  const { openAuthModal } = useAuthModel();
+  const { ensureRegistered } = useDeviceAuth();
   const [isHandling, setIsHandling] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isExistedInCollection, setIsExistedInCollection] = useState<boolean>(false);
 
   const toogleMovieToUserCollection = async () => {
     if (!user) {
-      openAuthModal();
+      ensureRegistered();
       return;
     }
 

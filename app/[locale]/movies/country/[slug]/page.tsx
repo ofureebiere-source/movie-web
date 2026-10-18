@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { browseMetadata } from 'lib/browse-metadata';
 import MovieCountryPage from '@/components/movie-country';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { LEGACY_COUNTRY_REDIRECTS, isKnownCountry } from 'constants/catalog-taxonomy';
+import { LEGACY_COUNTRY_REDIRECTS, isKnownCountry } from 'constants/framextv-taxonomy';
 import { queryString } from 'utils/query-string';
 
 export async function generateMetadata({

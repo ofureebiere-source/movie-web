@@ -1,4 +1,4 @@
-import { BROWSE_GENRE_SLUGS } from 'constants/catalog-taxonomy';
+import { BROWSE_GENRE_SLUGS } from 'constants/framextv-taxonomy';
 import { CATEGORY_MAP } from 'constants/i18n-mappings';
 
 /**

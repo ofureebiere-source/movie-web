@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { removeUser } from '../../redux/slices/user-slice';
-import AuthServices from 'services/auth-services';
-import LoadingSpinerBtn from '../loading/loading-spiner-btn';
-import { getFirebaseAuth } from '../../lib/firebase';
+import { forgetDevice } from '../../lib/device';
 import { Link } from 'i18n/routing';
 import AccountDefaultImg from '../../public/account-default-img.jpg';
 import Image from 'next/image';
@@ -15,10 +13,9 @@ import {
   IoPerson,
   IoBookmark,
   IoTime,
-  IoLogOut,
+  IoTrash,
 } from 'react-icons/io5';
 import { useTranslations } from 'next-intl';
-import { analytics } from 'lib/posthog/events';
 
 interface AccountProfileMobileProps {
   authenticatedUser: any;
@@ -32,17 +29,21 @@ export default function AccountProfileMobile({
   const t = useTranslations('accountMenu');
   const dispatch = useDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isConfirmingForget, setIsConfirmingForget] = useState(false);
 
-  const handleLogout = async () => {
-    setIsLoading(true);
-    analytics.authLogout();
-    await AuthServices.removeAuthCookie();
-    const [{ signOut }, auth] = await Promise.all([import('firebase/auth'), getFirebaseAuth()]);
-    await signOut(auth);
+  const deviceId: string = authenticatedUser.device?.id ?? authenticatedUser.id ?? '';
+
+  const handleForgetDevice = () => {
+    // Two-step on purpose: this is a destructive action inside a menu that is
+    // already under the user's thumb on a phone.
+    if (!isConfirmingForget) {
+      setIsConfirmingForget(true);
+      return;
+    }
+    forgetDevice();
     dispatch(removeUser());
-    setIsLoading(false);
-    onCloseMenu(); // Close mobile menu after logout
+    onCloseMenu();
+    window.location.href = '/';
   };
 
   const toggleExpanded = () => {
@@ -66,9 +67,11 @@ export default function AccountProfileMobile({
           />
           <div className="flex-1 min-w-0">
             <p className="text-white font-medium text-sm truncate" data-private>
-              {authenticatedUser.name || 'User'}
+              {authenticatedUser.name || 'Thiết bị'}
             </p>
-            <p className="text-gray-400 text-xs truncate" data-private>{authenticatedUser.email}</p>
+            <p className="text-gray-400 text-xs truncate font-mono" data-private>
+              {deviceId.slice(0, 12)}
+            </p>
           </div>
         </div>
         {isExpanded ? (
@@ -111,15 +114,14 @@ export default function AccountProfileMobile({
             <span className="text-sm font-medium">{t('profile')}</span>
           </Link>
 
-          {/* Logout Button */}
+          {/* Forget device */}
           <button
-            onClick={handleLogout}
-            disabled={isLoading}
-            className="flex items-center space-x-3 p-3 rounded-lg w-full text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors disabled:opacity-50"
+            onClick={handleForgetDevice}
+            className="flex items-center space-x-3 p-3 rounded-lg w-full text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors"
           >
-            <IoLogOut size={18} />
+            <IoTrash size={18} />
             <span className="text-sm font-medium">
-              {isLoading ? <LoadingSpinerBtn /> : t('logout')}
+              {isConfirmingForget ? t('confirmForget') : t('forgetDevice')}
             </span>
           </button>
         </div>

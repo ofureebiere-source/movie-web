@@ -6,6 +6,9 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  /* Exposed so `accent-color` on the player's range inputs (equaliser bands,
+     subtitle sliders) picks up the brand red without a Tailwind class. */
+  --brand: #e10711;
 }
 
 html, body {

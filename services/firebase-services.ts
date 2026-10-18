@@ -5,7 +5,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  DocumentData,
   getDoc,
   getDocs,
   limit,
@@ -16,143 +15,133 @@ import {
   updateDoc,
   where,
   writeBatch,
-} from 'firebase/firestore';
-import { db } from 'lib/firebase';
+  type DocumentData,
+} from 'lib/local-db';
+import { db } from 'lib/local-client';
 import IComment from 'types/comment';
 import { INotification } from 'types/notification';
 import DetailMovie from 'types/detail-movie';
-import { toast } from 'react-toastify';
 import { IRecentMovie } from 'types/recent-movie';
+import MovieCollection from 'types/movie-collection';
+
+/**
+ * The app's per-user data: collections, comments, notifications and watch
+ * history.
+ *
+ * This module used to talk to Firestore, and every method carried a
+ * `try/catch` that showed a toast and returned a safe default. The store is
+ * local now, so the failure modes are different — a full `localStorage` or a
+ * blocked origin — but the defensive shape is kept: this is all best-effort
+ * data, and none of it should be able to break a page.
+ *
+ * The collection paths are unchanged (`userMovies`, `movieComments`,
+ * `userNotifications`, `recentMovies`), so a viewer's existing local data from
+ * an earlier build still reads back.
+ */
+
+/** Trim a toast-worthy message out of an unknown thrown value. */
+function messageOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
 
 const firebaseServices = {
-  getMovieCollection: async (userId: string) => {
+  getMovieCollection: async (userId: string): Promise<MovieCollection[]> => {
     try {
-      const userMovieRef = doc(db, 'userMovies', userId);
-      const docSnapshot = await getDoc(userMovieRef);
-
-      if (docSnapshot.exists()) {
-        const movies = docSnapshot.data().movies ?? [];
-        return movies;
-      } else {
-        return [];
-      }
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
-    }
-  },
-
-  getMovieComments: async (movieId: string) => {
-    try {
-      const movieCommentsDocRef = doc(db, 'movieComments', movieId);
-      const docSnapshot = await getDoc(movieCommentsDocRef);
-
-      if (docSnapshot.exists()) {
-        const movieCommentsSubcollectionRef = collection(movieCommentsDocRef, 'comments');
-        const q = query(movieCommentsSubcollectionRef, orderBy('timeStamp', 'desc'));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) return [];
-
-        const comments: IComment[] = querySnapshot.docs.map((doc) => {
-          const docData = doc.data();
-
-          return {
-            id: doc.id,
-            userName: docData.userName,
-            userId: docData.userId,
-            userAvata: docData.userAvata,
-            text: docData.text,
-            timeStamp: docData.timeStamp,
-            likes: docData.likes,
-          };
-        });
-
-        return comments;
-      } else {
-        return [];
-      }
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
+      const snapshot = await getDoc(doc(db, 'userMovies', userId));
+      return snapshot.exists() ? ((snapshot.data().movies as MovieCollection[]) ?? []) : [];
+    } catch (error) {
+      console.warn('getMovieCollection error:', messageOf(error));
       return [];
     }
   },
 
-  addMovieComment: async (movieId: string, newComment: IComment) => {
+  getMovieComments: async (movieId: string): Promise<IComment[]> => {
     try {
       const movieCommentsDocRef = doc(db, 'movieComments', movieId);
-      const movieCommentsSubcollectionRef = collection(movieCommentsDocRef, 'comments');
-      const docSnapshot = await getDoc(movieCommentsDocRef);
+      const snapshot = await getDoc(movieCommentsDocRef);
+      if (!snapshot.exists()) return [];
 
-      if (!docSnapshot.exists()) {
-        // if document dont existed, create it
-        setDoc(movieCommentsDocRef, { createAt: new Date() });
+      const subcollection = collection(db, 'movieComments', movieId, 'comments');
+      const q = query(subcollection, orderBy('timeStamp', 'desc'));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) return [];
+
+      return querySnapshot.docs.map((d) => {
+        const data = d.data() as DocumentData;
+        return {
+          id: d.id,
+          userName: data.userName,
+          userId: data.userId,
+          userAvata: data.userAvata,
+          text: data.text,
+          timeStamp: data.timeStamp,
+          likes: data.likes,
+        } as IComment;
+      });
+    } catch (error) {
+      console.warn('getMovieComments error:', messageOf(error));
+      return [];
+    }
+  },
+
+  addMovieComment: async (movieId: string, newComment: IComment): Promise<IComment> => {
+    try {
+      const movieCommentsDocRef = doc(db, 'movieComments', movieId);
+      const snapshot = await getDoc(movieCommentsDocRef);
+      if (!snapshot.exists()) {
+        await setDoc(movieCommentsDocRef, { createAt: new Date().toISOString() });
       }
 
-      // add document to subcollection
-      const commentAdded = await addDoc(movieCommentsSubcollectionRef, newComment);
-
-      return {
-        id: commentAdded.id,
-        ...newComment,
-      };
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
+      const subcollection = collection(db, 'movieComments', movieId, 'comments');
+      const added = await addDoc(subcollection, newComment as unknown as DocumentData);
+      return { id: added.path.split('/').pop(), ...newComment };
+    } catch (error) {
+      console.warn('addMovieComment error:', messageOf(error));
       return newComment;
     }
   },
 
   editMovieComment: async (movieId: string, editedCommentText: string, commentId: string) => {
     try {
-      const commentDocRef = doc(db, 'movieComments', movieId, 'comments', commentId);
-      updateDoc(commentDocRef, { text: editedCommentText });
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
-    } finally {
-      return editedCommentText;
+      await updateDoc(doc(db, 'movieComments', movieId, 'comments', commentId), {
+        text: editedCommentText,
+      });
+    } catch (error) {
+      console.warn('editMovieComment error:', messageOf(error));
     }
+    return editedCommentText;
   },
 
   deleteMovieComment: async (movieId: string, commentId: string) => {
     try {
-      const commentDocRef = doc(db, 'movieComments', movieId, 'comments', commentId);
-      await deleteDoc(commentDocRef);
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
+      await deleteDoc(doc(db, 'movieComments', movieId, 'comments', commentId));
+    } catch (error) {
+      console.warn('deleteMovieComment error:', messageOf(error));
     }
   },
 
   likeComment: async (movieId: string, userId: string, comment: IComment) => {
     try {
-      const commentDocRef = doc(db, 'movieComments', movieId, 'comments', comment.id!);
-      await updateDoc(commentDocRef, {
+      await updateDoc(doc(db, 'movieComments', movieId, 'comments', comment.id!), {
         likes: arrayUnion(userId),
       });
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
+    } catch (error) {
+      console.warn('likeComment error:', messageOf(error));
     }
   },
 
   unlikeComment: async (movieId: string, userId: string, comment: IComment) => {
     try {
-      const commentDocRef = doc(db, 'movieComments', movieId, 'comments', comment.id!);
-      await updateDoc(commentDocRef, {
+      await updateDoc(doc(db, 'movieComments', movieId, 'comments', comment.id!), {
         likes: arrayRemove(userId),
       });
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
+    } catch (error) {
+      console.warn('unlikeComment error:', messageOf(error));
     }
   },
 
-  createNotification: async (user: any, comment: IComment, movie: DetailMovie) => {
+  createNotification: async (user: { id: string; name: string }, comment: IComment, movie: DetailMovie) => {
     try {
-      // create notification
       const notification: INotification = {
         type: 'react',
         userCreatedName: user.name,
@@ -165,14 +154,14 @@ const firebaseServices = {
         read: false,
       };
 
-      const userNotificationsDocRef = doc(db, 'userNotifications', notification.userReciveId);
-      const userNotificationCollectionRef = collection(userNotificationsDocRef, 'notifications');
-
-      await setDoc(userNotificationsDocRef, { updateAt: new Date() }, { merge: true });
-      await addDoc(userNotificationCollectionRef, notification);
-    } catch (error: any) {
-      toast.error('Đã có lỗi xảy ra...');
-      console.log(error.message);
+      const parent = doc(db, 'userNotifications', notification.userReciveId);
+      await setDoc(parent, { updateAt: new Date().toISOString() }, { merge: true });
+      await addDoc(
+        collection(db, 'userNotifications', notification.userReciveId, 'notifications'),
+        notification as unknown as DocumentData
+      );
+    } catch (error) {
+      console.warn('createNotification error:', messageOf(error));
     }
   },
 
@@ -182,52 +171,37 @@ const firebaseServices = {
         userReciveId,
         userCreatedId
       );
-
       if (!notificationId) return;
-
-      const mainUserNotificationsDocRef = doc(
-        db,
-        'userNotifications',
-        userReciveId,
-        'notifications',
-        notificationId
-      );
-      await deleteDoc(mainUserNotificationsDocRef);
-    } catch (error: any) {
-      console.log(error.message);
+      await deleteDoc(doc(db, 'userNotifications', userReciveId, 'notifications', notificationId));
+    } catch (error) {
+      console.warn('deleteNotification error:', messageOf(error));
     }
   },
 
-  findNotificationByUserCreatedId: async (userReciveId: string, userCreatedId: string) => {
+  findNotificationByUserCreatedId: async (
+    userReciveId: string,
+    userCreatedId: string
+  ): Promise<string | null> => {
     try {
-      const userNotificationsDocRef = doc(db, 'userNotifications', userReciveId);
-      const userNotificationCollectionRef = collection(userNotificationsDocRef, 'notifications');
-
       const q = query(
-        userNotificationCollectionRef,
+        collection(db, 'userNotifications', userReciveId, 'notifications'),
         where('userCreatedId', '==', userCreatedId),
         limit(1)
       );
-
-      const querySnapshot = await getDocs(q);
-      const result = querySnapshot.docs[0].id;
-
-      return result;
-    } catch (error: any) {
-      console.log(error.message);
+      const snapshot = await getDocs(q);
+      return snapshot.docs[0]?.id ?? null;
+    } catch (error) {
+      console.warn('findNotificationByUserCreatedId error:', messageOf(error));
       return null;
     }
   },
 
   readedNotification: async (notification: INotification) => {
-    const userNotificationDocRef = doc(
-      db,
-      'userNotifications',
-      notification.userReciveId,
-      'notifications',
-      notification.id!
+    await setDoc(
+      doc(db, 'userNotifications', notification.userReciveId, 'notifications', notification.id!),
+      { read: true },
+      { merge: true }
     );
-    setDoc(userNotificationDocRef, { read: true }, { merge: true });
   },
 
   // Mark every unread notification for a user as read in one batched write.
@@ -235,53 +209,36 @@ const firebaseServices = {
   // count + list refresh automatically — no manual local-state update needed.
   markAllNotificationsRead: async (userId: string) => {
     try {
-      const userNotificationCollectionRef = collection(
-        db,
-        'userNotifications',
-        userId,
-        'notifications'
+      const q = query(
+        collection(db, 'userNotifications', userId, 'notifications'),
+        where('read', '==', false)
       );
-      const q = query(userNotificationCollectionRef, where('read', '==', false));
       const snapshot = await getDocs(q);
       if (snapshot.empty) return;
 
       const batch = writeBatch(db);
-      snapshot.forEach((docSnap) => batch.update(docSnap.ref, { read: true }));
+      snapshot.docs.forEach((d) => batch.update(d.ref, { read: true }));
       await batch.commit();
-    } catch (error: any) {
-      console.log(error.message);
+    } catch (error) {
+      console.warn('markAllNotificationsRead error:', messageOf(error));
     }
   },
 
-  // REFACTOR LATER: this logic need to refactor when new comment added
   listenToUserNotifications: async (
     userId: string,
     handleReciveNotificationData: (notifications: INotification[]) => void
   ) => {
     try {
-      const userNotificationCollectionRef = collection(
-        db,
-        'userNotifications',
-        userId,
-        'notifications'
-      );
-
-      const q = query(userNotificationCollectionRef);
-
-      const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        const notifications: INotification[] = [];
-
-        querySnapshot.forEach((doc: DocumentData) => {
-          const data: INotification = { id: doc.id, ...doc.data() };
-          notifications.push(data);
-        });
-
+      const q = query(collection(db, 'userNotifications', userId, 'notifications'));
+      return onSnapshot(q, (snapshot) => {
+        const notifications: INotification[] = snapshot.docs.map(
+          (d) => ({ id: d.id, ...(d.data() as DocumentData) }) as INotification
+        );
         handleReciveNotificationData(notifications);
       });
-
-      return unsubscribe;
-    } catch (error: any) {
-      console.log(error.message);
+    } catch (error) {
+      console.warn('listenToUserNotifications error:', messageOf(error));
+      return undefined;
     }
   },
 
@@ -290,12 +247,11 @@ const firebaseServices = {
   /** List all recent-watched entries for a user (unsorted). */
   getRecentMovies: async (userId: string): Promise<IRecentMovie[]> => {
     try {
-      const ref = collection(db, 'recentMovies', userId, 'movies');
-      const res = await getDocs(ref);
-      if (res.empty) return [];
-      return res.docs.map((d: DocumentData) => ({ id: d.id, ...d.data() }) as IRecentMovie);
-    } catch (error: any) {
-      console.log(error.message);
+      const snapshot = await getDocs(collection(db, 'recentMovies', userId, 'movies'));
+      if (snapshot.empty) return [];
+      return snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as DocumentData) }) as IRecentMovie);
+    } catch (error) {
+      console.warn('getRecentMovies error:', messageOf(error));
       return [];
     }
   },
@@ -303,10 +259,9 @@ const firebaseServices = {
   /** Fetch one recent-watched entry. Returns null when missing or on error. */
   getRecentMovie: async (userId: string, movieId: string): Promise<IRecentMovie | null> => {
     try {
-      const ref = doc(db, 'recentMovies', userId, 'movies', movieId);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) return null;
-      return { id: snap.id, ...snap.data() } as IRecentMovie;
+      const snapshot = await getDoc(doc(db, 'recentMovies', userId, 'movies', movieId));
+      if (!snapshot.exists()) return null;
+      return { id: snapshot.id, ...(snapshot.data() as DocumentData) } as IRecentMovie;
     } catch {
       return null;
     }
@@ -315,11 +270,10 @@ const firebaseServices = {
   /** Delete one recent-watched entry. Returns false on failure (non-fatal). */
   removeRecentMovie: async (userId: string, movieId: string): Promise<boolean> => {
     try {
-      const ref = doc(db, 'recentMovies', userId, 'movies', movieId);
-      await deleteDoc(ref);
+      await deleteDoc(doc(db, 'recentMovies', userId, 'movies', movieId));
       return true;
-    } catch (error: any) {
-      console.log('removeRecentMovie error:', error.message);
+    } catch (error) {
+      console.warn('removeRecentMovie error:', messageOf(error));
       return false;
     }
   },
@@ -327,14 +281,13 @@ const firebaseServices = {
   /** Upsert watch progress. `updatedAt` stamped client-side for numeric sort. */
   updateWatchProgress: async (recentMovie: IRecentMovie, userId: string): Promise<void> => {
     try {
-      const ref = doc(db, 'recentMovies', userId, 'movies', recentMovie.id);
       await setDoc(
-        ref,
+        doc(db, 'recentMovies', userId, 'movies', recentMovie.id),
         { ...recentMovie, userId, updatedAt: Date.now() },
         { merge: true }
       );
-    } catch (error: any) {
-      console.log('updateWatchProgress error:', error.message);
+    } catch (error) {
+      console.warn('updateWatchProgress error:', messageOf(error));
     }
   },
 };
