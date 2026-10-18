@@ -115,6 +115,24 @@
     "born": "Lahir",
     "died": "Meninggal",
     "biography": "Biografi",
-    "filmography": "Daftar karya"
+    "filmography": "Daftar karya",
+    "sortLabel": "Urutkan",
+    "sortNewest": "Terbaru",
+    "sortOldest": "Terlama",
+    "sortRating": "Rating tertinggi",
+    "sortTitle": "Judul A–Z",
+    "yearLabel": "Tahun",
+    "allYears": "Semua tahun",
+    "genreLabel": "Genre",
+    "allGenres": "Semua genre",
+    "typeLabel": "Jenis",
+    "typeMovie": "Film",
+    "typeTv": "Serial",
+    "allTypes": "Semua",
+    "viewGrid": "Tampilan kisi",
+    "viewList": "Tampilan daftar",
+    "titles": "judul",
+    "noMatches": "Tidak ada judul yang cocok dengan filter ini.",
+    "clear": "Hapus"
   }
 }

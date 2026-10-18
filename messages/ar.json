@@ -115,6 +115,24 @@
     "born": "الميلاد",
     "died": "الوفاة",
     "biography": "السيرة الذاتية",
-    "filmography": "الأعمال"
+    "filmography": "الأعمال",
+    "sortLabel": "ترتيب",
+    "sortNewest": "الأحدث أولاً",
+    "sortOldest": "الأقدم أولاً",
+    "sortRating": "الأعلى تقييماً",
+    "sortTitle": "العنوان A–Z",
+    "yearLabel": "السنة",
+    "allYears": "كل السنوات",
+    "genreLabel": "النوع",
+    "allGenres": "كل الأنواع",
+    "typeLabel": "الفئة",
+    "typeMovie": "أفلام",
+    "typeTv": "مسلسلات",
+    "allTypes": "الكل",
+    "viewGrid": "عرض شبكي",
+    "viewList": "عرض قائمة",
+    "titles": "عمل",
+    "noMatches": "لا توجد أعمال مطابقة لهذه المرشحات.",
+    "clear": "مسح"
   }
 }

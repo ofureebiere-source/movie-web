@@ -115,6 +115,24 @@
     "born": "Родился",
     "died": "Умер",
     "biography": "Биография",
-    "filmography": "Фильмография"
+    "filmography": "Фильмография",
+    "sortLabel": "Сортировка",
+    "sortNewest": "Сначала новые",
+    "sortOldest": "Сначала старые",
+    "sortRating": "По рейтингу",
+    "sortTitle": "Название A–Z",
+    "yearLabel": "Год",
+    "allYears": "Все годы",
+    "genreLabel": "Жанр",
+    "allGenres": "Все жанры",
+    "typeLabel": "Тип",
+    "typeMovie": "Фильмы",
+    "typeTv": "Сериалы",
+    "allTypes": "Все",
+    "viewGrid": "Сетка",
+    "viewList": "Список",
+    "titles": "работ",
+    "noMatches": "Нет работ, соответствующих этим фильтрам.",
+    "clear": "Сбросить"
   }
 }

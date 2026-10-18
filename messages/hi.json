@@ -115,6 +115,24 @@
     "born": "जन्म",
     "died": "निधन",
     "biography": "जीवनी",
-    "filmography": "फ़िल्मोग्राफ़ी"
+    "filmography": "फ़िल्मोग्राफ़ी",
+    "sortLabel": "क्रमबद्ध करें",
+    "sortNewest": "नवीनतम पहले",
+    "sortOldest": "पुराने पहले",
+    "sortRating": "सर्वाधिक रेटेड",
+    "sortTitle": "शीर्षक A–Z",
+    "yearLabel": "वर्ष",
+    "allYears": "सभी वर्ष",
+    "genreLabel": "शैली",
+    "allGenres": "सभी शैलियाँ",
+    "typeLabel": "प्रकार",
+    "typeMovie": "फ़िल्में",
+    "typeTv": "सीरीज़",
+    "allTypes": "सभी",
+    "viewGrid": "ग्रिड दृश्य",
+    "viewList": "सूची दृश्य",
+    "titles": "शीर्षक",
+    "noMatches": "इन फ़िल्टरों से कोई शीर्षक मेल नहीं खाता।",
+    "clear": "साफ़ करें"
   }
 }

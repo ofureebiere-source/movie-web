@@ -115,6 +115,24 @@
     "born": "生年月日",
     "died": "没年月日",
     "biography": "経歴",
-    "filmography": "出演作品"
+    "filmography": "出演作品",
+    "sortLabel": "並び替え",
+    "sortNewest": "新しい順",
+    "sortOldest": "古い順",
+    "sortRating": "評価が高い順",
+    "sortTitle": "タイトル A–Z",
+    "yearLabel": "年",
+    "allYears": "すべての年",
+    "genreLabel": "ジャンル",
+    "allGenres": "すべてのジャンル",
+    "typeLabel": "種別",
+    "typeMovie": "映画",
+    "typeTv": "ドラマ",
+    "allTypes": "すべて",
+    "viewGrid": "グリッド表示",
+    "viewList": "リスト表示",
+    "titles": "作品",
+    "noMatches": "この条件に一致する作品はありません。",
+    "clear": "クリア"
   }
 }

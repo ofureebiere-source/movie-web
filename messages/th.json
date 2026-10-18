@@ -115,6 +115,24 @@
     "born": "เกิด",
     "died": "เสียชีวิต",
     "biography": "ประวัติ",
-    "filmography": "ผลงานการแสดง"
+    "filmography": "ผลงานการแสดง",
+    "sortLabel": "จัดเรียง",
+    "sortNewest": "ใหม่ที่สุด",
+    "sortOldest": "เก่าที่สุด",
+    "sortRating": "คะแนนสูงสุด",
+    "sortTitle": "ชื่อ A–Z",
+    "yearLabel": "ปี",
+    "allYears": "ทุกปี",
+    "genreLabel": "แนว",
+    "allGenres": "ทุกแนว",
+    "typeLabel": "ประเภท",
+    "typeMovie": "ภาพยนตร์",
+    "typeTv": "ซีรีส์",
+    "allTypes": "ทั้งหมด",
+    "viewGrid": "มุมมองตาราง",
+    "viewList": "มุมมองรายการ",
+    "titles": "เรื่อง",
+    "noMatches": "ไม่มีผลงานที่ตรงกับตัวกรองนี้",
+    "clear": "ล้าง"
   }
 }

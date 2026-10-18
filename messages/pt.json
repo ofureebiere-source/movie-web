@@ -115,6 +115,24 @@
     "born": "Nascimento",
     "died": "Falecimento",
     "biography": "Biografia",
-    "filmography": "Filmografia"
+    "filmography": "Filmografia",
+    "sortLabel": "Ordenar",
+    "sortNewest": "Mais recentes",
+    "sortOldest": "Mais antigos",
+    "sortRating": "Melhor avaliados",
+    "sortTitle": "Título A–Z",
+    "yearLabel": "Ano",
+    "allYears": "Todos os anos",
+    "genreLabel": "Gênero",
+    "allGenres": "Todos os gêneros",
+    "typeLabel": "Tipo",
+    "typeMovie": "Filmes",
+    "typeTv": "Séries",
+    "allTypes": "Todos",
+    "viewGrid": "Visão em grade",
+    "viewList": "Visão em lista",
+    "titles": "títulos",
+    "noMatches": "Nenhum título corresponde a estes filtros.",
+    "clear": "Limpar"
   }
 }

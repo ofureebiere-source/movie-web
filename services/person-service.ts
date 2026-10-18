@@ -30,6 +30,14 @@
  * did resolve. Nothing in this file is required for a page to draw.
  */
 
+/**
+ * The catalogue's own reader, reused to hydrate each credit with its poster,
+ * score, genres and synopsis. It brings its session cache, in-flight
+ * de-duplication and direct-then-Edge-proxy fallback along, so none of that is
+ * re-implemented here.
+ */
+import { getDetail } from 'services/framextv-api';
+
 const WIKIDATA_ENDPOINT = 'https://query.wikidata.org/sparql';
 const WIKIPEDIA_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
 
@@ -51,7 +59,7 @@ const REVALIDATE_SEC = 60 * 60 * 24;
  * returning visitors reading their own stale copy — which is exactly what
  * happened when the filmography filter changed.
  */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v4';
 const CACHE_PREFIX = `person:${CACHE_VERSION}:`;
 const inflight = new Map<string, Promise<unknown>>();
 
@@ -63,6 +71,18 @@ export interface PersonCredit {
   character?: string;
   /** `movie` | `tv` — read from which TMDB id property the work carries. */
   type: 'movie' | 'tv';
+
+  // The four below arrive later than the rest, from `enrichCredits`. They are
+  // optional on purpose: the grid renders before they land, and a title the
+  // enrichment could not reach still shows as a playable card without them.
+  /** Poster image URL. */
+  posterUrl?: string;
+  /** TMDB score, as the string the catalogue returns ("8.4"). */
+  rating?: string;
+  /** Genre names, used by the filmography genre filter. */
+  genres?: string[];
+  /** One-line synopsis, shown in the list view. */
+  overview?: string;
 }
 
 export interface PersonDetail {
@@ -257,10 +277,11 @@ async function fetchBiography(wikipediaTitle: string | undefined): Promise<strin
  */
 async function fetchFilmography(qid: string): Promise<PersonCredit[]> {
   const query = `
-SELECT ?work ?workLabel ?date ?tmdbMovie ?tmdbTv ?characterLabel WHERE {
+SELECT ?work ?workLabel ?date ?start ?tmdbMovie ?tmdbTv ?characterLabel WHERE {
   ?work wdt:P161 wd:${qid} .
   { ?work wdt:P4947 ?tmdbMovie } UNION { ?work wdt:P4983 ?tmdbTv }
   OPTIONAL { ?work wdt:P577 ?date }
+  OPTIONAL { ?work wdt:P580 ?start }
   OPTIONAL {
     ?work p:P161 ?st .
     ?st ps:P161 wd:${qid} ; pq:P453 ?character .
@@ -275,11 +296,17 @@ LIMIT 300`;
   for (const row of rows) {
     const title = row.workLabel?.value;
     if (!title) continue;
+    // An item with no English label comes back labelled with its own Q-id
+    // ("Q79784"), which renders as a nonsense title. There is nothing to show,
+    // so drop it rather than print the identifier.
+    if (/^Q\d+$/.test(title)) continue;
 
     const tmdbId = row.tmdbMovie?.value ?? row.tmdbTv?.value;
     if (!tmdbId) continue;
     const type: 'movie' | 'tv' = row.tmdbTv?.value ? 'tv' : 'movie';
-    const yearRaw = row.date?.value;
+    // Films carry a publication date (P577); series usually carry only a start
+    // time (P580), so a series would otherwise show no year at all.
+    const yearRaw = row.date?.value ?? row.start?.value;
     const year = yearRaw ? parseInt(yearRaw.slice(0, 4), 10) : undefined;
     const character = row.characterLabel?.value;
 
@@ -304,12 +331,77 @@ LIMIT 300`;
 }
 
 /**
+ * Fill in the poster, score, genres and synopsis for each credit.
+ *
+ * Wikidata supplies the cast list, the year and the character — enough to name
+ * a title, not enough to *show* one. Its own image property (P18) is no help:
+ * across a 41-credit filmography only 4 works carried one, and those four were
+ * a logo, a street photo and a teaser, so it is neither complete nor reliably a
+ * poster. A filmography without posters reads as a text list, which is what
+ * this replaces.
+ *
+ * The catalogue's own `/api/details` is a keyless TMDB proxy and returns the
+ * poster, score, genres and overview (verified: `access-control-allow-origin: *`,
+ * and the Edge proxy covers the datacenter-IP case). So each credit is hydrated
+ * through the same reader the rest of the app uses, `getDetail`, which also
+ * gives us its session cache, its in-flight de-duplication and its
+ * direct-then-Edge-proxy fallback for free.
+ *
+ * Two deliberate limits, because this fans out to one request per credit:
+ *
+ *  - It is bounded by `CONCURRENCY`. Firing 41 parallel requests would be rude
+ *    to the provider and would not finish sooner.
+ *  - Each result is reported through `onCredit` as it lands rather than being
+ *    returned in one batch, so the grid fills in progressively. The visitor
+ *    sees posters arrive instead of a spinner over an empty grid.
+ *
+ * A failure on any single credit is swallowed: an un-hydrated card is still a
+ * correct, playable card, and one dead request must not cost the visitor the
+ * other forty.
+ */
+export async function enrichCredits(
+  credits: PersonCredit[],
+  onCredit: (index: number, patch: Partial<PersonCredit>) => void
+): Promise<void> {
+  const CONCURRENCY = 6;
+  let next = 0;
+
+  async function worker(): Promise<void> {
+    while (next < credits.length) {
+      const index = next++;
+      const credit = credits[index];
+      try {
+        const detail = await getDetail(credit.tmdbId, credit.type);
+        if (!detail) continue;
+        onCredit(index, {
+          posterUrl: detail.poster ?? undefined,
+          rating: detail.rating ?? undefined,
+          genres: detail.genres?.length ? detail.genres : undefined,
+          overview: detail.overview ?? undefined,
+        });
+      } catch {
+        /* leave the card as it is — it still links and still plays */
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, credits.length) }, () => worker())
+  );
+}
+
+/**
  * Everything the person page renders, in one call.
  *
  * Resolves to `null` only when the person is absent from Wikidata *and* we
  * have no name to fall back on — i.e. when there is genuinely nothing to show.
  * The caller passes the name from the cast card so that even an unknown person
  * gets a page with their name and photograph.
+ *
+ * The returned credits are **not** enriched; the page hydrates them itself via
+ * `enrichCredits` so it can paint before the posters land. The cache therefore
+ * holds the un-enriched list, and hydration re-runs on every visit — which is
+ * cheap after the first, because `getDetail` caches each title for 30 minutes.
  */
 export async function loadPersonDetail(
   tmdbId: string,

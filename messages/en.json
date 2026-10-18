@@ -503,6 +503,24 @@
     "born": "Born",
     "died": "Died",
     "biography": "Biography",
-    "filmography": "Filmography"
+    "filmography": "Filmography",
+    "sortLabel": "Sort",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortRating": "Highest rated",
+    "sortTitle": "Title A–Z",
+    "yearLabel": "Year",
+    "allYears": "All years",
+    "genreLabel": "Genre",
+    "allGenres": "All genres",
+    "typeLabel": "Type",
+    "typeMovie": "Movies",
+    "typeTv": "TV",
+    "allTypes": "All",
+    "viewGrid": "Grid view",
+    "viewList": "List view",
+    "titles": "titles",
+    "noMatches": "No titles match these filters.",
+    "clear": "Clear"
   }
 }

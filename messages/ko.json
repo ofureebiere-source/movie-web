@@ -115,6 +115,24 @@
     "born": "출생",
     "died": "사망",
     "biography": "약력",
-    "filmography": "출연 작품"
+    "filmography": "출연 작품",
+    "sortLabel": "정렬",
+    "sortNewest": "최신순",
+    "sortOldest": "오래된순",
+    "sortRating": "평점 높은순",
+    "sortTitle": "제목 A–Z",
+    "yearLabel": "연도",
+    "allYears": "전체 연도",
+    "genreLabel": "장르",
+    "allGenres": "전체 장르",
+    "typeLabel": "유형",
+    "typeMovie": "영화",
+    "typeTv": "시리즈",
+    "allTypes": "전체",
+    "viewGrid": "그리드 보기",
+    "viewList": "목록 보기",
+    "titles": "작품",
+    "noMatches": "이 필터에 맞는 작품이 없습니다.",
+    "clear": "초기화"
   }
 }

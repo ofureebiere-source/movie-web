@@ -503,6 +503,24 @@
     "born": "Sinh",
     "died": "Mất",
     "biography": "Tiểu sử",
-    "filmography": "Danh sách phim"
+    "filmography": "Danh sách phim",
+    "sortLabel": "Sắp xếp",
+    "sortNewest": "Mới nhất",
+    "sortOldest": "Cũ nhất",
+    "sortRating": "Đánh giá cao",
+    "sortTitle": "Tên A–Z",
+    "yearLabel": "Năm",
+    "allYears": "Tất cả các năm",
+    "genreLabel": "Thể loại",
+    "allGenres": "Tất cả thể loại",
+    "typeLabel": "Loại",
+    "typeMovie": "Phim lẻ",
+    "typeTv": "Phim bộ",
+    "allTypes": "Tất cả",
+    "viewGrid": "Dạng lưới",
+    "viewList": "Dạng danh sách",
+    "titles": "tác phẩm",
+    "noMatches": "Không có tác phẩm nào khớp với bộ lọc này.",
+    "clear": "Xóa bộ lọc"
   }
 }

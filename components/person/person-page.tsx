@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link } from 'i18n/routing';
-import { loadPersonDetail, type PersonDetail } from 'services/person-service';
+import {
+  enrichCredits,
+  loadPersonDetail,
+  type PersonCredit,
+  type PersonDetail,
+} from 'services/person-service';
 import { slugifyTitle } from 'lib/framextv-adapter';
+import { resolveImageUrl } from 'lib/tmdb-image';
 import ActorImgDefault from '../../public/default-actor-img.jpg';
 
 /**
@@ -27,6 +33,8 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
   const [person, setPerson] = useState<PersonDetail | null>(null);
   const [settled, setSettled] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  const [credits, setCredits] = useState<PersonCredit[]>([]);
+  const [hydrating, setHydrating] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,6 +43,7 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
       .then((result) => {
         if (cancelled) return;
         setPerson(result);
+        setCredits(result?.credits ?? []);
         setSettled(true);
       })
       .catch(() => {
@@ -46,6 +55,31 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
       cancelled = true;
     };
   }, [id, name, attempt]);
+
+  // Posters, scores and genres arrive one credit at a time, after the page has
+  // already drawn. Each landing patches a single row, so the grid fills in
+  // place instead of the visitor watching a spinner over an empty list.
+  useEffect(() => {
+    if (!credits.length) return;
+    let cancelled = false;
+    setHydrating(true);
+    enrichCredits(credits, (index, patch) => {
+      if (cancelled) return;
+      setCredits((prev) => {
+        const next = prev.slice();
+        next[index] = { ...next[index], ...patch };
+        return next;
+      });
+    }).finally(() => {
+      if (!cancelled) setHydrating(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // `credits` is intentionally absent: this runs once per loaded person, and
+    // each `setCredits` above would otherwise re-trigger it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [person?.id]);
 
   if (!settled) return <PersonSkeleton />;
 
@@ -101,24 +135,328 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
                 </p>
               </section>
             )}
-
-            {person.credits.length > 0 && (
-              <section className="space-y-3">
-                <h2 className="text-lg font-semibold">{t('filmography')}</h2>
-                <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {person.credits.slice(0, 60).map((credit) => (
-                    <li key={`${credit.title}-${credit.year ?? ''}`}>
-                      <CreditRow credit={credit} locale={locale} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
           </div>
         </div>
+
+        {credits.length > 0 && (
+          <Filmography credits={credits} locale={locale} hydrating={hydrating} />
+        )}
       </div>
     </div>
   );
+}
+
+// ============================================================================
+// FILMOGRAPHY
+// ============================================================================
+
+type SortKey = 'newest' | 'oldest' | 'rating' | 'title';
+
+/**
+ * The filmography, presented the way a filmography is normally presented:
+ * a poster grid with the controls to narrow and reorder it.
+ *
+ * A flat text list (what this replaces) cannot answer the three questions a
+ * visitor actually arrives with — "what has this person been in recently",
+ * "what are they best known for", "what can I watch from a given era" — so
+ * sorting, a year filter and a genre filter are all here rather than only the
+ * newest-first order the list implied.
+ *
+ * `credits` is passed whole, including the ones still missing their poster;
+ * those render a placeholder card and fill in as hydration lands.
+ */
+function Filmography({
+  credits,
+  locale,
+  hydrating,
+}: {
+  credits: PersonCredit[];
+  locale: string;
+  hydrating: boolean;
+}) {
+  const t = useTranslations('person');
+  const [sort, setSort] = useState<SortKey>('newest');
+  const [year, setYear] = useState('');
+  const [genre, setGenre] = useState('');
+  const [type, setType] = useState('');
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+
+  // Years and genres are derived from what the person actually has, so neither
+  // control can ever offer a value that yields nothing.
+  const years = useMemo(() => {
+    const set = new Set<number>();
+    for (const c of credits) if (c.year) set.add(c.year);
+    return Array.from(set).sort((a, b) => b - a);
+  }, [credits]);
+
+  const genres = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of credits) for (const g of c.genres ?? []) set.add(g);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [credits]);
+
+  const visible = useMemo(() => {
+    const filtered = credits.filter((c) => {
+      if (year && String(c.year ?? '') !== year) return false;
+      if (genre && !(c.genres ?? []).includes(genre)) return false;
+      if (type && c.type !== type) return false;
+      return true;
+    });
+    const bySort: Record<SortKey, (a: PersonCredit, b: PersonCredit) => number> = {
+      newest: (a, b) => (b.year ?? 0) - (a.year ?? 0),
+      oldest: (a, b) => (a.year ?? 0) - (b.year ?? 0),
+      // Unrated titles sort last rather than as zero, so a missing score does
+      // not read as "rated lowest".
+      rating: (a, b) => (parseFloat(b.rating ?? '') || -1) - (parseFloat(a.rating ?? '') || -1),
+      title: (a, b) => a.title.localeCompare(b.title),
+    };
+    return filtered.sort(bySort[sort]);
+  }, [credits, year, genre, type, sort]);
+
+  const filtering = Boolean(year || genre || type);
+
+  return (
+    <section className="mt-10 space-y-4">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 className="text-lg font-semibold">{t('filmography')}</h2>
+        <span className="text-sm text-gray-500">
+          {visible.length} {t('titles')}
+          {hydrating && <span className="ml-2 text-gray-600">·</span>}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Select label={t('sortLabel')} value={sort} onChange={(v) => setSort(v as SortKey)}>
+          <option value="newest">{t('sortNewest')}</option>
+          <option value="oldest">{t('sortOldest')}</option>
+          <option value="rating">{t('sortRating')}</option>
+          <option value="title">{t('sortTitle')}</option>
+        </Select>
+
+        <Select label={t('typeLabel')} value={type} onChange={setType}>
+          <option value="">{t('allTypes')}</option>
+          <option value="movie">{t('typeMovie')}</option>
+          <option value="tv">{t('typeTv')}</option>
+        </Select>
+
+        <Select label={t('yearLabel')} value={year} onChange={setYear}>
+          <option value="">{t('allYears')}</option>
+          {years.map((y) => (
+            <option key={y} value={String(y)}>
+              {y}
+            </option>
+          ))}
+        </Select>
+
+        <Select label={t('genreLabel')} value={genre} onChange={setGenre}>
+          <option value="">{t('allGenres')}</option>
+          {genres.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </Select>
+
+        {filtering && (
+          <button
+            type="button"
+            onClick={() => {
+              setYear('');
+              setGenre('');
+              setType('');
+            }}
+            className="glass-btn glass-btn-sm glass-btn-primary"
+          >
+            {t('clear')}
+          </button>
+        )}
+
+        <div className="ml-auto flex items-center gap-1">
+          <ViewToggle active={view === 'grid'} onClick={() => setView('grid')} label={t('viewGrid')}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </ViewToggle>
+          <ViewToggle active={view === 'list'} onClick={() => setView('list')} label={t('viewList')}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="8" y1="6" x2="21" y2="6" />
+              <line x1="8" y1="12" x2="21" y2="12" />
+              <line x1="8" y1="18" x2="21" y2="18" />
+              <circle cx="4" cy="6" r="1" />
+              <circle cx="4" cy="12" r="1" />
+              <circle cx="4" cy="18" r="1" />
+            </svg>
+          </ViewToggle>
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500">{t('noMatches')}</p>
+      ) : view === 'grid' ? (
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {visible.map((credit) => (
+            <li key={`${credit.type}-${credit.tmdbId}`}>
+              <CreditCard credit={credit} locale={locale} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ul className="divide-y divide-white/5">
+          {visible.map((credit) => (
+            <li key={`${credit.type}-${credit.tmdbId}`}>
+              <CreditListRow credit={credit} locale={locale} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** A labelled native `<select>`. Native so it is keyboard- and screen-reader-native. */
+function Select({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="glass-btn glass-btn-sm relative inline-flex cursor-pointer items-center gap-2">
+      <span className="text-gray-400">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="cursor-pointer appearance-none bg-transparent pr-4 text-gray-100 outline-none [&>option]:bg-neutral-900 [&>option]:text-gray-100"
+      >
+        {children}
+      </select>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        className="pointer-events-none absolute right-2 text-gray-400"
+        aria-hidden
+      >
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </label>
+  );
+}
+
+function ViewToggle({
+  active,
+  onClick,
+  label,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      aria-pressed={active}
+      className={`glass-btn glass-btn-sm px-2 ${active ? 'glass-btn-primary' : ''}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Poster card, the grid's unit. */
+function CreditCard({ credit, locale }: { credit: PersonCredit; locale: string }) {
+  const poster = resolveImageUrl(credit.posterUrl, 'poster');
+  const href = `/movies/${creditSlug(credit)}`;
+  const score = parseFloat(credit.rating ?? '');
+
+  return (
+    <Link href={href} locale={locale} title={credit.title} className="group block">
+      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-neutral-800/60 ring-1 ring-white/10">
+        {poster ? (
+          <Image
+            src={poster}
+            alt={credit.title}
+            fill
+            className="object-cover object-center transition-transform duration-200 group-hover:scale-105"
+            sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 22vw, 16vw"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-gray-500">
+            {credit.title}
+          </div>
+        )}
+        {Number.isFinite(score) && (
+          <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-400">
+            {score.toFixed(1)}
+          </span>
+        )}
+      </div>
+      <div className="mt-2 space-y-0.5">
+        <p className="line-clamp-2 text-sm font-medium text-gray-100 group-hover:text-brand">
+          {credit.title}
+        </p>
+        {credit.year && <p className="text-xs text-gray-500">{credit.year}</p>}
+        {credit.character && (
+          <p className="line-clamp-1 text-xs text-gray-400">{credit.character}</p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+/** List row, the alternative view. */
+function CreditListRow({ credit, locale }: { credit: PersonCredit; locale: string }) {
+  const poster = resolveImageUrl(credit.posterUrl, 'poster');
+  const score = parseFloat(credit.rating ?? '');
+
+  return (
+    <Link
+      href={`/movies/${creditSlug(credit)}`}
+      locale={locale}
+      className="flex items-center gap-4 rounded-lg px-2 py-3 transition-colors hover:bg-white/5 focus-visible:bg-white/5"
+    >
+      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded bg-neutral-800/60">
+        {poster && (
+          <Image src={poster} alt={credit.title} fill className="object-cover" sizes="3rem" />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-gray-100">{credit.title}</p>
+        <p className="text-xs text-gray-500">
+          {[credit.year, credit.character].filter(Boolean).join(' · ')}
+        </p>
+      </div>
+      {Number.isFinite(score) && (
+        <span className="shrink-0 text-xs font-semibold text-yellow-400">{score.toFixed(1)}</span>
+      )}
+    </Link>
+  );
+}
+
+/**
+ * The catalogue slug for a credit.
+ *
+ * Every credit carries a TMDB id — the filmography query requires one — so this
+ * always mints the `title-type-id` shape the catalogue resolves.
+ */
+function creditSlug(credit: PersonCredit): string {
+  return `${slugifyTitle(credit.title) || 'title'}-${credit.type}-${credit.tmdbId}`;
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
@@ -127,41 +465,6 @@ function Fact({ label, value }: { label: string; value: string }) {
       <dt className="text-xs uppercase tracking-wide text-gray-500">{label}</dt>
       <dd className="text-gray-200">{value}</dd>
     </div>
-  );
-}
-
-/**
- * One filmography entry, linked into this app's own catalogue.
- *
- * Every entry carries a TMDB id (the query requires one), so the slug always
- * resolves — see `slugFor`, which mints the same `title-type-id` shape.
- */
-function CreditRow({
-  credit,
-  locale,
-}: {
-  credit: { tmdbId: string; title: string; year?: number; character?: string; type: 'movie' | 'tv' };
-  locale: string;
-}) {
-  const label = (
-    <>
-      <span className="font-medium text-gray-100">{credit.title}</span>
-      {credit.year ? <span className="text-gray-500"> ({credit.year})</span> : null}
-      {credit.character ? (
-        <span className="block text-xs text-gray-400">{credit.character}</span>
-      ) : null}
-    </>
-  );
-
-  const slug = `${slugifyTitle(credit.title) || 'title'}-${credit.type}-${credit.tmdbId}`;
-  return (
-    <Link
-      href={`/movies/${slug}`}
-      locale={locale}
-      className="block rounded-lg px-3 py-2 text-sm transition-colors hover:bg-white/5 focus-visible:bg-white/5"
-    >
-      {label}
-    </Link>
   );
 }
 

@@ -115,6 +115,24 @@
     "born": "出生",
     "died": "逝世",
     "biography": "生平",
-    "filmography": "作品年表"
+    "filmography": "作品年表",
+    "sortLabel": "排序",
+    "sortNewest": "最新优先",
+    "sortOldest": "最早优先",
+    "sortRating": "评分最高",
+    "sortTitle": "名称 A–Z",
+    "yearLabel": "年份",
+    "allYears": "全部年份",
+    "genreLabel": "类型",
+    "allGenres": "全部类型",
+    "typeLabel": "类别",
+    "typeMovie": "电影",
+    "typeTv": "剧集",
+    "allTypes": "全部",
+    "viewGrid": "网格视图",
+    "viewList": "列表视图",
+    "titles": "部作品",
+    "noMatches": "没有符合这些筛选条件的作品。",
+    "clear": "清除"
   }
 }
