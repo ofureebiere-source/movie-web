@@ -12,6 +12,7 @@ const ALLOWED_HOSTS = new Set([
   'image.tmdb.org',          // TMDB artwork (hero logos, stills, cast)
   'phimimg.com',             // catalog posters and stills — originals up to ~1 MB
   'lh3.googleusercontent.com', // Google account avatars
+  'via.placeholder.com',     // the catalogue's own "no artwork" placeholder
 ]);
 
 // Next.js default imageSizes + deviceSizes — keep in sync with next.config.mjs.
