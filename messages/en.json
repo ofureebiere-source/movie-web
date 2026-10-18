@@ -25,7 +25,9 @@
       "cartoons": "Animation",
       "tvShows": "TV Shows",
       "categories": "Genres",
-      "countries": "Countries"
+      "countries": "Countries",
+      "anime": "Anime",
+      "myList": "My List"
     },
     "search": "Search movies"
   },
@@ -169,28 +171,21 @@
       },
       "vpn": {
         "title": "Looks like you're on a VPN",
-        "body": "The main source only accepts connections from Vietnam. Turn the VPN off and try again, or watch the backup source (subtitles only)."
+        "body": "This stream only accepts connections from Vietnam. Turn the VPN off and try again."
       },
       "abroad": {
-        "title": "The main source only streams in Vietnam",
-        "body": "It won't open from where you are. The backup source works, with subtitles."
+        "title": "Not available on your connection",
+        "body": "This stream only opens on Vietnamese connections, and it didn't open from where you are."
       },
       "cdn": {
         "title": "This source isn't playing right now",
-        "body": "Try another audio server below, or switch to the backup source."
+        "body": "Try another audio server below, or hit Try again."
       },
       "unknown": {
         "title": "The video didn't load",
-        "body": "If a VPN or WARP is on, turn it off and try again. Otherwise, use the backup source."
+        "body": "If a VPN or WARP is on, turn it off and try again."
       },
-      "fallback": {
-        "abroad": "You're on the backup source because the main one only streams inside Vietnam. Subtitles, no Vietnamese voiceover or dub.",
-        "chosen": "You're on the backup source: subtitles, no Vietnamese voiceover or dub."
-      },
-      "retry": "Try again",
-      "useFallback": "Use backup source",
-      "useMain": "Back to main source",
-      "noFallback": "No backup source for this title yet."
+      "retry": "Try again"
     }
   },
   "lists": {
@@ -231,7 +226,8 @@
     "home": "Home",
     "search": "Search",
     "myList": "My List",
-    "profile": "Profile"
+    "profile": "Profile",
+    "anime": "Anime"
   },
   "disclaimer": {
     "eyebrow": "Notice",
@@ -342,6 +338,21 @@
         "sent": "Your message has been sent successfully! We'll respond within 24 hours.",
         "error": "Failed to send message. Please try again."
       }
+    },
+    "personalInfo": {
+      "heading": "Profile",
+      "edit": "Edit",
+      "avatar": "Avatar",
+      "avatarHelp": "JPG, PNG or GIF. Max 2MB.",
+      "displayName": "Display name",
+      "displayNameRequired": "Display name is required",
+      "displayNameMinLength": "Name must be at least 2 characters",
+      "email": "Email",
+      "invalidEmail": "Invalid email",
+      "savedHere": "Saved here",
+      "savedHereHelp": "Your list, watch history and settings are kept in this browser. Nothing is uploaded.",
+      "successToast": "Profile updated successfully",
+      "errorToast": "Failed to update profile"
     }
   },
   "comment": {
@@ -397,9 +408,9 @@
       "sciFi": "Sci-Fi",
       "newest": "New Releases"
     },
-    "copyright": "© 2024 Netflix-pro. All rights reserved.",
-    "disclaimer": "Netflix-pro does not host any content on this site. All content is sourced from third parties.",
-    "seo": "High-quality online movie streaming at Netflix-pro — the leading streaming platform in Vietnam",
+    "copyright": "© 2024 Watch Movies Online. All rights reserved.",
+    "disclaimer": "Watch Movies Online does not host any content on this site. All content is sourced from third parties.",
+    "seo": "High-quality online movie streaming — a growing library of films, series, animation and TV shows, updated daily with subtitles and dubs.",
     "tmdbAttribution": "This product uses the TMDB API but is not endorsed or certified by TMDB."
   },
   "errors": {
@@ -457,6 +468,30 @@
       ],
       "watchTrailer": "Watch trailer",
       "close": "Close"
+    }
+  },
+  "anime": {
+    "title": "Anime",
+    "subtitle": "Explore thousands of anime — action, romance, fantasy and more.",
+    "metaTitle": "Anime — watch anime online",
+    "metaDescription": "Watch high-quality anime online with subtitles. Thousands of action, romance, fantasy, comedy and school anime.",
+    "browseAll": "All anime",
+    "allGenres": "All",
+    "titleCount": "{count} anime titles",
+    "genreDescription": "Watch {name} anime online in high quality with subtitles.",
+    "genres": {
+      "action": "Action",
+      "adventure": "Adventure",
+      "comedy": "Comedy",
+      "drama": "Drama",
+      "fantasy": "Fantasy",
+      "romance": "Romance",
+      "sciFi": "Sci-Fi",
+      "supernatural": "Supernatural",
+      "mystery": "Mystery",
+      "horror": "Horror",
+      "sports": "Sports",
+      "thriller": "Thriller"
     }
   }
 }

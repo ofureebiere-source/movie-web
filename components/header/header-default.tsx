@@ -39,6 +39,14 @@ export default function HeaderDefault({
         <Wordmark />
         <ul className="flex flex-grow justify-center items-center font-semibold text-lg">
           <li className="px-8">
+            <Link
+              href="/anime"
+              className={`hover:text-custome-red ${pathname.startsWith('/anime') && 'text-custome-red'}`}
+            >
+              {t('anime')}
+            </Link>
+          </li>
+          <li className="px-8">
             <PrefetchLink
               kind="format"
               slug="phim-le"

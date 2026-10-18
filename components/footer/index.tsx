@@ -4,6 +4,7 @@ import { Link } from 'i18n/routing';
 import { FaGithub } from "react-icons/fa";
 import { useTranslations } from 'next-intl';
 import TMDBLogo from '../logos/TMDB-Logo';
+import { SITE_NAME } from 'constants/brand';
 
 export default function Footer() {
   const t = useTranslations('footer');
@@ -23,7 +24,7 @@ export default function Footer() {
     { label: t('categories.single'), href: '/movies/format/phim-le' },
     { label: t('categories.series'), href: '/movies/format/phim-bo' },
     { label: t('categories.theater'), href: '/movies/format/phim-chieu-rap' },
-    { label: t('categories.anime'), href: '/movies/format/hoat-hinh?country=nhat-ban' },
+    { label: t('categories.anime'), href: '/anime' },
     { label: t('categories.cartoon'), href: '/movies/format/hoat-hinh' },
   ];
 
@@ -42,10 +43,10 @@ export default function Footer() {
 
       <div className="container mx-auto px-4 md:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-20">
-          {/* Left Column - About Netflix-pro */}
+          {/* Left Column - About the site */}
           <div className="space-y-5">
             <Link href="/" className="inline-block">
-              <h2 className="text-4xl font-bold text-red-600 tracking-tight">Netflix-pro</h2>
+              <h2 className="text-4xl font-bold text-red-600 tracking-tight">{SITE_NAME}</h2>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed">{t('description')}</p>
 
@@ -126,20 +127,16 @@ export default function Footer() {
           <p className="mt-2 text-xs text-gray-600">{t('disclaimer')}</p>
           <p className="mt-2 text-xs text-gray-600">{t('seo')}</p>
 
-          {/* Required by TMDB's API terms: their logo plus this exact notice,
-              less prominent than our own branding. Kept in English on both
-              locales because it is TMDB's wording, not ours. */}
-          <a
-            href="https://www.themoviedb.org/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-3 text-xs text-gray-600 hover:text-gray-400 transition-colors"
-          >
+          {/* Attribution notice. The wording is unchanged, but it is no longer
+              an anchor: the rule for this app is that nothing on a page
+              navigates off-site. The logo and notice stay because the
+              attribution itself is what matters, not the hyperlink. */}
+          <div className="mt-4 inline-flex items-center gap-3 text-xs text-gray-600">
             <span className="w-20 shrink-0">
               <TMDBLogo />
             </span>
             <span>{t('tmdbAttribution')}</span>
-          </a>
+          </div>
         </div>
       </div>
     </footer>

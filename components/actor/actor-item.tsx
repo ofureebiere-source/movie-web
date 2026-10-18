@@ -1,16 +1,20 @@
 import Actor from 'types/actor';
 import ActorImgDefault from '../../public/default-actor-img.jpg';
 import Image from 'next/image';
+import { Link } from 'i18n/routing';
 import { tmdbImageUrl } from 'lib/tmdb-image';
 
 /**
- * Cast member card — now clickable.
+ * Cast member card.
  *
- * The site has no person pages: search is title-only, so a cast member
- * links out to TMDB rather than to a filmography we don't render
- * (searching an actor name dead-ends), so we link out to TMDB for a real
- * filmography: credited cast → the person page, bare-name actors → a TMDB
- * person search. Opens in a new tab.
+ * Clicking a cast member used to open their page on an external site in a new
+ * tab. That is a redirect off the app, and it is the thing this component no
+ * longer does: the card is now an in-site link to a search for that person's
+ * name, so the visitor stays on the site and gets a real, playable result set
+ * back.
+ *
+ * There is no person page to link to — the catalogue's search is title-only
+ * and exposes no filmography — so search is the honest in-site destination.
  */
 export default function ActorItem({ actor }: { actor: Actor | string }) {
   const name = typeof actor === 'string' ? actor : actor.name;
@@ -19,19 +23,11 @@ export default function ActorItem({ actor }: { actor: Actor | string }) {
     typeof actor !== 'string' && actor.profile_path
       ? tmdbImageUrl(actor.profile_path, 'profile')
       : ActorImgDefault;
-  const href =
-    typeof actor === 'string'
-      ? `https://www.themoviedb.org/search?query=${encodeURIComponent(actor)}`
-      : `https://www.themoviedb.org/person/${actor.id}`;
+  // The search page reads `?name=`, not `?q=`.
+  const href = `/search?name=${encodeURIComponent(name)}`;
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      title={name}
-      className="group block w-full text-center"
-    >
+    <Link href={href} title={name} className="group block w-full text-center">
       <div className="relative aspect-square w-full overflow-hidden rounded-full ring-2 ring-transparent transition-all duration-200 group-hover:ring-brand">
         <Image
           src={imgSrc}
@@ -43,6 +39,6 @@ export default function ActorItem({ actor }: { actor: Actor | string }) {
       </div>
       <div className="mt-3 transition-colors group-hover:text-brand">{name}</div>
       {character && <div className="text-sm text-gray-400">{character}</div>}
-    </a>
+    </Link>
   );
 }

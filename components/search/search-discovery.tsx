@@ -28,7 +28,7 @@ const GENRE_SLUGS = [
 ];
 
 /**
- * Search discovery surface — replaces the old shared "Netflix-pro" placeholder.
+ * Search discovery surface — replaces the old shared brand placeholder.
  * Renders two distinct states:
  *  - initial (no `query`): a prompt + browse-by-genre + trending row
  *  - zero-results (`query` set): a clear "no results for X" message + the same

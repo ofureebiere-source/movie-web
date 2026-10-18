@@ -16,7 +16,9 @@
       "cartoons": "Animasi",
       "tvShows": "Acara TV",
       "categories": "Genre",
-      "countries": "Negara"
+      "countries": "Negara",
+      "anime": "Anime",
+      "myList": "Daftar Saya"
     },
     "search": "Cari film"
   },
@@ -40,7 +42,8 @@
     "home": "Beranda",
     "search": "Cari",
     "myList": "Daftar Saya",
-    "profile": "Profil"
+    "profile": "Profil",
+    "anime": "Anime"
   },
   "lists": {
     "endOfList": "🎬 Anda telah mencapai akhir",
@@ -76,7 +79,31 @@
     "share": "Bagikan"
   },
   "footer": {
-    "copyright": "© 2024 Netflix-pro. Hak cipta dilindungi.",
-    "disclaimer": "Netflix-pro tidak menghosting konten apa pun di situs ini. Semua konten berasal dari pihak ketiga."
+    "copyright": "© 2024 Nonton Film Online. Hak cipta dilindungi.",
+    "disclaimer": "Nonton Film Online tidak menghosting konten apa pun di situs ini. Semua konten berasal dari pihak ketiga."
+  },
+  "anime": {
+    "title": "Anime",
+    "subtitle": "Jelajahi ribuan anime — aksi, romansa, fantasi, dan lainnya.",
+    "metaTitle": "Anime — tonton anime online",
+    "metaDescription": "Tonton anime berkualitas tinggi secara online dengan subtitle. Ribuan anime aksi, romansa, fantasi, komedi, dan sekolah.",
+    "browseAll": "Semua anime",
+    "allGenres": "Semua",
+    "titleCount": "{count} judul anime",
+    "genreDescription": "Tonton anime {name} secara online dengan kualitas tinggi dan subtitle.",
+    "genres": {
+      "action": "Aksi",
+      "adventure": "Petualangan",
+      "comedy": "Komedi",
+      "drama": "Drama",
+      "fantasy": "Fantasi",
+      "romance": "Romansa",
+      "sciFi": "Sci-Fi",
+      "supernatural": "Supernatural",
+      "mystery": "Misteri",
+      "horror": "Horor",
+      "sports": "Olahraga",
+      "thriller": "Thriller"
+    }
   }
 }

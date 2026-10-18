@@ -7,15 +7,14 @@ import {
   IoHomeOutline,
   IoSearch,
   IoSearchOutline,
-  IoBookmark,
-  IoBookmarkOutline,
   IoPerson,
   IoPersonOutline,
 } from 'react-icons/io5';
+import { SiCrunchyroll } from 'react-icons/si';
 import type { IconType } from 'react-icons';
 
 interface Tab {
-  key: 'home' | 'search' | 'myList' | 'profile';
+  key: 'home' | 'search' | 'anime' | 'profile';
   href: string;
   Icon: IconType;
   IconActive: IconType;
@@ -24,7 +23,11 @@ interface Tab {
 const TABS: Tab[] = [
   { key: 'home', href: '/', Icon: IoHomeOutline, IconActive: IoHome },
   { key: 'search', href: '/search', Icon: IoSearchOutline, IconActive: IoSearch },
-  { key: 'myList', href: '/movies/collection', Icon: IoBookmarkOutline, IconActive: IoBookmark },
+  // Anime replaces My List: the list is a saved-items view a viewer dips into,
+  // while anime is a whole catalogue to browse, and a tab is for the latter.
+  // My List moved into the hamburger drawer, which is where the saved view
+  // belongs now.
+  { key: 'anime', href: '/anime', Icon: SiCrunchyroll, IconActive: SiCrunchyroll },
   { key: 'profile', href: '/profile', Icon: IoPersonOutline, IconActive: IoPerson },
 ];
 

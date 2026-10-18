@@ -4,6 +4,8 @@ import {
   browseByFormat,
   browseByGenre,
   browseByCountry,
+  browseAnime,
+  loadAnimeRails,
   searchTitles,
   getTitleDetail,
   getBecauseYouWatchedTitles,
@@ -132,6 +134,29 @@ export async function getMoviesByCountry(
   filters?: MovieFilters
 ): Promise<CatalogPage> {
   return browseByCountry(slug, page, filters, locale);
+}
+
+// ---- Anime ----------------------------------------------------------------
+
+/** One page of the anime catalogue, optionally narrowed to a genre. */
+export async function getAnime(
+  page: number,
+  locale: string,
+  genreSlug?: string
+): Promise<CatalogPage> {
+  return browseAnime(page, locale, genreSlug);
+}
+
+/** Every rail the anime landing page renders. */
+export async function loadAnimeLanding(locale: string) {
+  return loadAnimeRails(locale);
+}
+
+/** Warm the anime landing page for a hover, same contract as `prefetchBrowse`. */
+export function prefetchAnime(locale: string): void {
+  loadAnimeRails(locale).catch(() => {
+    /* prefetch is best-effort; the page reports its own failures */
+  });
 }
 
 export async function searchingMovie(query: string, locale: string): Promise<CatalogPage> {

@@ -6,6 +6,7 @@ import AccountDefaultImg from '../../public/account-default-img.jpg';
 import Image from 'next/image';
 import { IoChevronDown, IoChevronUp, IoPerson, IoBookmark, IoTime } from 'react-icons/io5';
 import { useTranslations } from 'next-intl';
+import { SITE_NAME } from 'constants/brand';
 
 interface AccountProfileMobileProps {
   authenticatedUser: any;
@@ -46,7 +47,7 @@ export default function AccountProfileMobile({
           />
           <div className="flex-1 min-w-0">
             <p className="text-white font-medium text-sm truncate">
-              {authenticatedUser.name || 'Netflix-pro'}
+              {authenticatedUser.name || SITE_NAME}
             </p>
           </div>
         </div>

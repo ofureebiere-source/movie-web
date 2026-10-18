@@ -126,10 +126,10 @@ export default function MovieCardOverlay({
 
         {/* Action row: Xem ngay + Add to collection */}
         <div className="flex items-center justify-between gap-2 pt-1">
-          <div className="flex items-center gap-1.5 text-[11px] md:text-xs font-bold text-red-400">
+          <span className="glass-btn glass-btn-primary glass-btn-sm">
             <FaPlay className="text-[9px] md:text-[10px]" />
             <span>{t('watchNow')}</span>
-          </div>
+          </span>
           {collectionItem && <AddToCollectionOverlayBtn collectionItem={collectionItem} />}
         </div>
       </div>

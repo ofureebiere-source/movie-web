@@ -13,6 +13,9 @@ const ALLOWED_HOSTS = new Set([
   'phimimg.com',             // catalog posters and stills — originals up to ~1 MB
   'lh3.googleusercontent.com', // Google account avatars
   'via.placeholder.com',     // the catalogue's own "no artwork" placeholder
+  'media.kitsu.app',         // anime posters/backdrops (the anime catalogue)
+  's4.anilist.co',           // anime banners and character portraits
+  'img1.ak.crunchyroll.com', // anime episode stills
 ]);
 
 // Next.js default imageSizes + deviceSizes — keep in sync with next.config.mjs.

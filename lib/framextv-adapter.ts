@@ -1,4 +1,4 @@
-import type { FxItem, FxDetail, FxEpisode, FxSeason } from 'services/framextv-api';
+import type { FxItem, FxDetail, FxEpisode, FxSeason, FxAnimeItem, AniListMedia } from 'services/framextv-api';
 import { genreSlugForName, genreIdForSlug } from 'constants/framextv-taxonomy';
 import { CATEGORY_MAP, COUNTRY_MAP } from 'constants/i18n-mappings';
 import type NewlyMovie from 'types/newly-movie';
@@ -173,6 +173,141 @@ export function adaptItems(items: FxItem[], opts: AdaptOptions): NewlyMovie[] {
 }
 
 // ============================================================================
+// ANIME
+// ============================================================================
+
+/**
+ * The catalogue's anime rows arrive from Kitsu, so they use Kitsu's field
+ * names: the synopsis is `synopsis`, not `overview`. Normalizing here means
+ * everything downstream — `adaptItem`, the cards, the detail page — reads one
+ * shape and never has to know which upstream a row came from.
+ */
+export function normalizeAnimeItem(item: FxAnimeItem): FxItem {
+  return { ...item, overview: item.overview ?? item.synopsis };
+}
+
+/**
+ * An anime row → list item. Same mapping as any other title; the only anime
+ * specific is that `type` is already `anime`, which `mediaTypeOf` understands,
+ * so the minted slug tail is `anime-<anilistId>` and `parseMintedSlug` reads
+ * it back.
+ */
+export function adaptAnimeItem(item: FxAnimeItem, opts: AdaptOptions): NewlyMovie {
+  return adaptItem(normalizeAnimeItem(item), opts);
+}
+
+export function adaptAnimeItems(items: FxAnimeItem[], opts: AdaptOptions): NewlyMovie[] {
+  return (items ?? [])
+    .filter((item) => item?.id && item.title)
+    .map((item) => adaptAnimeItem(item, opts));
+}
+
+/**
+ * Build the detail view model for an anime from the catalogue row plus the
+ * AniList record.
+ *
+ * Neither source alone is enough: the catalogue has the playable id, the
+ * poster and the genre names; AniList has the runtime, the episode count, the
+ * cast and a cleaner banner. `media` is optional because AniList is an
+ * enhancement — a title it has never heard of still renders from the row.
+ *
+ * Episodes are synthesized as one entry per episode number. AniList exposes
+ * no per-episode playable list (its `streamingEpisodes` are Crunchyroll
+ * links, which are exactly the outbound redirect this app must not offer), so
+ * the episode selector is built from the count and each entry resolves its
+ * stream at play time through our own `/api/stream`.
+ */
+export function buildAnimeDetail(
+  item: FxAnimeItem,
+  media: AniListMedia | null,
+  opts: AdaptOptions
+): DetailMovie {
+  const normalized = normalizeAnimeItem(item);
+  const base = adaptItem(normalized, opts);
+
+  const episodes = buildAnimeEpisodes(item.id, media?.episodes ?? undefined);
+  const title = media?.title?.english || media?.title?.romaji || normalized.title;
+
+  // AniList's banner is a wide, textless image; prefer it for the hero. The
+  // catalogue's backdrop is a Kitsu cover, which is portrait-ish and crops
+  // badly full-bleed.
+  const banner = media?.bannerImage || normalized.backdrop || normalized.poster || '';
+
+  const movie: Movie = {
+    ...base,
+    name: title,
+    origin_name: media?.title?.romaji || normalized.title,
+    thumb_url: media?.coverImage?.extraLarge || normalized.poster || base.thumb_url,
+    poster_url: banner || base.poster_url || '',
+    type: 'hoathinh',
+    sub_docquyen: false,
+    chieurap: false,
+    time: media?.duration ? `${media.duration} phút/tập` : '',
+    episode_current: animeStatusLabel(media),
+    lang: 'Phụ đề',
+    category: base.category ?? [],
+    country: base.country ?? [],
+    actor: (media?.characters?.edges ?? [])
+      .map((edge) => edge.node?.name?.full)
+      .filter((name): name is string => !!name)
+      .slice(0, 20),
+    director: [],
+    content: stripHtml(media?.description) || normalized.overview || '',
+    content_lang: 'en',
+    status: media?.status === 'RELEASING' ? 'ongoing' : 'completed',
+    episode_total: media?.episodes ?? undefined,
+  };
+
+  // The hero wants a TMDB-style path only when the artwork is actually TMDB's.
+  // AniList banners are absolute AniList URLs, so `tmdb_backdrop` stays unset
+  // and the raw URL rides in `poster_url` — which `next/image` loads through
+  // our own resizer once `s4.anilist.co` is on the allow-list.
+  movie.tmdb_backdrop = undefined;
+
+  return { movie, episodes };
+}
+
+/** `"25 tập"` / `"Đang chiếu"` / `"Hoàn tất"` — whatever AniList can support. */
+function animeStatusLabel(media: AniListMedia | null): string {
+  if (!media) return '';
+  if (media.status === 'RELEASING' && media.episodes) return `${media.episodes} tập`;
+  if (media.episodes) return `Hoàn tất (${media.episodes}/${media.episodes})`;
+  return media.status === 'RELEASING' ? 'Đang chiếu' : 'Hoàn tất';
+}
+
+/** One season, one entry per episode, plus the playable addresses. */
+function buildAnimeEpisodes(id: string, count: number | undefined): Episode[] {
+  const total = count && count > 0 ? Math.min(count, 2000) : 1;
+  const data: Episode['server_data'] = [];
+  for (let n = 1; n <= total; n++) {
+    data.push({
+      name: `Tập ${n}`,
+      slug: String(n),
+      filename: `tap-${n}`,
+      link_m3u8: streamUrl(id, 'anime', 1, n),
+      link_embed: embedUrl(id, 'anime', 1, n),
+    });
+  }
+  return [{ server_name: 'Phần 1', server_data: data }];
+}
+
+/** AniList descriptions are HTML (`<br>`, `<i>`); the synopsis renders as text. */
+function stripHtml(html: string | undefined): string {
+  if (!html) return '';
+  return html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&#039;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+// ============================================================================
 // DETAIL
 // ============================================================================
 
@@ -278,10 +413,6 @@ export function adaptDetail(
   opts: AdaptOptions
 ): DetailMovie {
   const base = adaptItem(detail, opts);
-  const trailer = (detail.videos ?? detail.trailers ?? []).find(
-    (v) => (v.site ?? 'YouTube').toLowerCase() === 'youtube' && v.type !== 'Teaser'
-  );
-
   const movie: Movie = {
     ...base,
     poster_url: base.poster_url || base.thumb_url,
@@ -299,7 +430,6 @@ export function adaptDetail(
     // The provider writes every synopsis in English; recording that lets the
     // localizer decide whether the `vi` view needs a translation.
     content_lang: 'en',
-    trailer_url: trailer?.key ? `https://www.youtube.com/watch?v=${trailer.key}` : '',
     status: mediaTypeOf(detail) === 'tv' ? 'ongoing' : 'completed',
     episode_total: detail.number_of_seasons,
   };

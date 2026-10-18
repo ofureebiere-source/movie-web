@@ -214,25 +214,12 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
           {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
 
-        {/* Account Info */}
+        {/* Where this lives. Deliberately not the device id: it is an
+            implementation detail of the keyless account, not something the
+            viewer signed up for. */}
         <div className="border-t border-gray-700 pt-6">
-          <h3 className="text-white font-medium mb-4">{t('accountInfo')}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">{t('accountId')}</label>
-              <div className="p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-gray-300 text-sm font-mono">
-                {user.id}
-              </div>
-            </div>
-            <div>
-              <label className="block text-gray-400 text-sm mb-1">{t('createdAt')}</label>
-              <div className="p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-gray-300 text-sm">
-                {user.createdAt
-                  ? new Date(user.createdAt).toLocaleDateString('vi-VN')
-                  : tCommon('unknown')}
-              </div>
-            </div>
-          </div>
+          <h3 className="text-white font-medium mb-2">{t('savedHere')}</h3>
+          <p className="text-gray-400 text-sm">{t('savedHereHelp')}</p>
         </div>
 
         {/* Action Buttons */}

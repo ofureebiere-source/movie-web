@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import '../../globals.css';
+import { SITE_NAME } from 'constants/brand';
 
 /**
  * Maintenance shell — intentionally NOT `app/[locale]/layout.tsx`.
@@ -11,7 +12,7 @@ import '../../globals.css';
  * root layout (`app/layout.tsx`) allows.
  */
 export const metadata: Metadata = {
-  title: 'Netflix-pro',
+  title: SITE_NAME,
   robots: { index: false, follow: false },
 };
 

@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { whenHomeReady } from 'lib/home-ready';
 import styles from './brand-intro.module.css';
+import { SITE_NAME } from 'constants/brand';
 
 /**
- * Netflix-pro brand intro — a fixed-duration cinematic wordmark reveal that plays
+ * Brand intro — a fixed-duration cinematic wordmark reveal that plays
  * on every visit and doubles as a homepage warm-up window. NOT skippable.
  *
  * Timing model — "fixed floor, capped ceiling":
@@ -71,11 +72,24 @@ export default function BrandIntro({ onDone }: { onDone: () => void }) {
       <div className={styles.lightLeak} />
       <div className={styles.grain} />
       {/* Decorative wordmark — the disclaimer and header carry the accessible
-          brand name, so the overlay stays aria-hidden. */}
+          brand name, so the overlay stays aria-hidden.
+
+          The name is split into words and then letters. Each word is an
+          `inline-block` (so a space inside a letter span cannot collapse) and
+          the delay index runs continuously across the whole name. The word gap
+          is narrower than the letter gap so it still reads as two words. */}
       <div className={styles.wordmark}>
-        {'Netflix-pro'.split('').map((ch, i) => (
-          <span key={i} className={styles.letter}>
-            {ch === '-' ? '\u2011' : ch}
+        {SITE_NAME.split(' ').map((word, w) => (
+          <span key={w} className={styles.word}>
+            {word.split('').map((ch, i) => (
+              <span
+                key={i}
+                className={styles.letter}
+                style={{ '--i': w * 6 + i } as React.CSSProperties}
+              >
+                {ch}
+              </span>
+            ))}
           </span>
         ))}
       </div>

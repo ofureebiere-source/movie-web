@@ -44,6 +44,16 @@ export default function HeaderFixed({
           <li className="px-8">
             <Link
               className={`hover:text-custome-red ${
+                pathname.startsWith('/anime') && 'text-custome-red'
+              }`}
+              href="/anime"
+            >
+              {t('anime')}
+            </Link>
+          </li>
+          <li className="px-8">
+            <Link
+              className={`hover:text-custome-red ${
                 pathname === '/movies/format/phim-le' && 'text-custome-red'
               }`}
               href="/movies/format/phim-le"

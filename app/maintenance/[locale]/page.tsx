@@ -4,6 +4,7 @@ import { routing } from 'i18n/routing';
 import { readCinemaSchedule } from 'lib/cinema-data';
 import CinemaSections from '@/components/maintenance/cinema-sections';
 import styles from '@/components/maintenance/maintenance.module.css';
+import { SITE_NAME } from 'constants/brand';
 
 /**
  * The maintenance screen. Reached only through the rewrite in `middleware.ts`
@@ -40,7 +41,7 @@ export default async function MaintenancePage({
 
       <header className={styles.hero}>
         <div className={styles.heroBody}>
-          <div className={styles.wordmark}>Netflix-pro</div>
+          <div className={styles.wordmark}>{SITE_NAME}</div>
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.note}>{t('note')}</p>
         </div>
@@ -77,7 +78,7 @@ export default async function MaintenancePage({
       )}
 
       <footer className={`${styles.footer} ${hasSchedule ? '' : styles.footerBare}`}>
-        © {new Date().getFullYear()} Netflix-pro
+        © {new Date().getFullYear()} {SITE_NAME}
       </footer>
     </div>
   );

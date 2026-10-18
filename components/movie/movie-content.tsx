@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 import type NewlyMovie from 'types/newly-movie';
 import Country from 'types/country';
 import DetailMovie from 'types/detail-movie';
-import Trailer from './trailer';
 import ActorList from '../actor/actor-list';
 import Credit from 'types/credit';
 import isNonEmpty from 'utils/is-none-empty';
@@ -139,8 +138,10 @@ export default function MovieContent({
         {/* Stills */}
         {images && images.length > 0 && <MovieImageList images={images} />}
 
-        {/* Trailer */}
-        {movie.movie.trailer_url !== '' && <Trailer trailer={movie.movie.trailer_url} />}
+        {/* No trailer embed. The catalogue's trailer links are YouTube, and a
+            third-party frame is an off-site redirect in everything but name —
+            the same reason the cast, rating and attribution links are no
+            longer anchors. The synopsis and the stills carry the page. */}
 
         {/* More like this — grid */}
         {relatedMovies.length > 0 && (

@@ -16,7 +16,9 @@
       "cartoons": "Animation",
       "tvShows": "Émissions TV",
       "categories": "Genres",
-      "countries": "Pays"
+      "countries": "Pays",
+      "anime": "Anime",
+      "myList": "Ma liste"
     },
     "search": "Rechercher un film"
   },
@@ -40,7 +42,8 @@
     "home": "Accueil",
     "search": "Recherche",
     "myList": "Ma liste",
-    "profile": "Profil"
+    "profile": "Profil",
+    "anime": "Anime"
   },
   "lists": {
     "endOfList": "🎬 Vous avez atteint la fin",
@@ -76,7 +79,31 @@
     "share": "Partager"
   },
   "footer": {
-    "copyright": "© 2024 Netflix-pro. Tous droits réservés.",
-    "disclaimer": "Netflix-pro n'héberge aucun contenu sur ce site. Tout le contenu provient de tiers."
+    "copyright": "© 2024 Regarder des films en ligne. Tous droits réservés.",
+    "disclaimer": "Regarder des films en ligne n'héberge aucun contenu sur ce site. Tout le contenu provient de tiers."
+  },
+  "anime": {
+    "title": "Anime",
+    "subtitle": "Explorez des milliers d'animes — action, romance, fantasy et plus.",
+    "metaTitle": "Anime — regarder des animés en ligne",
+    "metaDescription": "Regardez des animés en haute qualité en ligne avec sous-titres. Des milliers d'animés d'action, de romance, de fantasy, de comédie et scolaires.",
+    "browseAll": "Tous les animés",
+    "allGenres": "Tout",
+    "titleCount": "{count} animés",
+    "genreDescription": "Regardez des animés {name} en ligne en haute qualité avec sous-titres.",
+    "genres": {
+      "action": "Action",
+      "adventure": "Aventure",
+      "comedy": "Comédie",
+      "drama": "Drame",
+      "fantasy": "Fantasy",
+      "romance": "Romance",
+      "sciFi": "Science-fiction",
+      "supernatural": "Surnaturel",
+      "mystery": "Mystère",
+      "horror": "Horreur",
+      "sports": "Sport",
+      "thriller": "Thriller"
+    }
   }
 }

@@ -6,6 +6,7 @@ import { FiBookOpen, FiGlobe, FiServer, FiMail } from 'react-icons/fi';
 import Logo from '../../public/mini-logo.png';
 import PosterCollection from '../../public/movie-poster-collection.png';
 import { useDisclaimerModal } from '../context/disclaimer-modal-context';
+import { SUPPORT_EMAIL } from 'constants/brand';
 
 export default function DisclaimerModal() {
   const t = useTranslations('disclaimer');
@@ -108,7 +109,7 @@ export default function DisclaimerModal() {
             </button>
 
             <a
-              href="mailto:support@netflix-pro.com?subject=Copyright%20concern"
+              href={`mailto:${SUPPORT_EMAIL}?subject=Copyright%20concern`}
               className="block w-full text-center text-white/40 hover:text-white/80 text-xs tracking-wide py-3 mt-1.5 transition-colors"
             >
               {t('learnMore')}

@@ -69,6 +69,12 @@ async function probeStream(url: string): Promise<boolean> {
   try {
     const res = await fetchWithTimeout(url);
     if (!res.ok) return false;
+    // The catalogue serves two shapes: an HLS playlist (`#EXTM3U`) and, for
+    // plenty of films, a direct mp4. Both are playable, so both count as
+    // reachable. The blocked-in-Vietnam page is neither — it answers with an
+    // HTML body, which is what this check rejects.
+    const contentType = res.headers.get('content-type') ?? '';
+    if (contentType.startsWith('video/') || contentType.startsWith('audio/')) return true;
     const head = (await res.text()).slice(0, 16);
     return head.startsWith('#EXTM3U');
   } catch {

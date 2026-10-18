@@ -10,8 +10,10 @@ import {
   getHome,
   getDetail,
   getSeason,
+  getAniListMedia,
   CatalogApiError,
   type FxItem,
+  type FxAnimeItem,
 } from 'services/framextv-api';
 import {
   GENRE_ID,
@@ -21,10 +23,13 @@ import {
   isKnownFormat,
   resolveFormat,
 } from 'constants/framextv-taxonomy';
+import { ANIME_RAIL_SLUGS, animeGenreName } from 'constants/anime-taxonomy';
 import {
   adaptItem,
   adaptItems,
+  adaptAnimeItems,
   adaptDetail,
+  buildAnimeDetail,
   buildSeasons,
   buildMovieEpisodes,
   parseMintedSlug,
@@ -331,7 +336,13 @@ export async function getTitleDetail(slug: string, locale: string): Promise<Deta
   if (!slug) return null;
 
   const minted = parseMintedSlug(slug);
-  if (minted) return loadDetail(minted.id, minted.type, locale);
+  if (minted) {
+    // Anime ids are AniList ids, not TMDB ids, so the catalogue's detail
+    // endpoint cannot resolve them. Build the page from the anime row plus
+    // AniList's own record instead.
+    if (minted.type === 'anime') return loadAnimeDetail(minted.id, locale);
+    return loadDetail(minted.id, minted.type, locale);
+  }
 
   const words = slug.replace(/-/g, ' ').trim();
   if (!words) return null;
@@ -339,10 +350,134 @@ export async function getTitleDetail(slug: string, locale: string): Promise<Deta
     const found = await apiSearch(words, 1);
     const hit = found.items[0];
     if (!hit) return null;
+    if (hit.type === 'anime') return loadAnimeDetail(hit.id, locale);
     return loadDetail(hit.id, hit.type ?? 'movie', locale);
   } catch {
     return null;
   }
+}
+
+/**
+ * One anime, resolved from two sources in parallel: the catalogue row (which
+ * carries the poster, genre names and the id the stream endpoint needs) and
+ * the AniList record (runtime, episode count, cast, banner).
+ *
+ * The row is the load-bearing half — if it cannot be found the page is a real
+ * 404. AniList failing only costs the extra detail.
+ */
+async function loadAnimeDetail(id: string, locale: string): Promise<DetailMovie | null> {
+  const [row, media] = await Promise.all([
+    findAnimeRow(id),
+    getAniListMedia(id),
+  ]);
+  if (!row) return null;
+  return buildAnimeDetail(row, media, { locale });
+}
+
+/**
+ * Find one anime row by AniList id.
+ *
+ * The anime catalogue has no per-id endpoint, so the row is located by paging
+ * the discover feed — capped, because this is a lookup and not a crawl. A
+ * miss past the cap falls back to a synthesized row so a valid id still opens
+ * a playable page rather than a 404.
+ */
+async function findAnimeRow(id: string): Promise<FxAnimeItem | null> {
+  try {
+    // `apiSearch`, not the local `searchTitles` of the same name: this needs
+    // the raw catalogue page (`FxItem`, carrying the provider's own id), not
+    // the adapted `NewlyMovie` page the app-facing export returns.
+    const found = await apiSearch(id, 1);
+    const exact = found.items.find((item) => String(item.id) === String(id));
+    if (exact) return exact as FxAnimeItem;
+  } catch {
+    // Search is best-effort; discover below is the real lookup.
+  }
+
+  const MAX_PAGES = 6;
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const result = await discover('anime', { page });
+    const hit = result.items.find((item) => String(item.id) === String(id));
+    if (hit) return hit as FxAnimeItem;
+    if (page >= result.totalPages) break;
+  }
+
+  // Not in the first pages we were willing to walk. AniList still knows the
+  // title, so keep the page rather than 404 — the poster and genres are the
+  // only things lost.
+  const media = await getAniListMedia(id);
+  if (!media) return null;
+  return {
+    id,
+    anilistId: id,
+    type: 'anime',
+    title: media.title?.english || media.title?.romaji || media.title?.native || `Anime ${id}`,
+    year: media.seasonYear ? String(media.seasonYear) : undefined,
+    rating: media.averageScore ? String(media.averageScore / 10) : undefined,
+    poster: media.coverImage?.extraLarge || media.coverImage?.large,
+    backdrop: media.bannerImage,
+    synopsis: media.description,
+    genres: media.genres,
+  };
+}
+
+/**
+ * One page of the anime catalogue.
+ *
+ * Paged against the anime discover endpoint (50 pages, ~22k titles), filtered
+ * by genre NAME. `hasMore` is driven by the upstream page count so the grid's
+ * infinite scroll stops exactly where the catalogue does.
+ */
+export async function browseAnime(
+  page: number,
+  locale: string,
+  genreSlug?: string
+): Promise<CatalogPage> {
+  const genre = animeGenreName(genreSlug);
+  const result = await discover('anime', { page, genre });
+  return {
+    items: adaptAnimeItems(result.items as FxAnimeItem[], { locale }),
+    totalItems: result.totalItems,
+    hasMore: page < result.totalPages,
+  };
+}
+
+/** One anime genre rail for the landing page. Never throws. */
+export async function getAnimeRail(
+  genreSlug: string,
+  locale: string,
+  limit = RAIL_SIZE
+): Promise<NewlyMovie[]> {
+  return safeRail(async () => {
+    const genre = animeGenreName(genreSlug);
+    if (!genre) return [];
+    const page = await discover('anime', { page: 1, genre });
+    return adaptAnimeItems(page.items as FxAnimeItem[], { locale }).slice(0, limit);
+  });
+}
+
+/** The anime hero row — the top of the unfiltered anime catalogue. */
+export async function getAnimeHero(locale: string, limit = HERO_SIZE): Promise<NewlyMovie[]> {
+  return safeRail(async () => {
+    const page = await discover('anime', { page: 1 });
+    return adaptAnimeItems(page.items as FxAnimeItem[], { locale })
+      .filter((m) => m.poster_url || m.thumb_url)
+      .slice(0, limit);
+  });
+}
+
+/** Every anime rail the landing page renders, resolved together. */
+export async function loadAnimeRails(
+  locale: string
+): Promise<{ hero: NewlyMovie[]; rails: { slug: string; items: NewlyMovie[] }[] }> {
+  const [hero, ...genreResults] = await Promise.all([
+    getAnimeHero(locale),
+    ...ANIME_RAIL_SLUGS.map((slug) => getAnimeRail(slug, locale)),
+  ]);
+  return {
+    hero,
+    rails: ANIME_RAIL_SLUGS.map((slug, i) => ({ slug, items: genreResults[i] ?? [] })),
+  };
 }
 
 /**

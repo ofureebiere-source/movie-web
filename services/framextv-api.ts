@@ -92,6 +92,17 @@ export interface FxItem {
   genres?: string[];
 }
 
+/**
+ * An anime row. The anime catalogue is a different upstream (Kitsu, fronted by
+ * AniList ids) so its rows carry two fields the TMDB-shaped `FxItem` has no
+ * place for: `synopsis` (Kitsu's word for `overview`) and `anilistId`, which
+ * is what the detail and stream calls address the title by.
+ */
+export interface FxAnimeItem extends FxItem {
+  synopsis?: string;
+  anilistId?: string;
+}
+
 export interface FxList {
   success: boolean;
   page?: number;
@@ -384,7 +395,14 @@ export async function discover(
   params: { page?: number; genre?: string | number; year?: string | number } = {}
 ): Promise<FxPage> {
   if (type === 'anime') {
-    const body = await apiFetch<FxList>('/anime/api/discover', { page: params.page ?? 1 }, REVALIDATE.list);
+    // Anime filters by genre NAME (`Action`), not the numeric TMDB id the
+    // film/series endpoints take — so a numeric `genre` is dropped rather
+    // than sent and silently ignored.
+    const body = await apiFetch<FxList>(
+      '/anime/api/discover',
+      { page: params.page ?? 1, genre: typeof params.genre === 'string' ? params.genre : undefined },
+      REVALIDATE.list
+    );
     return toPage(body, '/anime/api/discover');
   }
   const body = await apiFetch<FxList>(
@@ -458,4 +476,114 @@ export async function getStream(
 export async function getGenres(type: 'movie' | 'tv' = 'movie'): Promise<{ id: number; name: string }[]> {
   const body = await apiFetch<{ genres: { id: number; name: string }[] }>('/api/genres', { type }, REVALIDATE.taxonomy);
   return body.genres ?? [];
+}
+
+// ============================================================================
+// ANIME DETAIL — AniList
+// ============================================================================
+
+/**
+ * An anime title's own metadata, from AniList.
+ *
+ * The catalogue's `/api/details` is a TMDB proxy, and anime ids are AniList
+ * ids (16498), not TMDB ids — so asking it for one returns
+ * `{"error":"TMDB returned HTTP 404"}`. The anime catalogue carries only what
+ * a poster grid needs (title, art, year, rating, genres, a synopsis), which
+ * leaves the detail page with no runtime, no episode list and no cast.
+ *
+ * AniList's public GraphQL API fills exactly that gap, keylessly, and sends
+ * `access-control-allow-origin: *` so the browser can call it directly — the
+ * same reason every other call here runs client-side. This is the endpoint
+ * framextv.xyz's own anime pages read, so the two sites agree on the data.
+ */
+export interface AniListMedia {
+  id: number;
+  title?: { romaji?: string; english?: string; native?: string };
+  description?: string;
+  coverImage?: { extraLarge?: string; large?: string };
+  bannerImage?: string;
+  averageScore?: number;
+  popularity?: number;
+  episodes?: number;
+  duration?: number;
+  status?: string;
+  format?: string;
+  seasonYear?: number;
+  genres?: string[];
+  characters?: {
+    edges?: { role?: string; node?: { id: number; name?: { full?: string }; image?: { large?: string } } }[];
+  };
+  streamingEpisodes?: { title?: string; thumbnail?: string; url?: string }[];
+}
+
+const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
+
+const ANILIST_MEDIA_QUERY = `
+query ($id: Int) {
+  Media(id: $id, type: ANIME) {
+    id
+    title { romaji english native }
+    description(asHtml: false)
+    coverImage { extraLarge large }
+    bannerImage
+    averageScore
+    popularity
+    episodes
+    duration
+    status
+    format
+    seasonYear
+    genres
+    characters(sort: [ROLE, RELEVANCE], perPage: 12) {
+      edges { role node { id name { full } image { large } } }
+    }
+    streamingEpisodes { title thumbnail url }
+  }
+}`;
+
+/**
+ * Fetch one anime's AniList record.
+ *
+ * Returns null on any failure — a title with no AniList record still renders
+ * from the catalogue's own data, so this is an enhancement, never a gate.
+ */
+export async function getAniListMedia(id: string): Promise<AniListMedia | null> {
+  const numericId = Number(id);
+  if (!Number.isFinite(numericId) || numericId <= 0) return null;
+
+  const cacheKey = `anilist:${numericId}`;
+  const cached = readCache<AniListMedia>(cacheKey, REVALIDATE.detail);
+  if (cached !== null) return cached;
+  const pending = inflight.get(cacheKey);
+  if (pending) return pending as Promise<AniListMedia | null>;
+
+  const request = (async (): Promise<AniListMedia | null> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(ANILIST_ENDPOINT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ query: ANILIST_MEDIA_QUERY, variables: { id: numericId } }),
+        signal: controller.signal,
+        mode: 'cors',
+        cache: 'no-store',
+      });
+      if (!res.ok) return null;
+      const body = (await res.json()) as { data?: { Media?: AniListMedia } };
+      const media = body?.data?.Media ?? null;
+      if (media) writeCache(cacheKey, media);
+      return media;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  })();
+
+  inflight.set(cacheKey, request);
+  request.finally(() => inflight.delete(cacheKey)).catch(() => {
+    /* the consumer handles the rejection */
+  });
+  return request;
 }

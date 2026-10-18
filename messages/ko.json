@@ -16,7 +16,9 @@
       "cartoons": "애니메이션",
       "tvShows": "TV 프로그램",
       "categories": "장르",
-      "countries": "국가"
+      "countries": "국가",
+      "anime": "애니메이션",
+      "myList": "내 목록"
     },
     "search": "영화 검색"
   },
@@ -40,7 +42,8 @@
     "home": "홈",
     "search": "검색",
     "myList": "내 목록",
-    "profile": "프로필"
+    "profile": "프로필",
+    "anime": "애니"
   },
   "lists": {
     "endOfList": "🎬 끝까지 보셨습니다",
@@ -76,7 +79,31 @@
     "share": "공유"
   },
   "footer": {
-    "copyright": "© 2024 Netflix-pro. 모든 권리 보유.",
-    "disclaimer": "Netflix-pro는 이 사이트의 어떤 콘텐츠도 호스팅하지 않습니다. 모든 콘텐츠는 제3자로부터 제공됩니다."
+    "copyright": "© 2024 온라인 영화 시청. 모든 권리 보유.",
+    "disclaimer": "온라인 영화 시청는 이 사이트의 어떤 콘텐츠도 호스팅하지 않습니다. 모든 콘텐츠는 제3자로부터 제공됩니다."
+  },
+  "anime": {
+    "title": "애니메이션",
+    "subtitle": "수천 편의 애니메이션을 만나보세요 — 액션, 로맨스, 판타지 등.",
+    "metaTitle": "애니메이션 — 온라인으로 애니 보기",
+    "metaDescription": "고화질 애니메이션을 자막과 함께 온라인으로 시청하세요. 액션, 로맨스, 판타지, 코미디, 학원 애니메이션 수천 편.",
+    "browseAll": "모든 애니메이션",
+    "allGenres": "전체",
+    "titleCount": "애니메이션 {count}편",
+    "genreDescription": "{name} 애니메이션을 고화질로 자막과 함께 온라인에서 시청하세요.",
+    "genres": {
+      "action": "액션",
+      "adventure": "모험",
+      "comedy": "코미디",
+      "drama": "드라마",
+      "fantasy": "판타지",
+      "romance": "로맨스",
+      "sciFi": "SF",
+      "supernatural": "초자연",
+      "mystery": "미스터리",
+      "horror": "공포",
+      "sports": "스포츠",
+      "thriller": "스릴러"
+    }
   }
 }

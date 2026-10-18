@@ -16,7 +16,9 @@
       "cartoons": "アニメ",
       "tvShows": "テレビ番組",
       "categories": "ジャンル",
-      "countries": "国"
+      "countries": "国",
+      "anime": "アニメ",
+      "myList": "マイリスト"
     },
     "search": "映画を検索"
   },
@@ -40,7 +42,8 @@
     "home": "ホーム",
     "search": "検索",
     "myList": "マイリスト",
-    "profile": "プロフィール"
+    "profile": "プロフィール",
+    "anime": "アニメ"
   },
   "lists": {
     "endOfList": "🎬 最後まで表示しました",
@@ -76,7 +79,31 @@
     "share": "共有"
   },
   "footer": {
-    "copyright": "© 2024 Netflix-pro. All rights reserved.",
-    "disclaimer": "Netflix-pro は本サイト上のいかなるコンテンツもホストしていません。すべてのコンテンツは第三者から提供されています。"
+    "copyright": "© 2024 オンライン映画視聴. All rights reserved.",
+    "disclaimer": "オンライン映画視聴 は本サイト上のいかなるコンテンツもホストしていません。すべてのコンテンツは第三者から提供されています。"
+  },
+  "anime": {
+    "title": "アニメ",
+    "subtitle": "何千ものアニメを探そう — アクション、恋愛、ファンタジーなど。",
+    "metaTitle": "アニメ — アニメをオンラインで視聴",
+    "metaDescription": "高画質のアニメを字幕付きでオンライン視聴。アクション、恋愛、ファンタジー、コメディ、学園アニメを数千タイトル。",
+    "browseAll": "すべてのアニメ",
+    "allGenres": "すべて",
+    "titleCount": "アニメ {count} 件",
+    "genreDescription": "{name}アニメを高画質・字幕付きでオンライン視聴。",
+    "genres": {
+      "action": "アクション",
+      "adventure": "冒険",
+      "comedy": "コメディ",
+      "drama": "ドラマ",
+      "fantasy": "ファンタジー",
+      "romance": "恋愛",
+      "sciFi": "SF",
+      "supernatural": "超自然",
+      "mystery": "ミステリー",
+      "horror": "ホラー",
+      "sports": "スポーツ",
+      "thriller": "スリラー"
+    }
   }
 }

@@ -203,6 +203,13 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         <video
           ref={videoRef}
           playsInline
+          // Required for the equaliser. `createMediaElementSource` outputs
+          // SILENCE for a cross-origin element unless the element itself
+          // requested the media with CORS — so without this attribute
+          // `useAudioProcessing` detects the muted graph and disables the EQ
+          // entirely ("unavailable"). The catalogue's CDN answers with
+          // `access-control-allow-origin: *`, so the request succeeds.
+          crossOrigin="anonymous"
           className="absolute inset-0 h-full w-full"
         />
 

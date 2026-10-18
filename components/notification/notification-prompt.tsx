@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { getOrRegisterDevice } from 'lib/device';
 import { registerDeviceToken, notificationPermission, type PushPermission } from 'lib/push';
 
 /**

@@ -72,3 +72,158 @@ html, body {
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* ==========================================================================
+   Glass-morphism buttons
+   ==========================================================================
+
+   One button treatment for the whole app: a translucent frosted pane over
+   whatever is behind it, a hairline highlight along the top edge, and a soft
+   blur of the backdrop. Applied via the `glass-btn` class rather than a
+   component so an `<a>`, a `<button>` and a `<Link>` can all wear it without
+   a wrapper.
+
+   The backdrop-filter is what makes it read as glass; the inset highlight is
+   what stops it reading as a flat grey pill on a dark background. Both are
+   cheap, and both are also set on `-webkit-` for Safari.
+   ========================================================================== */
+
+@layer components {
+  .glass-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0.07) 100%
+    );
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    backdrop-filter: blur(14px) saturate(160%);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.18),
+      0 4px 16px -4px rgba(0, 0, 0, 0.5);
+    transition:
+      background 200ms ease,
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      transform 150ms ease;
+  }
+
+  .glass-btn:hover {
+    border-color: rgba(255, 255, 255, 0.32);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(255, 255, 255, 0.12) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.18),
+      0 6px 22px -4px rgba(0, 0, 0, 0.6);
+  }
+
+  .glass-btn:active {
+    transform: scale(0.97);
+  }
+
+  .glass-btn:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline-offset: 2px;
+  }
+
+  .glass-btn:disabled,
+  .glass-btn[aria-disabled='true'] {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* The tinted variant — the one primary action per surface (Play, Watch Now,
+     the active filter chip). Red reads as "this is the action" against the
+     app's near-black chrome, and stays glass because the fill is translucent
+     rather than solid. */
+  .glass-btn-primary {
+    border-color: rgba(255, 90, 90, 0.45);
+    background: linear-gradient(
+      135deg,
+      rgba(225, 7, 17, 0.62) 0%,
+      rgba(150, 10, 20, 0.44) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 0 rgba(0, 0, 0, 0.25),
+      0 6px 20px -6px rgba(225, 7, 17, 0.6);
+  }
+
+  .glass-btn-primary:hover {
+    border-color: rgba(255, 120, 120, 0.65);
+    background: linear-gradient(
+      135deg,
+      rgba(235, 25, 35, 0.75) 0%,
+      rgba(170, 15, 25, 0.55) 100%
+    );
+  }
+
+  /* Selected chip / current tab. */
+  .glass-btn-active {
+    border-color: rgba(255, 255, 255, 0.55);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0.16) 100%
+    );
+  }
+
+  /* Compact variant for chip rows and the bottom bar. */
+  .glass-btn-sm {
+    padding: 0.375rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+
+  /* Icon-only, square-ish. */
+  .glass-btn-icon {
+    padding: 0.5rem;
+    border-radius: 9999px;
+    aspect-ratio: 1;
+  }
+
+  /* Full-width block (detail-page CTAs on narrow screens). */
+  .glass-btn-block {
+    display: flex;
+    width: 100%;
+  }
+}
+
+/* Backdrop blur is a progressive enhancement: where it is unsupported the
+   translucent fill alone still reads as a button, so no fallback is needed
+   beyond keeping the text white. */
+
+/* Respect reduced-transparency preferences: swap the blur for a solid fill so
+   the UI stays legible for anyone who has asked the OS for less frosting. */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-btn {
+    background: rgba(38, 38, 38, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-btn-primary {
+    background: rgba(190, 12, 20, 0.96);
+  }
+  .glass-btn-active {
+    background: rgba(70, 70, 70, 0.96);
+  }
+}

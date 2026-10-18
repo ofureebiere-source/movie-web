@@ -16,7 +16,9 @@
       "cartoons": "动画",
       "tvShows": "电视节目",
       "categories": "类型",
-      "countries": "国家"
+      "countries": "国家",
+      "anime": "动漫",
+      "myList": "我的列表"
     },
     "search": "搜索影片"
   },
@@ -40,7 +42,8 @@
     "home": "首页",
     "search": "搜索",
     "myList": "我的列表",
-    "profile": "我的"
+    "profile": "我的",
+    "anime": "动漫"
   },
   "lists": {
     "endOfList": "🎬 已经到底了",
@@ -76,7 +79,31 @@
     "share": "分享"
   },
   "footer": {
-    "copyright": "© 2024 Netflix-pro. 保留所有权利。",
-    "disclaimer": "Netflix-pro 不托管本网站的任何内容。所有内容均来自第三方。"
+    "copyright": "© 2024 在线观看电影. 保留所有权利。",
+    "disclaimer": "在线观看电影 不托管本网站的任何内容。所有内容均来自第三方。"
+  },
+  "anime": {
+    "title": "动漫",
+    "subtitle": "探索数千部动漫——动作、恋爱、奇幻等应有尽有。",
+    "metaTitle": "动漫 — 在线观看动漫",
+    "metaDescription": "在线观看高清动漫，附中文字幕。数千部动作、恋爱、奇幻、搞笑及校园动漫。",
+    "browseAll": "全部动漫",
+    "allGenres": "全部",
+    "titleCount": "{count} 部动漫",
+    "genreDescription": "在线观看{name}动漫，高清画质，附中文字幕。",
+    "genres": {
+      "action": "动作",
+      "adventure": "冒险",
+      "comedy": "喜剧",
+      "drama": "剧情",
+      "fantasy": "奇幻",
+      "romance": "恋爱",
+      "sciFi": "科幻",
+      "supernatural": "超自然",
+      "mystery": "悬疑",
+      "horror": "恐怖",
+      "sports": "体育",
+      "thriller": "惊悚"
+    }
   }
 }

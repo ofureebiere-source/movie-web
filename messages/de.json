@@ -16,7 +16,9 @@
       "cartoons": "Animation",
       "tvShows": "TV-Sendungen",
       "categories": "Genres",
-      "countries": "Länder"
+      "countries": "Länder",
+      "anime": "Anime",
+      "myList": "Meine Liste"
     },
     "search": "Filme suchen"
   },
@@ -40,7 +42,8 @@
     "home": "Start",
     "search": "Suche",
     "myList": "Meine Liste",
-    "profile": "Profil"
+    "profile": "Profil",
+    "anime": "Anime"
   },
   "lists": {
     "endOfList": "🎬 Du hast das Ende erreicht",
@@ -76,7 +79,31 @@
     "share": "Teilen"
   },
   "footer": {
-    "copyright": "© 2024 Netflix-pro. Alle Rechte vorbehalten.",
-    "disclaimer": "Netflix-pro hostet keine Inhalte auf dieser Seite. Alle Inhalte stammen von Dritten."
+    "copyright": "© 2024 Filme online ansehen. Alle Rechte vorbehalten.",
+    "disclaimer": "Filme online ansehen hostet keine Inhalte auf dieser Seite. Alle Inhalte stammen von Dritten."
+  },
+  "anime": {
+    "title": "Anime",
+    "subtitle": "Entdecke tausende Animes — Action, Romance, Fantasy und mehr.",
+    "metaTitle": "Anime — Animes online ansehen",
+    "metaDescription": "Sieh Animes in hoher Qualität online mit Untertiteln. Tausende Action-, Romance-, Fantasy-, Comedy- und Schul-Animes.",
+    "browseAll": "Alle Animes",
+    "allGenres": "Alle",
+    "titleCount": "{count} Animes",
+    "genreDescription": "Sieh {name}-Animes online in hoher Qualität mit Untertiteln.",
+    "genres": {
+      "action": "Action",
+      "adventure": "Abenteuer",
+      "comedy": "Komödie",
+      "drama": "Drama",
+      "fantasy": "Fantasy",
+      "romance": "Romance",
+      "sciFi": "Science-Fiction",
+      "supernatural": "Übernatürlich",
+      "mystery": "Mystery",
+      "horror": "Horror",
+      "sports": "Sport",
+      "thriller": "Thriller"
+    }
   }
 }

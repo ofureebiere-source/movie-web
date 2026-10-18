@@ -133,6 +133,32 @@ export default function HeaderMobile({
                     <li>
                       <Link
                         className={`block py-2 text-lg font-medium transition-colors ${
+                          pathname === '/anime' || pathname.startsWith('/anime/')
+                            ? 'text-custome-red'
+                            : 'text-white hover:text-custome-red'
+                        }`}
+                        href="/anime"
+                        onClick={closeMobileMenu}
+                      >
+                        {t('anime')}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        className={`block py-2 text-lg font-medium transition-colors ${
+                          pathname === '/movies/collection'
+                            ? 'text-custome-red'
+                            : 'text-white hover:text-custome-red'
+                        }`}
+                        href="/movies/collection"
+                        onClick={closeMobileMenu}
+                      >
+                        {t('myList')}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/format/phim-le'
                             ? 'text-custome-red'
                             : 'text-white hover:text-custome-red'

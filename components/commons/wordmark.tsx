@@ -1,4 +1,5 @@
 import { Link } from 'i18n/routing';
+import { SITE_NAME, WORDMARK_LEAD, WORDMARK_ACCENT } from 'constants/brand';
 
 /**
  * The site's wordmark.
@@ -8,17 +9,21 @@ import { Link } from 'i18n/routing';
  * search engines, it scales, and there is no asset to re-cut when the name
  * changes.
  *
+ * The name itself lives in `constants/brand.ts` so the mark, the footer, the
+ * brand intro and the page titles cannot drift apart.
+ *
  * `compact` is for the mobile header, where horizontal room is tight.
  */
 export default function Wordmark({ compact = false, onClick }: { compact?: boolean; onClick?: () => void }) {
   return (
-    <Link href="/" className="block shrink-0" aria-label="Netflix-pro — home" onClick={onClick}>
+    <Link href="/" className="block shrink-0" aria-label={`${SITE_NAME} — home`} onClick={onClick}>
       <span
         className={`font-extrabold tracking-tight text-white leading-none select-none ${
           compact ? 'text-xl' : 'text-2xl'
         }`}
       >
-        Netflix<span className="text-custome-red">-pro</span>
+        {WORDMARK_LEAD}
+        <span className="text-custome-red"> {WORDMARK_ACCENT}</span>
       </span>
     </Link>
   );

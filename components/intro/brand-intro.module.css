@@ -1,11 +1,17 @@
-/* Netflix-pro brand intro — cinematic letter reveal.
-   Ported from the approved storyboard: staggered letter cascade + film grain +
-   red light-leak + scanline + vignette. Self-contained (no CDN fonts/scripts).
-   Compositor-friendly (opacity / transform). Visuals are CSS-driven and start
-   on first paint; the handoff is JS-driven (the `.handoff` class), with a
-   pure-CSS failsafe so a no-JS / stuck client is never trapped.
+/* Brand intro — cinematic letter reveal.
+   Staggered letter cascade + film grain + red light-leak + scanline + vignette.
+   Self-contained (no CDN fonts/scripts). Compositor-friendly (opacity /
+   transform). Visuals are CSS-driven and start on first paint; the handoff is
+   JS-driven (the `.handoff` class), with a pure-CSS failsafe so a no-JS /
+   stuck client is never trapped.
 
-   Timeline: letters 150–1150ms  ·  brand hold + pulse  ·  handoff ~1500ms. */
+   Per-letter delays are NOT set here: the name is data
+   (`constants/brand.ts`), so the stagger is computed from its length in
+   `brand-intro.tsx` and passed inline. Hard-coding `:nth-child` delays capped
+   the cascade at six letters and left the rest of the name appearing instantly.
+
+   Timeline: letters from 150ms, ~80ms apart  ·  brand hold + pulse  ·
+   handoff ~1500ms. */
 
 .overlay {
   position: fixed;
@@ -87,19 +93,22 @@
     pulse 320ms ease-in-out 1150ms both;
 }
 
+.word {
+  display: inline-flex;
+  /* Word gap: narrower than the letter gap so the two words stay legible. */
+  margin-right: 0.12em;
+}
+.word:last-child { margin-right: 0; }
+
 .letter {
   display: inline-block;
   opacity: 0;
   transform: translateY(0.5em) scale(0.7);
   will-change: opacity, transform;
   animation: letterIn 500ms cubic-bezier(0.23, 1, 0.32, 1) both;
+  /* `--i` is the letter's index, set inline from the name's length. */
+  animation-delay: calc(150ms + var(--i, 0) * 80ms);
 }
-.letter:nth-child(1) { animation-delay: 150ms; }
-.letter:nth-child(2) { animation-delay: 250ms; }
-.letter:nth-child(3) { animation-delay: 350ms; }
-.letter:nth-child(4) { animation-delay: 450ms; }
-.letter:nth-child(5) { animation-delay: 550ms; }
-.letter:nth-child(6) { animation-delay: 650ms; }
 
 @keyframes letterIn {
   to { opacity: 1; transform: translateY(0) scale(1); }

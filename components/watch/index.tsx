@@ -12,6 +12,7 @@ import { useWatchAnalytics } from 'hooks/useWatchAnalytics';
 import { useVidsrcBridge } from 'hooks/useVidsrcBridge';
 import { useVideoElementBridge } from 'hooks/useVideoElementBridge';
 import { useStreamReachability } from 'hooks/useStreamReachability';
+import { useResolvedStream } from 'hooks/useResolvedStream';
 import { analytics } from 'lib/posthog/events';
 import { subtitleLanguagesFor } from 'services/vidsrc-service';
 import { localizedLang } from 'constants/i18n-mappings';
@@ -49,8 +50,6 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   const [serverIndex, setServerIndex] = useState<number>(0);
   const [episodeIndex, setEpisodeIndex] = useState<number>(0);
   const [episodeLink, setEpisodeLink] = useState<string>('');
-  /** The viewer asked for the backup source. */
-  const [preferBackup, setPreferBackup] = useState(false);
   /** The main player hit a fatal error on the current episode. */
   const [mainFailed, setMainFailed] = useState(false);
 
@@ -64,20 +63,42 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   const m3u8 = current?.link_m3u8 ?? '';
   const embed = current?.link_embed ?? '';
 
+  // `link_m3u8` is our own resolver, not a playlist: the catalogue mints its
+  // playlist tokens with a short expiry, so the URL has to be fetched at play
+  // time. Resolve it first — the reachability probe below needs a real m3u8 to
+  // test, and probing the resolver would just read JSON.
+  const resolved = useResolvedStream(m3u8);
+  const streamUrl = resolved.url;
+
   // ---- Which surface ------------------------------------------------------
 
-  const reach = useStreamReachability(m3u8);
-  const mainBlocked = Boolean(m3u8) && (reach.status === 'blocked' || mainFailed);
+  const reach = useStreamReachability(streamUrl);
+  // A resolution failure ("the catalogue has no source for this title") is a
+  // block like any other as far as the UI is concerned — it shows the notice
+  // instead of a black player.
+  const resolveFailed = Boolean(m3u8) && !resolved.isLoading && Boolean(resolved.error);
+  const mainBlocked =
+    Boolean(m3u8) && (reach.status === 'blocked' || mainFailed || resolveFailed);
+  // The provider embed is used when the catalogue hands back a resolver link
+  // that cannot be probed, and when the probe reports the CDN is unreachable
+  // from this network. It is the SAME provider, reached the other way — not a
+  // lesser source — so the viewer is never told they have been downgraded.
   const surface: 'main' | 'backup' | 'none' = !m3u8
     ? embed
       ? 'backup'
       : 'none'
-    : embed && (preferBackup || (reach.status === 'blocked' && reach.reason === 'abroad'))
+    : embed && reach.status === 'blocked' && reach.reason === 'abroad'
       ? 'backup'
       : 'main';
   // A fatal player error with the probe still green means the CDN or this
   // link, not the viewer's network.
-  const blockReason = reach.status === 'blocked' ? reach.reason : mainFailed ? 'cdn' : null;
+  const blockReason = resolveFailed
+    ? 'cdn'
+    : reach.status === 'blocked'
+      ? reach.reason
+      : mainFailed
+        ? 'cdn'
+        : null;
 
   const surfaceRef = useRef(surface);
   surfaceRef.current = surface;
@@ -159,7 +180,6 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
     setEpisodeIndex(0);
     setEpisodeLink(linkOf(servers[0]?.server_data?.[0]));
     setVideoProgress(null);
-    setPreferBackup(false);
     setMainFailed(false);
     iframeBridge.reset();
     videoBridge.reset();
@@ -253,23 +273,14 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
     },
   };
 
-  const switchToBackup = useCallback(() => {
-    // Carry the position over: the iframe resumes via `startAt`.
-    const time = playbackRef.current?.currentTime ?? 0;
-    if (time > 3) setVideoProgress(time);
-    setPreferBackup(true);
-  }, [playbackRef, setVideoProgress]);
-
-  const switchToMain = useCallback(() => {
-    setPreferBackup(false);
-    setMainFailed(false);
-    reach.retry();
-  }, [reach]);
-
   const retryMain = useCallback(() => {
     setMainFailed(false);
+    // Re-resolve as well: the usual reason the main player gave up is that the
+    // catalogue handed back a playlist it could not reach, and a fresh lookup
+    // is what fixes that.
+    resolved.retry();
     reach.retry();
-  }, [reach]);
+  }, [reach, resolved]);
 
   // ---- Player props -------------------------------------------------------
 
@@ -314,16 +325,14 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
     <div className="pt-20 lg:pt-[3.75rem] space-y-6 lg:space-y-10">
       {surface === 'main' && mainBlocked ? (
         <StreamNotice
-          variant="blocked"
           reason={blockReason}
-          isRetrying={reach.status === 'checking'}
+          isRetrying={reach.status === 'checking' || resolved.isLoading}
           onRetry={retryMain}
-          onUseFallback={embed ? switchToBackup : null}
         />
       ) : surface === 'main' ? (
         <VideoPlayer
           ref={videoRef}
-          videoUrl={m3u8}
+          videoUrl={streamUrl}
           thumbnail={posterSrc}
           thumbnailSrcSet={posterSrcSet}
           videoProgress={videoProgress}
@@ -349,16 +358,6 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
           title={movie.movie.name}
           unavailableLabel={t('unavailable')}
           resume={resume}
-        />
-      )}
-
-      {surface === 'backup' && m3u8 && (
-        <StreamNotice
-          variant="fallback"
-          reason={reach.reason}
-          onRetry={retryMain}
-          onUseFallback={null}
-          onUseMain={switchToMain}
         />
       )}
 

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import BrandIntro from './brand-intro';
 
 /**
- * Plays the Netflix-pro brand intro on top of the app on every visit, while the
+ * Plays the site's brand intro on top of the app on every visit, while the
  * children (homepage + disclaimer) mount and warm up BEHIND the opaque overlay.
  *
  * `introDone` starts false and is SSR'd, so the overlay is present in the very

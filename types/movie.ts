@@ -33,7 +33,6 @@ export default interface Movie extends NewlyMovie{
      * translation is needed instead of guessing from the text itself.
      */
     content_lang?: string,
-    trailer_url: string,
 
     // ---- catalog-only (absent on TMDB-built titles) ----
     /** `ongoing` | `completed` | `trailer`. */
