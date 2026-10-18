@@ -77,7 +77,7 @@ function absolutize(url: string): string {
 }
 
 /** The catalogue address for the title our own resolver link describes. */
-function catalogUrlFor(link: string): string | null {
+function catalogUrlFor(link: string): { direct: string; proxy: string } | null {
   let params: URLSearchParams;
   try {
     params = new URL(link, window.location.origin).searchParams;
@@ -87,17 +87,19 @@ function catalogUrlFor(link: string): string | null {
   const id = params.get('id');
   if (!id) return null;
   const type = params.get('type') ?? 'movie';
+  const path = type === 'anime' ? '/anime/api/stream' : '/api/stream';
 
-  const upstream = new URL(
-    `${CATALOG_BASE}${type === 'anime' ? '/anime/api/stream' : '/api/stream'}`
-  );
-  upstream.searchParams.set('id', id);
-  upstream.searchParams.set('type', type);
+  const upstream = new URL(`${CATALOG_BASE}${path}`);
+  const search = new URLSearchParams({ id, type });
   const season = params.get('season');
   const episode = params.get('episode');
-  if (season) upstream.searchParams.set('season', season);
-  if (episode) upstream.searchParams.set('episode', episode);
-  return upstream.toString();
+  if (season) search.set('season', season);
+  if (episode) search.set('episode', episode);
+  upstream.search = search.toString();
+
+  // The Edge proxy re-reads the same path server-side, which is the only way
+  // the anime endpoint is reachable at all (it sends no CORS header).
+  return { direct: upstream.toString(), proxy: `/api/catalog${path}?${search}` };
 }
 
 /** Highest-bitrate source from a catalogue stream payload, absolutised. */
@@ -167,14 +169,19 @@ export function useResolvedStream(link: string): ResolvedStream {
         let resolved: string | null = null;
         let failure = 'stream lookup failed';
 
-        const direct = catalogUrlFor(link);
-        if (direct) {
-          try {
-            const { ok, body } = await fetchJson(direct);
-            if (ok) resolved = pickSource(body);
-            if (!resolved) failure = body.message ?? body.error ?? 'no playable source';
-          } catch {
-            // Blocked on the visitor's side — the server route is the retry.
+        const candidates = catalogUrlFor(link);
+        if (candidates) {
+          // Direct first (fastest), then the Edge proxy — the anime endpoint
+          // has no direct path at all.
+          for (const candidate of [candidates.direct, candidates.proxy]) {
+            try {
+              const { ok, body } = await fetchJson(candidate);
+              if (ok) resolved = pickSource(body);
+              if (!resolved) failure = body.message ?? body.error ?? 'no playable source';
+            } catch {
+              // Blocked on the visitor's side — try the next route.
+            }
+            if (resolved) break;
           }
         }
 
