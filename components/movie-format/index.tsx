@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import NewlyMovie from 'types/newly-movie';
 import RegularMovieItem from '../commons/regular-movie-item';
-import { getMoviesByFormat } from 'app/actions';
+import { getMoviesByFormat } from 'lib/catalog-client';
 import { useInfinitePagination } from 'hooks/useInfinitePagination';
 import { MovieGridLoadMoreSkeleton } from '../commons/movie-grid-skeleton';
 import InfiniteScrollSentinel from '../commons/infinite-scroll-sentinel';
@@ -32,7 +32,7 @@ export default function MovieFormatPage({ slug }: { slug: string }) {
         sort: sort || undefined,
         lang: lang || undefined,
       };
-      return getMoviesByFormat(slug, page, filters);
+      return getMoviesByFormat(slug, page, locale, filters);
     },
     [slug, category, country, year, sort, lang]
   );

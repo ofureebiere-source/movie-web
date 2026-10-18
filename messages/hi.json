@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "लोड हो रहा है...",
+    "loadingMovies": "फ़िल्में लोड हो रही हैं...",
+    "error": "कुछ गलत हो गया",
+    "retry": "पुनः प्रयास करें",
+    "close": "बंद करें",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "unknown": "अज्ञात"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "फ़िल्में",
+      "tvSeries": "टीवी सीरीज़",
+      "cartoons": "एनिमेशन",
+      "tvShows": "टीवी शो",
+      "categories": "शैलियाँ",
+      "countries": "देश"
+    },
+    "search": "फ़िल्में खोजें"
+  },
+  "home": {
+    "continueWatching": "देखना जारी रखें",
+    "topPicks": "आपके लिए चुनी गई",
+    "trending": {
+      "title": "इस सप्ताह ट्रेंडिंग"
+    },
+    "lists": {
+      "newlyUpdated": "नवीनतम अपडेट",
+      "singleNewlyUpdated": "नई फ़िल्में",
+      "tvSeriesNewlyUpdated": "नई सीरीज़",
+      "cartoonNewlyUpdated": "नया एनिमेशन",
+      "tvShowsNewlyUpdated": "नए टीवी शो",
+      "theatricalNewlyUpdated": "सिनेमा रिलीज़",
+      "voicedNewlyUpdated": "वियतनामी डबिंग"
+    }
+  },
+  "bottomNav": {
+    "home": "होम",
+    "search": "खोज",
+    "myList": "मेरी सूची",
+    "profile": "प्रोफ़ाइल"
+  },
+  "lists": {
+    "endOfList": "🎬 आप अंत तक पहुँच गए",
+    "errorLoading": "❌ फ़िल्में लोड नहीं हो सकीं",
+    "emptyCategory": "इस श्रेणी में अभी कोई फ़िल्म नहीं",
+    "searchPlaceholder": "फ़िल्म का नाम दर्ज करें..."
+  },
+  "search": {
+    "promptTitle": "देखने के लिए फ़िल्म खोजें",
+    "promptSubtitle": "ऊपर नाम लिखें या शैली से ब्राउज़ करें",
+    "browseByGenre": "शैली से ब्राउज़ करें",
+    "trending": "अभी ट्रेंडिंग",
+    "suggestions": "आपको पसंद आ सकती हैं"
+  },
+  "filter": {
+    "browse": "ब्राउज़",
+    "filtersLabel": "फ़िल्टर",
+    "genre": "शैली",
+    "country": "देश",
+    "year": "वर्ष",
+    "sort": "क्रमबद्ध करें",
+    "all": "सभी",
+    "clear": "फ़िल्टर हटाएँ",
+    "sortLatest": "नवीनतम",
+    "lang": "ऑडियो",
+    "langVietsub": "वियतनामी सबटाइटल",
+    "langVoiceover": "वॉइसओवर",
+    "langDubbed": "डब"
+  },
+  "movie": {
+    "watch": "फ़िल्म देखें",
+    "moreLikeThis": "इससे मिलती-जुलती",
+    "share": "साझा करें"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. सर्वाधिकार सुरक्षित।",
+    "disclaimer": "Netflix-pro इस साइट पर कोई सामग्री होस्ट नहीं करता। सभी सामग्री तीसरे पक्ष से प्राप्त है।"
+  }
+}

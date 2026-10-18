@@ -108,7 +108,7 @@ export default function DisclaimerModal() {
             </button>
 
             <a
-              href="mailto:support@moviex.com?subject=Copyright%20concern"
+              href="mailto:support@netflix-pro.com?subject=Copyright%20concern"
               className="block w-full text-center text-white/40 hover:text-white/80 text-xs tracking-wide py-3 mt-1.5 transition-colors"
             >
               {t('learnMore')}

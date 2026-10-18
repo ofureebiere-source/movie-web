@@ -22,7 +22,20 @@ import type { Locale } from 'i18n/routing';
 // ============================================================================
 // CATEGORIES (genres)
 // ============================================================================
-export const CATEGORY_MAP: Record<Locale, Record<string, string>> = {
+/**
+ * A locale→label table.
+ *
+ * `vi` and `en` are required — they are the two hand-maintained, complete
+ * tables, and every accessor falls back to `vi`. The other locales are
+ * optional: adding a language to `i18n/routing` must not force a taxonomy
+ * table for it, and an absent entry simply falls through to Vietnamese.
+ */
+type LocaleMaps = {
+  vi: Record<string, string>;
+  en: Record<string, string>;
+} & Partial<Record<Locale, Record<string, string>>>;
+
+export const CATEGORY_MAP: LocaleMaps = {
   vi: {
     'hanh-dong': 'Hành Động',
     'phieu-luu': 'Phiêu Lưu',
@@ -100,7 +113,7 @@ export const CATEGORY_MAP: Record<Locale, Record<string, string>> = {
 // ============================================================================
 // COUNTRIES
 // ============================================================================
-export const COUNTRY_MAP: Record<Locale, Record<string, string>> = {
+export const COUNTRY_MAP: LocaleMaps = {
   vi: {
     'viet-nam': 'Việt Nam',
     'hoa-ky': 'Hoa Kỳ',
@@ -188,7 +201,7 @@ export const COUNTRY_MAP: Record<Locale, Record<string, string>> = {
 // ============================================================================
 // MOVIE FORMATS (header menu items)
 // ============================================================================
-export const FORMAT_MAP: Record<Locale, Record<string, string>> = {
+export const FORMAT_MAP: LocaleMaps = {
   vi: {
     'phim-le': 'Phim lẻ',
     'phim-bo': 'Phim bộ',
@@ -218,7 +231,7 @@ export const FORMAT_MAP: Record<Locale, Record<string, string>> = {
 // that watch-history records written before the migration still render a
 // sensible chip instead of raw Vietnamese on the English site.
 // ============================================================================
-export const LANG_MAP: Record<Locale, Record<string, string>> = {
+export const LANG_MAP: LocaleMaps = {
   vi: {
     'Phụ đề': 'Phụ đề',
     Vietsub: 'Vietsub',

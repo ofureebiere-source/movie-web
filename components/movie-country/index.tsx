@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import NewlyMovie from 'types/newly-movie';
 import RegularMovieItem from '../commons/regular-movie-item';
-import { getMoviesByCountry } from 'app/actions';
+import { getMoviesByCountry } from 'lib/catalog-client';
 import { useInfinitePagination } from 'hooks/useInfinitePagination';
 import { MovieGridLoadMoreSkeleton } from '../commons/movie-grid-skeleton';
 import InfiniteScrollSentinel from '../commons/infinite-scroll-sentinel';
@@ -30,7 +30,7 @@ export default function MovieCountryPage({ slug }: { slug: string }) {
         sort: sort || undefined,
         lang: lang || undefined,
       };
-      return getMoviesByCountry(slug, page, filters);
+      return getMoviesByCountry(slug, page, locale, filters);
     },
     [slug, category, year, sort, lang]
   );

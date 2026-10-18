@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import type { CinemaMovie } from 'types/cinema';
+import { tmdbImageUrl } from 'lib/tmdb-image';
 import styles from './maintenance.module.css';
 
 /**
@@ -38,9 +39,7 @@ interface OpenTrailer {
   title: string;
 }
 
-const TMDB_POSTER = `${process.env.NEXT_PUBLIC_TMDB_IMG_DOMAIN}/t/p/w500`;
-
-const posterUrl = (path: string | null) => (path ? `${TMDB_POSTER}${path}` : '');
+const posterUrl = (path: string | null) => tmdbImageUrl(path, 'poster');
 
 /** Whole days between today and an ISO date, both at UTC midnight. */
 function daysUntil(iso: string, todayIso: string): number {

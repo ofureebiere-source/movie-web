@@ -1,4 +1,3 @@
-import 'server-only';
 import type NewlyMovie from 'types/newly-movie';
 import type DetailMovie from 'types/detail-movie';
 import type Credit from 'types/credit';

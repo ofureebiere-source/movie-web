@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "loadingMovies": "جارٍ تحميل الأفلام...",
+    "error": "حدث خطأ ما",
+    "retry": "إعادة المحاولة",
+    "close": "إغلاق",
+    "yes": "نعم",
+    "no": "لا",
+    "unknown": "غير معروف"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "أفلام",
+      "tvSeries": "مسلسلات",
+      "cartoons": "رسوم متحركة",
+      "tvShows": "برامج تلفزيونية",
+      "categories": "التصنيفات",
+      "countries": "الدول"
+    },
+    "search": "ابحث عن أفلام"
+  },
+  "home": {
+    "continueWatching": "متابعة المشاهدة",
+    "topPicks": "مختار لك",
+    "trending": {
+      "title": "الأكثر رواجًا هذا الأسبوع"
+    },
+    "lists": {
+      "newlyUpdated": "محدّث حديثًا",
+      "singleNewlyUpdated": "أحدث الأفلام",
+      "tvSeriesNewlyUpdated": "أحدث المسلسلات",
+      "cartoonNewlyUpdated": "أحدث الرسوم المتحركة",
+      "tvShowsNewlyUpdated": "أحدث البرامج",
+      "theatricalNewlyUpdated": "إصدارات السينما",
+      "voicedNewlyUpdated": "دبلجة فيتنامية"
+    }
+  },
+  "bottomNav": {
+    "home": "الرئيسية",
+    "search": "بحث",
+    "myList": "قائمتي",
+    "profile": "الملف الشخصي"
+  },
+  "lists": {
+    "endOfList": "🎬 لقد وصلت إلى النهاية",
+    "errorLoading": "❌ تعذّر تحميل الأفلام",
+    "emptyCategory": "لا توجد أفلام في هذا التصنيف بعد",
+    "searchPlaceholder": "أدخل اسم الفيلم..."
+  },
+  "search": {
+    "promptTitle": "ابحث عن فيلم للمشاهدة",
+    "promptSubtitle": "اكتب عنوانًا بالأعلى أو تصفّح حسب التصنيف",
+    "browseByGenre": "تصفّح حسب التصنيف",
+    "trending": "الأكثر رواجًا",
+    "suggestions": "قد يعجبك"
+  },
+  "filter": {
+    "browse": "تصفّح",
+    "filtersLabel": "عوامل التصفية",
+    "genre": "التصنيف",
+    "country": "الدولة",
+    "year": "السنة",
+    "sort": "ترتيب",
+    "all": "الكل",
+    "clear": "مسح عوامل التصفية",
+    "sortLatest": "الأحدث",
+    "lang": "الصوت",
+    "langVietsub": "ترجمة فيتنامية",
+    "langVoiceover": "تعليق صوتي",
+    "langDubbed": "مدبلج"
+  },
+  "movie": {
+    "watch": "شاهد الفيلم",
+    "moreLikeThis": "أعمال مشابهة",
+    "share": "مشاركة"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. جميع الحقوق محفوظة.",
+    "disclaimer": "لا يستضيف Netflix-pro أي محتوى على هذا الموقع. جميع المحتوى مصدره أطراف ثالثة."
+  }
+}

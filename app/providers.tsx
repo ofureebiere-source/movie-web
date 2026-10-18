@@ -7,7 +7,6 @@ import { store } from '../redux/store';
 import { PersistGate } from 'redux-persist/integration/react';
 import persistStore from 'redux-persist/es/persistStore';
 import AuthProvider from '@/components/context/auth-conext';
-import HomePageLoadingProvider from '@/components/context/home-page-loading-context';
 import { DropdownProvider } from '@/components/context/dropdown-context';
 import DisclaimerModalProvider from '@/components/context/disclaimer-modal-context';
 import DisclaimerGuard from '@/components/disclaimer/disclaimer-guard';
@@ -48,13 +47,11 @@ export default function Providers({
           <DisclaimerModalProvider initialAccepted={initialDisclaimerAccepted}>
             <IntroGate>
               <DisclaimerGuard>
-                <HomePageLoadingProvider>
                   <GlobalEffects />
                   <DropdownProvider>
                     <Layout>{children}</Layout>
                   </DropdownProvider>
                   <ToastContainer />
-                </HomePageLoadingProvider>
               </DisclaimerGuard>
             </IntroGate>
           </DisclaimerModalProvider>

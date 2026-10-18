@@ -7,9 +7,9 @@ import { useSelector } from 'react-redux';
 import AccountProfileIcon from '../account/account-profile-icon';
 import { useEffect, useState } from 'react';
 import { usePathname, Link } from 'i18n/routing';
+import PrefetchLink from '../commons/prefetch-link';
 import Notification from '../notification';
 import { INotificationDropdownState } from 'types/notification';
-import LanguageSwitcher from './language-switcher';
 import { useTranslations } from 'next-intl';
 
 export default function HeaderDefault({
@@ -41,44 +41,52 @@ export default function HeaderDefault({
         </Link>
         <ul className="flex flex-grow justify-center items-center font-semibold text-lg">
           <li className="px-8">
-            <Link
+            <PrefetchLink
+              kind="format"
+              slug="phim-le"
               className={`hover:text-custome-red ${
                 pathname === '/movies/format/phim-le' && 'text-custome-red'
               }`}
               href="/movies/format/phim-le"
             >
               {t('singleMovies')}
-            </Link>
+            </PrefetchLink>
           </li>
           <li className="px-8">
-            <Link
+            <PrefetchLink
+              kind="format"
+              slug="phim-bo"
               className={`hover:text-custome-red ${
                 pathname === '/movies/format/phim-bo' && 'text-custome-red'
               }`}
               href="/movies/format/phim-bo"
             >
               {t('tvSeries')}
-            </Link>
+            </PrefetchLink>
           </li>
           <li className="px-8">
-            <Link
+            <PrefetchLink
+              kind="format"
+              slug="hoat-hinh"
               className={`hover:text-custome-red ${
                 pathname === '/movies/format/hoat-hinh' && 'text-custome-red'
               }`}
               href="/movies/format/hoat-hinh"
             >
               {t('cartoons')}
-            </Link>
+            </PrefetchLink>
           </li>
           <li className="px-8">
-            <Link
+            <PrefetchLink
+              kind="format"
+              slug="tv-shows"
               className={`hover:text-custome-red ${
                 pathname === '/movies/format/tv-shows' && 'text-custome-red'
               }`}
               href="/movies/format/tv-shows"
             >
               {t('tvShows')}
-            </Link>
+            </PrefetchLink>
           </li>
           <li className={`px-8 relative ${!isShowFixedHeader && 'group'}`}>
             <p className="leading-[3.62rem] hover:text-custome-red cursor-pointer">{t('categories')}</p>
@@ -90,7 +98,7 @@ export default function HeaderDefault({
           </li>
         </ul>
         <div className="flex gap-x-3 items-center justify-end min-w-[10rem] h-[3.62rem]">
-          <LanguageSwitcher />
+          {/* Language is chosen automatically from the visitor's location — see middleware.ts. */}
           <Link className="cursor-pointer hover:text-custome-red" href="/search">
             <IoSearch size={25} />
           </Link>

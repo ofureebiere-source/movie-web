@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "Wird geladen...",
+    "loadingMovies": "Filme werden geladen...",
+    "error": "Etwas ist schiefgelaufen",
+    "retry": "Erneut versuchen",
+    "close": "Schließen",
+    "yes": "Ja",
+    "no": "Nein",
+    "unknown": "Unbekannt"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "Filme",
+      "tvSeries": "Serien",
+      "cartoons": "Animation",
+      "tvShows": "TV-Sendungen",
+      "categories": "Genres",
+      "countries": "Länder"
+    },
+    "search": "Filme suchen"
+  },
+  "home": {
+    "continueWatching": "Weiterschauen",
+    "topPicks": "Für dich empfohlen",
+    "trending": {
+      "title": "Diese Woche im Trend"
+    },
+    "lists": {
+      "newlyUpdated": "Neu aktualisiert",
+      "singleNewlyUpdated": "Neueste Filme",
+      "tvSeriesNewlyUpdated": "Neueste Serien",
+      "cartoonNewlyUpdated": "Neueste Animation",
+      "tvShowsNewlyUpdated": "Neueste TV-Sendungen",
+      "theatricalNewlyUpdated": "Kinostarts",
+      "voicedNewlyUpdated": "Vietnamesische Synchronisation"
+    }
+  },
+  "bottomNav": {
+    "home": "Start",
+    "search": "Suche",
+    "myList": "Meine Liste",
+    "profile": "Profil"
+  },
+  "lists": {
+    "endOfList": "🎬 Du hast das Ende erreicht",
+    "errorLoading": "❌ Filme konnten nicht geladen werden",
+    "emptyCategory": "Noch keine Filme in dieser Kategorie",
+    "searchPlaceholder": "Filmtitel eingeben..."
+  },
+  "search": {
+    "promptTitle": "Finde einen Film",
+    "promptSubtitle": "Gib oben einen Titel ein oder stöbere nach Genre",
+    "browseByGenre": "Nach Genre stöbern",
+    "trending": "Aktuell im Trend",
+    "suggestions": "Das könnte dir gefallen"
+  },
+  "filter": {
+    "browse": "Stöbern",
+    "filtersLabel": "Filter",
+    "genre": "Genre",
+    "country": "Land",
+    "year": "Jahr",
+    "sort": "Sortieren",
+    "all": "Alle",
+    "clear": "Filter löschen",
+    "sortLatest": "Neueste",
+    "lang": "Audio",
+    "langVietsub": "Vietnamesische Untertitel",
+    "langVoiceover": "Voiceover",
+    "langDubbed": "Synchronisation"
+  },
+  "movie": {
+    "watch": "Film ansehen",
+    "moreLikeThis": "Ähnliche Titel",
+    "share": "Teilen"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. Alle Rechte vorbehalten.",
+    "disclaimer": "Netflix-pro hostet keine Inhalte auf dieser Seite. Alle Inhalte stammen von Dritten."
+  }
+}

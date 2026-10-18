@@ -27,11 +27,6 @@
       "categories": "Genres",
       "countries": "Countries"
     },
-    "language": {
-      "selectLanguage": "Select language",
-      "viName": "Tiếng Việt",
-      "enName": "English"
-    },
     "search": "Search movies"
   },
   "home": {
@@ -301,7 +296,6 @@
     "menu": {
       "personalInfo": "Profile",
       "security": "Security",
-      "language": "Language",
       "support": "Support"
     },
     "personalInfo": {
@@ -358,16 +352,6 @@
         "userNotFound": "User not found"
       }
     },
-    "language": {
-      "heading": "Language settings",
-      "description": "Choose the display language for the app interface. Changes apply immediately.",
-      "current": "Current language",
-      "additional": "Additional settings",
-      "autoDetect": "Auto-detect language from browser",
-      "showNative": "Show language names in native script",
-      "infoHeading": "💡 Info",
-      "infoMessage": "Changing the language affects the entire app interface. Some content may still appear in the original language if not yet translated."
-    },
     "support": {
       "heading": "Support",
       "intro": "We're here to help. Choose the contact method that works best for you.",
@@ -416,7 +400,7 @@
         "q2": "I forgot my password, what should I do?",
         "a2": "Use the \"Forgot password\" feature on the sign-in page. We'll send a reset link to your email.",
         "q3": "How do I delete my account?",
-        "a3": "Contact us at support@moviex.com for help with account deletion."
+        "a3": "Contact us at support@netflix-pro.com for help with account deletion."
       },
       "hours": {
         "heading": "Support hours",
@@ -481,9 +465,9 @@
       "sciFi": "Sci-Fi",
       "newest": "New Releases"
     },
-    "copyright": "© 2024 MOVIEX. All rights reserved.",
-    "disclaimer": "MOVIEX does not host any content on this site. All content is sourced from third parties.",
-    "seo": "High-quality online movie streaming at MOVIEX — the leading streaming platform in Vietnam",
+    "copyright": "© 2024 Netflix-pro. All rights reserved.",
+    "disclaimer": "Netflix-pro does not host any content on this site. All content is sourced from third parties.",
+    "seo": "High-quality online movie streaming at Netflix-pro — the leading streaming platform in Vietnam",
     "tmdbAttribution": "This product uses the TMDB API but is not endorsed or certified by TMDB."
   },
   "errors": {

@@ -33,7 +33,22 @@
  * the backup iframe. Both are keyless.
  */
 
-const API_BASE = (process.env.CATALOG_API_BASE ?? 'https://api.framextv.tech').replace(/\/+$/, '');
+/**
+ * The catalogue origin.
+ *
+ * Read from a `NEXT_PUBLIC_` variable because the fetch happens in the
+ * browser (see the fetch layer below) and Next only inlines that prefix into
+ * client bundles. This is a public catalogue URL, not a credential, so
+ * exposing it is intended.
+ *
+ * `CATALOG_API_BASE` is still honoured as a fallback so an existing
+ * deployment that only sets the server-side name keeps working.
+ */
+const API_BASE = (
+  process.env.NEXT_PUBLIC_CATALOG_API_BASE ??
+  process.env.CATALOG_API_BASE ??
+  'https://api.framextv.tech'
+).replace(/\/+$/, '');
 const TIMEOUT_MS = 12000;
 
 /** The site's own origin, used to build embed/backup URLs. */
@@ -193,53 +208,151 @@ export interface FxHome {
 // FETCH
 // ============================================================================
 
-async function apiFetch<T>(path: string, params: Record<string, string | number | undefined>, revalidate: number): Promise<T> {
+/**
+ * Fetch layer.
+ *
+ * This runs in the BROWSER, not on the server, and that is deliberate. The
+ * catalogue host is behind Cloudflare, which answers Vercel's datacenter IPs
+ * with a 403 bot challenge ("Just a moment...") — every server-side fetch
+ * returns an interstitial instead of JSON, which is why the first deployment
+ * rendered an empty page. The visitor's own IP is not challenged, so the
+ * request is made from their browser and the block never applies. The API
+ * sends `access-control-allow-origin: *`, so this is a plain cross-origin
+ * read with no proxy.
+ *
+ * Two consequences shape the code below:
+ *
+ *  - `next: { revalidate }` is a server-only option and is ignored (or worse,
+ *    warns) in the browser, so caching is handled here instead, in
+ *    `sessionStorage`. That is also what makes navigation feel instant: a rail
+ *    visited once is painted from cache with no network round trip.
+ *  - A response that is not JSON is almost always the Cloudflare challenge.
+ *    It is reported as such rather than as a generic parse error.
+ */
+
+/** In-flight requests, so two components asking for the same rail share one. */
+const inflight = new Map<string, Promise<unknown>>();
+
+const CACHE_PREFIX = 'mw_cat:';
+
+/** Read-through cache. TTL comes from the caller's revalidate window. */
+function readCache<T>(key: string, ttlSec: number): T | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(CACHE_PREFIX + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; body: T };
+    if (Date.now() - parsed.at > ttlSec * 1000) {
+      window.sessionStorage.removeItem(CACHE_PREFIX + key);
+      return null;
+    }
+    return parsed.body;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache<T>(key: string, body: T): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(CACHE_PREFIX + key, JSON.stringify({ at: Date.now(), body }));
+  } catch {
+    // Quota or private mode — the cache is an optimisation, never a requirement.
+  }
+}
+
+/**
+ * Warm the cache for a path without needing the result. Used by the hover
+ * prefetch so a link is ready before it is clicked.
+ */
+export function prefetchCatalog(path: string, params: Record<string, string | number | undefined> = {}): void {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === '') continue;
+    search.set(key, String(value));
+  }
+  const url = `${API_BASE}${path}${search.toString() ? `?${search}` : ''}`;
+  void apiFetch(path, params, 0, url);
+}
+
+async function apiFetch<T>(
+  path: string,
+  params: Record<string, string | number | undefined>,
+  revalidate: number,
+  presetUrl?: string
+): Promise<T> {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === '') continue;
     search.set(key, String(value));
   }
 
-  const url = `${API_BASE}${path}${search.toString() ? `?${search}` : ''}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const url = presetUrl ?? `${API_BASE}${path}${search.toString() ? `?${search}` : ''}`;
 
-  try {
-    const res = await fetch(url, {
-      headers: { accept: 'application/json' },
-      signal: controller.signal,
-      next: { revalidate },
-    });
+  if (revalidate > 0) {
+    const cached = readCache<T>(url, revalidate);
+    if (cached !== null) return cached;
+    const pending = inflight.get(url);
+    if (pending) return pending as Promise<T>;
+  }
 
-    const contentType = res.headers.get('content-type') ?? '';
-    if (!contentType.includes('application/json')) {
+  const request = (async (): Promise<T> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        headers: { accept: 'application/json' },
+        signal: controller.signal,
+        // Cross-origin read; the API opts in with `allow-origin: *`.
+        mode: 'cors',
+        cache: 'no-store',
+      });
+
+      const contentType = res.headers.get('content-type') ?? '';
+      if (!contentType.includes('application/json')) {
+        // The challenge page is HTML served with a 403. Naming it here saves
+        // whoever reads the next failure report from re-deriving this.
+        throw new CatalogApiError(
+          `Catalogue returned non-JSON (${res.status}, ${contentType || 'no content-type'})`,
+          res.status,
+          path
+        );
+      }
+      if (!res.ok) {
+        throw new CatalogApiError(`Catalogue responded ${res.status}`, res.status, path);
+      }
+
+      const body = (await res.json()) as T & { success?: unknown };
+      // This backend answers unknown paths with a 200 `{status:"ok",name:…}`
+      // health payload rather than a 404, so "did we get the field we asked
+      // for" is the real success test — callers check the shape.
+      if (body?.success === false && !(body as { error?: unknown }).error) {
+        throw new CatalogApiError('Catalogue reported success:false', 404, path);
+      }
+      if (revalidate > 0) writeCache(url, body);
+      return body;
+    } catch (err) {
+      if (err instanceof CatalogApiError) throw err;
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new CatalogApiError(`Catalogue timed out after ${TIMEOUT_MS}ms`, 408, path);
+      }
       throw new CatalogApiError(
-        `Catalogue returned non-JSON (${res.status}, ${contentType || 'no content-type'})`,
-        res.status,
+        err instanceof Error ? err.message : 'Catalogue request failed',
+        0,
         path
       );
+    } finally {
+      clearTimeout(timer);
     }
-    if (!res.ok) {
-      throw new CatalogApiError(`Catalogue responded ${res.status}`, res.status, path);
-    }
+  })();
 
-    const body = (await res.json()) as T & { success?: unknown };
-    // This backend answers unknown paths with a 200 `{status:"ok",name:…}`
-    // health payload rather than a 404, so "did we get the field we asked
-    // for" is the real success test — callers check the shape.
-    if (body?.success === false && !(body as { error?: unknown }).error) {
-      throw new CatalogApiError('Catalogue reported success:false', 404, path);
-    }
-    return body;
-  } catch (err) {
-    if (err instanceof CatalogApiError) throw err;
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new CatalogApiError(`Catalogue timed out after ${TIMEOUT_MS}ms`, 408, path);
-    }
-    throw new CatalogApiError(err instanceof Error ? err.message : 'Catalogue request failed', 0, path);
-  } finally {
-    clearTimeout(timer);
+  if (revalidate > 0) {
+    inflight.set(url, request);
+    request.finally(() => inflight.delete(url)).catch(() => {
+      /* the consumer handles the rejection */
+    });
   }
+  return request;
 }
 
 // ============================================================================

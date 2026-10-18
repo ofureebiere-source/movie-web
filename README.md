@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🎬 MovieX
+# 🎬 Netflix-pro
 
 ### A modern Next.js streaming platform with AI-powered translation, watch progress sync & personalized collections
 
@@ -26,11 +26,11 @@
 <div align="center">
 
 <!-- Replace the line below with your hero screenshot or demo GIF -->
-<!-- Example: <img src="./public/screenshots/hero.png" alt="MovieX preview" width="100%" /> -->
+<!-- Example: <img src="./public/screenshots/hero.png" alt="Netflix-pro preview" width="100%" /> -->
 
 <!-- > 📸 _Hero screenshot / demo GIF goes here_ -->
 
-<img src="./public/screenshots/home-screenshot.png" alt="MovieX preview" width="100%" />
+<img src="./public/screenshots/home-screenshot.png" alt="Netflix-pro preview" width="100%" />
 
 </div>
 
@@ -59,9 +59,9 @@
 
 ## 📖 About The Project
 
-**MovieX** is a full-featured, production-ready movie streaming web app built with **Next.js 14 (App Router)**. It delivers a Netflix-style browsing experience with secure authentication, embedded video playback, cross-device watch-progress sync, and an **AI-powered translation pipeline** that fills in movie synopses wherever the catalog has no official translation.
+**Netflix-pro** is a full-featured, production-ready movie streaming web app built with **Next.js 14 (App Router)**. It delivers a Netflix-style browsing experience with secure authentication, embedded video playback, cross-device watch-progress sync, and an **AI-powered translation pipeline** that fills in movie synopses wherever the catalog has no official translation.
 
-### Why MovieX?
+### Why Netflix-pro?
 
 - ⚡ **Built on the modern Next.js App Router** — server components, streaming SSR, and locale-prefixed routes for SEO.
 - 🤖 **AI-driven internationalization** — uses the **Groq LLM API** (Llama 3.3 70B) inside a Vercel Cron job to batch-translate movie content, so users in any locale see fully localized titles and descriptions without manual work.
@@ -133,7 +133,7 @@
 ## 📸 Screenshots
 
 <!-- > _Add your screenshots here. Suggested layout:_ -->
-<img src="./public/screenshots/search-screenshot.png" alt="MovieX preview" width="100%" />
+<img src="./public/screenshots/search-screenshot.png" alt="Netflix-pro preview" width="100%" />
 
 <div align="center">
 
@@ -151,7 +151,7 @@
 
 ## 🚀 Getting Started
 
-Follow these steps to run MovieX locally.
+Follow these steps to run Netflix-pro locally.
 
 ### Prerequisites
 
@@ -180,55 +180,42 @@ npm install
 
 ### Environment Variables
 
-Create a `.env` file in the project root and fill in the following keys:
+The app is **keyless**: there is no Firebase, no TMDB token, and no service
+account to configure. Accounts are per-browser device identities, comments and
+watch progress are stored locally, and titles come from the catalogue API. A
+checkout with an empty environment builds and runs.
+
+Create a `.env` file in the project root only if you need to override a
+default:
 
 ```bash
-# ── Firebase (client) ─────────────────────────────────────────
-NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+# ── Catalogue ─────────────────────────────────────────────────
+# Base URL of the catalogue API. Defaults to https://api.framextv.tech.
+# The NEXT_PUBLIC_ form is the one the browser reads; the plain form is kept
+# as a fallback for server-side callers.
+NEXT_PUBLIC_CATALOG_API_BASE=https://api.framextv.tech
 
-# ── Firebase Admin (server) ───────────────────────────────────
-# base64-encoded service-account JSON
-FIREBASE_CREDENTIALS_BASE64=your_base64_service_account
-
-# ── TMDB ──────────────────────────────────────────────────────
-NEXT_PUBLIC_TMDB_ACCESS_TOKEN=your_tmdb_v4_access_token
-NEXT_PUBLIC_TMDB_IMG_DOMAIN=https://image.tmdb.org
-
-# ── Movie content source ──────────────────────────────────────
-# Catalog API base (optional — defaults to https://phimapi.com)
-CATALOG_API_BASE=https://phimapi.com
-# Backup player
+# ── Backup player ─────────────────────────────────────────────
 NEXT_PUBLIC_VIDSRC_DOMAIN=https://vidsrc.sh
 # Apply an iframe sandbox to the player. Leave false until verified against
 # the provider's anti-sandbox check — see docs/vidsrc-migration-plan.md.
 NEXT_PUBLIC_VIDSRC_SANDBOX=false
 
-# ── AI translation (optional, only if cron is enabled) ────────
-GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
-
-# ── Cron security ─────────────────────────────────────────────
-CRON_SECRET=any_random_long_string
-
 # ── Maintenance mode ──────────────────────────────────────────
-# "true" gates every user-facing route to the maintenance page and pauses
-# the translation cron. See docs/maintenance-mode.md
+# "true" gates every user-facing route to the maintenance page. See
+# docs/maintenance-mode.md
 MAINTENANCE_MODE=false
-```
 
-> 💡 To generate the base64 service-account string, download your Firebase service-account JSON, then run:
->
-> ```bash
-> # Linux / macOS
-> base64 -i path/to/service-account.json
-> # Windows PowerShell
-> [Convert]::ToBase64String([IO.File]::ReadAllBytes("path\to\service-account.json"))
-> ```
+# ── Optional ──────────────────────────────────────────────────
+# AI translation of synopses into the visitor's locale. Both must be set for
+# the feature to turn on; without them the original text is shown.
+GROQ_API_KEY=
+GROQ_MODEL=llama-3.3-70b-versatile
+# Shared secret for the translation cron endpoint. Unset disables the route.
+CRON_SECRET=
+# Set to "true" to show the first-visit disclaimer modal.
+NEXT_PUBLIC_DISCLAIMER_MODAL_ENABLED=false
+```
 
 ### Running Locally
 

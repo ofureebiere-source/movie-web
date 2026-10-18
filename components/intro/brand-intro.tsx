@@ -5,7 +5,7 @@ import { whenHomeReady } from 'lib/home-ready';
 import styles from './brand-intro.module.css';
 
 /**
- * MOVIEX brand intro — a fixed-duration cinematic wordmark reveal that plays
+ * Netflix-pro brand intro — a fixed-duration cinematic wordmark reveal that plays
  * on every visit and doubles as a homepage warm-up window. NOT skippable.
  *
  * Timing model — "fixed floor, capped ceiling":
@@ -73,12 +73,11 @@ export default function BrandIntro({ onDone }: { onDone: () => void }) {
       {/* Decorative wordmark — the disclaimer and header carry the accessible
           brand name, so the overlay stays aria-hidden. */}
       <div className={styles.wordmark}>
-        <span className={styles.letter}>M</span>
-        <span className={styles.letter}>O</span>
-        <span className={styles.letter}>V</span>
-        <span className={styles.letter}>I</span>
-        <span className={styles.letter}>E</span>
-        <span className={styles.letter}>X</span>
+        {'Netflix-pro'.split('').map((ch, i) => (
+          <span key={i} className={styles.letter}>
+            {ch === '-' ? '\u2011' : ch}
+          </span>
+        ))}
       </div>
       <div className={styles.scanline} />
       <div className={styles.vignette} />

@@ -12,7 +12,6 @@ import Notification from '../notification';
 import { INotificationDropdownState } from 'types/notification';
 import movieType from '../../data/movie-type';
 import countries from '../../data/countries';
-import LanguageSwitcher from './language-switcher';
 import { useTranslations, useLocale } from 'next-intl';
 import { localizedCategory, localizedCountry } from 'constants/i18n-mappings';
 import type { Locale } from 'i18n/routing';
@@ -96,9 +95,9 @@ export default function HeaderMobile({
             <Image src={logo} alt="Logo" className="w-24 h-auto" />
           </Link>
 
-          {/* Right side actions: language + search */}
+          {/* Right side actions */}
           <div className="flex items-center gap-2">
-            <LanguageSwitcher />
+            {/* Language is chosen automatically from the visitor's location — see middleware.ts. */}
             <Link
               className="text-white hover:text-custome-red transition-colors"
               href="/search"

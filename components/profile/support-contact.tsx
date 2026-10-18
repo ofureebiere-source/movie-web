@@ -37,7 +37,7 @@ const contactMethods = [
     icon: IoMail,
     title: 'Email hỗ trợ',
     description: 'Gửi email cho chúng tôi',
-    contact: 'support@moviex.com',
+    contact: 'support@netflix-pro.com',
     action: 'Gửi email',
     color: 'text-blue-400',
   },
@@ -314,7 +314,7 @@ export default function SupportContact() {
           <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
             <h4 className="text-white font-medium mb-2">Làm sao để xóa tài khoản?</h4>
             <p className="text-gray-400 text-sm">
-              Liên hệ với chúng tôi qua email support@moviex.com để được hỗ trợ xóa tài khoản.
+              Liên hệ với chúng tôi qua email support@netflix-pro.com để được hỗ trợ xóa tài khoản.
             </p>
           </div>
         </div>

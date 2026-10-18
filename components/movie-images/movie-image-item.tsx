@@ -1,5 +1,6 @@
 import MovieImage from 'types/movie-image';
 import Image from 'next/image';
+import { tmdbImageUrl } from 'lib/tmdb-image';
 
 interface MovieImageItemProps {
   image: MovieImage;
@@ -14,7 +15,7 @@ export default function MovieImageItem({ image, onClick }: MovieImageItemProps) 
         onClick={onClick}
       >
         <Image
-          src={`${process.env.NEXT_PUBLIC_TMDB_IMG_DOMAIN}/t/p/w500${image.file_path}`}
+          src={tmdbImageUrl(image.file_path, 'poster')}
           alt="Movie Image"
           fill
           className="object-cover object-center"

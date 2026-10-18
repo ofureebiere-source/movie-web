@@ -11,7 +11,7 @@ import '../../globals.css';
  * root layout (`app/layout.tsx`) allows.
  */
 export const metadata: Metadata = {
-  title: 'MOVIEX',
+  title: 'Netflix-pro',
   robots: { index: false, follow: false },
 };
 

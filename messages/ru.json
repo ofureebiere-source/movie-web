@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "Загрузка...",
+    "loadingMovies": "Загрузка фильмов...",
+    "error": "Что-то пошло не так",
+    "retry": "Повторить",
+    "close": "Закрыть",
+    "yes": "Да",
+    "no": "Нет",
+    "unknown": "Неизвестно"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "Фильмы",
+      "tvSeries": "Сериалы",
+      "cartoons": "Анимация",
+      "tvShows": "ТВ-шоу",
+      "categories": "Жанры",
+      "countries": "Страны"
+    },
+    "search": "Поиск фильмов"
+  },
+  "home": {
+    "continueWatching": "Продолжить просмотр",
+    "topPicks": "Рекомендуем вам",
+    "trending": {
+      "title": "В тренде на этой неделе"
+    },
+    "lists": {
+      "newlyUpdated": "Недавно обновлено",
+      "singleNewlyUpdated": "Новые фильмы",
+      "tvSeriesNewlyUpdated": "Новые сериалы",
+      "cartoonNewlyUpdated": "Новая анимация",
+      "tvShowsNewlyUpdated": "Новые ТВ-шоу",
+      "theatricalNewlyUpdated": "Кинопремьеры",
+      "voicedNewlyUpdated": "Вьетнамская озвучка"
+    }
+  },
+  "bottomNav": {
+    "home": "Главная",
+    "search": "Поиск",
+    "myList": "Мой список",
+    "profile": "Профиль"
+  },
+  "lists": {
+    "endOfList": "🎬 Вы дошли до конца",
+    "errorLoading": "❌ Не удалось загрузить фильмы",
+    "emptyCategory": "В этой категории пока нет фильмов",
+    "searchPlaceholder": "Введите название..."
+  },
+  "search": {
+    "promptTitle": "Найдите фильм",
+    "promptSubtitle": "Введите название выше или выберите жанр",
+    "browseByGenre": "По жанрам",
+    "trending": "Сейчас в тренде",
+    "suggestions": "Вам может понравиться"
+  },
+  "filter": {
+    "browse": "Обзор",
+    "filtersLabel": "Фильтры",
+    "genre": "Жанр",
+    "country": "Страна",
+    "year": "Год",
+    "sort": "Сортировка",
+    "all": "Все",
+    "clear": "Сбросить фильтры",
+    "sortLatest": "Новые",
+    "lang": "Аудио",
+    "langVietsub": "Вьетнамские субтитры",
+    "langVoiceover": "Закадровый перевод",
+    "langDubbed": "Дубляж"
+  },
+  "movie": {
+    "watch": "Смотреть фильм",
+    "moreLikeThis": "Похожие",
+    "share": "Поделиться"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. Все права защищены.",
+    "disclaimer": "Netflix-pro не размещает контент на этом сайте. Весь контент получен от третьих лиц."
+  }
+}

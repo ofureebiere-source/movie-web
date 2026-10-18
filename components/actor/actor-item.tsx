@@ -1,6 +1,7 @@
 import Actor from 'types/actor';
 import ActorImgDefault from '../../public/default-actor-img.jpg';
 import Image from 'next/image';
+import { tmdbImageUrl } from 'lib/tmdb-image';
 
 /**
  * Cast member card — now clickable.
@@ -16,7 +17,7 @@ export default function ActorItem({ actor }: { actor: Actor | string }) {
   const character = typeof actor === 'string' ? undefined : actor.character;
   const imgSrc =
     typeof actor !== 'string' && actor.profile_path
-      ? `${process.env.NEXT_PUBLIC_TMDB_IMG_DOMAIN}/t/p/w300${actor.profile_path}`
+      ? tmdbImageUrl(actor.profile_path, 'profile')
       : ActorImgDefault;
   const href =
     typeof actor === 'string'

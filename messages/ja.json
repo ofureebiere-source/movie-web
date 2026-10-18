@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "loadingMovies": "映画を読み込んでいます...",
+    "error": "問題が発生しました",
+    "retry": "再試行",
+    "close": "閉じる",
+    "yes": "はい",
+    "no": "いいえ",
+    "unknown": "不明"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "映画",
+      "tvSeries": "テレビシリーズ",
+      "cartoons": "アニメ",
+      "tvShows": "テレビ番組",
+      "categories": "ジャンル",
+      "countries": "国"
+    },
+    "search": "映画を検索"
+  },
+  "home": {
+    "continueWatching": "続きを見る",
+    "topPicks": "おすすめ",
+    "trending": {
+      "title": "今週の人気"
+    },
+    "lists": {
+      "newlyUpdated": "新着更新",
+      "singleNewlyUpdated": "最新映画",
+      "tvSeriesNewlyUpdated": "最新ドラマ",
+      "cartoonNewlyUpdated": "最新アニメ",
+      "tvShowsNewlyUpdated": "最新テレビ番組",
+      "theatricalNewlyUpdated": "劇場公開作",
+      "voicedNewlyUpdated": "ベトナム語吹替"
+    }
+  },
+  "bottomNav": {
+    "home": "ホーム",
+    "search": "検索",
+    "myList": "マイリスト",
+    "profile": "プロフィール"
+  },
+  "lists": {
+    "endOfList": "🎬 最後まで表示しました",
+    "errorLoading": "❌ 映画の読み込みに失敗しました",
+    "emptyCategory": "このカテゴリにはまだ映画がありません",
+    "searchPlaceholder": "映画のタイトルを入力..."
+  },
+  "search": {
+    "promptTitle": "観たい映画を探す",
+    "promptSubtitle": "上にタイトルを入力するか、ジャンルから探す",
+    "browseByGenre": "ジャンルで探す",
+    "trending": "今話題",
+    "suggestions": "おすすめ"
+  },
+  "filter": {
+    "browse": "探す",
+    "filtersLabel": "絞り込み",
+    "genre": "ジャンル",
+    "country": "国",
+    "year": "年",
+    "sort": "並び順",
+    "all": "すべて",
+    "clear": "絞り込みを解除",
+    "sortLatest": "最新",
+    "lang": "音声",
+    "langVietsub": "ベトナム語字幕",
+    "langVoiceover": "吹替",
+    "langDubbed": "吹替版"
+  },
+  "movie": {
+    "watch": "映画を観る",
+    "moreLikeThis": "似ている作品",
+    "share": "共有"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. All rights reserved.",
+    "disclaimer": "Netflix-pro は本サイト上のいかなるコンテンツもホストしていません。すべてのコンテンツは第三者から提供されています。"
+  }
+}

@@ -15,12 +15,68 @@ const MAINTENANCE_PREFIX = '/maintenance';
  * Vercel-only geo signal. Returns null on local dev / non-Vercel hosts so the
  * caller falls through to next-intl's Accept-Language detection.
  *
- * Policy: VN → vi, every other country → en.
+ * Country → locale, using the ISO 3166-1 alpha-2 code Vercel supplies. The
+ * list covers the locales in `i18n/routing`; anything unlisted falls to
+ * English, which is the safe default for a catalogue whose titles and artwork
+ * are language-neutral.
+ *
+ * A country with more than one official language picks the majority one
+ * (Belgium → fr, Switzerland → de, Canada → en). Getting those wrong costs a
+ * visitor a click at most, and there is no click to make any more — so the
+ * majority guess is the whole policy.
  */
+const LOCALE_BY_COUNTRY: Record<string, string> = {
+  // Vietnamese
+  VN: 'vi',
+
+  // Chinese
+  CN: 'zh', TW: 'zh', HK: 'zh', MO: 'zh',
+
+  // Korean
+  KR: 'ko', KP: 'ko',
+
+  // Japanese
+  JP: 'ja',
+
+  // Thai
+  TH: 'th',
+
+  // Indonesian
+  ID: 'id',
+
+  // Spanish — Spain plus Latin America
+  ES: 'es', MX: 'es', AR: 'es', CO: 'es', CL: 'es', PE: 'es', VE: 'es',
+  EC: 'es', GT: 'es', CU: 'es', BO: 'es', DO: 'es', HN: 'es', PY: 'es',
+  SV: 'es', NI: 'es', CR: 'es', PA: 'es', UY: 'es', PR: 'es',
+
+  // French — France, francophone Europe and Africa
+  FR: 'fr', BE: 'fr', LU: 'fr', MC: 'fr', SN: 'fr', CI: 'fr', CM: 'fr',
+  ML: 'fr', BF: 'fr', NE: 'fr', TG: 'fr', BJ: 'fr', GA: 'fr', CG: 'fr',
+  CD: 'fr', MG: 'fr', HT: 'fr',
+
+  // Portuguese
+  PT: 'pt', BR: 'pt', AO: 'pt', MZ: 'pt', CV: 'pt', GW: 'pt', ST: 'pt', TL: 'pt',
+
+  // German
+  DE: 'de', AT: 'de', LI: 'de',
+
+  // Russian
+  RU: 'ru', BY: 'ru', KZ: 'ru', KG: 'ru', TJ: 'ru', TM: 'ru', UZ: 'ru',
+
+  // Hindi
+  IN: 'hi',
+
+  // Arabic
+  SA: 'ar', AE: 'ar', EG: 'ar', DZ: 'ar', MA: 'ar', TN: 'ar', LY: 'ar',
+  JO: 'ar', LB: 'ar', SY: 'ar', IQ: 'ar', KW: 'ar', QA: 'ar', BH: 'ar',
+  OM: 'ar', YE: 'ar', SD: 'ar', PS: 'ar', MR: 'ar', SO: 'ar', DJ: 'ar',
+  KM: 'ar',
+};
+
 function pickLocaleFromGeo(request: NextRequest): string | null {
   const country = request.geo?.country;
   if (!country) return null;
-  return country === 'VN' ? 'vi' : 'en';
+  return LOCALE_BY_COUNTRY[country] ?? 'en';
 }
 
 /**

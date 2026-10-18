@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "กำลังโหลด...",
+    "loadingMovies": "กำลังโหลดภาพยนตร์...",
+    "error": "เกิดข้อผิดพลาด",
+    "retry": "ลองอีกครั้ง",
+    "close": "ปิด",
+    "yes": "ใช่",
+    "no": "ไม่",
+    "unknown": "ไม่ทราบ"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "ภาพยนตร์",
+      "tvSeries": "ซีรีส์",
+      "cartoons": "อนิเมชัน",
+      "tvShows": "รายการทีวี",
+      "categories": "หมวดหมู่",
+      "countries": "ประเทศ"
+    },
+    "search": "ค้นหาภาพยนตร์"
+  },
+  "home": {
+    "continueWatching": "ดูต่อ",
+    "topPicks": "แนะนำสำหรับคุณ",
+    "trending": {
+      "title": "ยอดนิยมสัปดาห์นี้"
+    },
+    "lists": {
+      "newlyUpdated": "อัปเดตล่าสุด",
+      "singleNewlyUpdated": "ภาพยนตร์ล่าสุด",
+      "tvSeriesNewlyUpdated": "ซีรีส์ล่าสุด",
+      "cartoonNewlyUpdated": "อนิเมชันล่าสุด",
+      "tvShowsNewlyUpdated": "รายการทีวีล่าสุด",
+      "theatricalNewlyUpdated": "หนังโรง",
+      "voicedNewlyUpdated": "พากย์เวียดนาม"
+    }
+  },
+  "bottomNav": {
+    "home": "หน้าแรก",
+    "search": "ค้นหา",
+    "myList": "รายการของฉัน",
+    "profile": "โปรไฟล์"
+  },
+  "lists": {
+    "endOfList": "🎬 ถึงจุดสิ้นสุดแล้ว",
+    "errorLoading": "❌ โหลดภาพยนตร์ไม่สำเร็จ",
+    "emptyCategory": "ยังไม่มีภาพยนตร์ในหมวดนี้",
+    "searchPlaceholder": "ใส่ชื่อภาพยนตร์..."
+  },
+  "search": {
+    "promptTitle": "ค้นหาภาพยนตร์ที่จะดู",
+    "promptSubtitle": "พิมพ์ชื่อด้านบน หรือเลือกตามหมวดหมู่ด้านล่าง",
+    "browseByGenre": "เลือกตามหมวดหมู่",
+    "trending": "กำลังนิยม",
+    "suggestions": "คุณอาจชอบ"
+  },
+  "filter": {
+    "browse": "เรียกดู",
+    "filtersLabel": "ตัวกรอง",
+    "genre": "หมวดหมู่",
+    "country": "ประเทศ",
+    "year": "ปี",
+    "sort": "เรียงลำดับ",
+    "all": "ทั้งหมด",
+    "clear": "ล้างตัวกรอง",
+    "sortLatest": "ล่าสุด",
+    "lang": "เสียง",
+    "langVietsub": "ซับเวียดนาม",
+    "langVoiceover": "พากย์",
+    "langDubbed": "พากย์"
+  },
+  "movie": {
+    "watch": "ดูภาพยนตร์",
+    "moreLikeThis": "เรื่องที่คล้ายกัน",
+    "share": "แชร์"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. สงวนลิขสิทธิ์ทั้งหมด",
+    "disclaimer": "Netflix-pro ไม่ได้โฮสต์เนื้อหาใด ๆ บนไซต์นี้ เนื้อหาทั้งหมดมาจากบุคคลที่สาม"
+  }
+}

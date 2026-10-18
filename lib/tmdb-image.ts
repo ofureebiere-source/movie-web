@@ -19,15 +19,15 @@ const TMDB_BASE = process.env.NEXT_PUBLIC_TMDB_IMG_DOMAIN || 'https://image.tmdb
  * TMDB's published size buckets, narrowed to the ones this app renders.
  *
  * `w500` for portrait posters (cards, 2:3) and `w1280` for landscape
- * backdrops (hero, player poster). `original` is deliberately absent: every
- * image goes through `/api/image` for a sharp resize anyway, so fetching the
- * original would only burn bandwidth on the way in.
+ * backdrops (hero, player poster). `original` is only for the lightbox, where
+ * the visitor has explicitly asked for the full-size still.
  */
 export const TMDB_SIZES = {
   poster: 'w500',
   backdrop: 'w1280',
   still: 'w300',
   profile: 'w300',
+  original: 'original',
 } as const;
 
 export type TmdbImageKind = keyof typeof TMDB_SIZES;

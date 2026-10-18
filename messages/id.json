@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "Memuat...",
+    "loadingMovies": "Memuat film...",
+    "error": "Terjadi kesalahan",
+    "retry": "Coba lagi",
+    "close": "Tutup",
+    "yes": "Ya",
+    "no": "Tidak",
+    "unknown": "Tidak diketahui"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "Film",
+      "tvSeries": "Serial TV",
+      "cartoons": "Animasi",
+      "tvShows": "Acara TV",
+      "categories": "Genre",
+      "countries": "Negara"
+    },
+    "search": "Cari film"
+  },
+  "home": {
+    "continueWatching": "Lanjutkan Menonton",
+    "topPicks": "Pilihan untuk Anda",
+    "trending": {
+      "title": "Trending Minggu Ini"
+    },
+    "lists": {
+      "newlyUpdated": "Baru Diperbarui",
+      "singleNewlyUpdated": "Film Terbaru",
+      "tvSeriesNewlyUpdated": "Serial Terbaru",
+      "cartoonNewlyUpdated": "Animasi Terbaru",
+      "tvShowsNewlyUpdated": "Acara TV Terbaru",
+      "theatricalNewlyUpdated": "Rilis Bioskop",
+      "voicedNewlyUpdated": "Sulih Suara Vietnam"
+    }
+  },
+  "bottomNav": {
+    "home": "Beranda",
+    "search": "Cari",
+    "myList": "Daftar Saya",
+    "profile": "Profil"
+  },
+  "lists": {
+    "endOfList": "🎬 Anda telah mencapai akhir",
+    "errorLoading": "❌ Gagal memuat film",
+    "emptyCategory": "Belum ada film di kategori ini",
+    "searchPlaceholder": "Masukkan judul film..."
+  },
+  "search": {
+    "promptTitle": "Temukan film untuk ditonton",
+    "promptSubtitle": "Ketik judul di atas, atau jelajahi berdasarkan genre",
+    "browseByGenre": "Jelajahi berdasarkan genre",
+    "trending": "Sedang tren",
+    "suggestions": "Anda mungkin suka"
+  },
+  "filter": {
+    "browse": "Jelajahi",
+    "filtersLabel": "Filter",
+    "genre": "Genre",
+    "country": "Negara",
+    "year": "Tahun",
+    "sort": "Urutkan",
+    "all": "Semua",
+    "clear": "Hapus filter",
+    "sortLatest": "Terbaru",
+    "lang": "Audio",
+    "langVietsub": "Sub Indonesia",
+    "langVoiceover": "Sulih suara",
+    "langDubbed": "Dub"
+  },
+  "movie": {
+    "watch": "Tonton film",
+    "moreLikeThis": "Serupa",
+    "share": "Bagikan"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. Hak cipta dilindungi.",
+    "disclaimer": "Netflix-pro tidak menghosting konten apa pun di situs ini. Semua konten berasal dari pihak ketiga."
+  }
+}

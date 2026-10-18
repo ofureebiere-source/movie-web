@@ -10,7 +10,6 @@ import { usePathname } from 'i18n/routing';
 import Notification from '../notification';
 import { INotificationDropdownState } from 'types/notification';
 import { Link } from 'i18n/routing';
-import LanguageSwitcher from './language-switcher';
 import { useTranslations } from 'next-intl';
 
 export default function HeaderFixed({
@@ -95,7 +94,7 @@ export default function HeaderFixed({
           </li>
         </ul>
         <div className="flex gap-x-3 items-center justify-end min-w-[10rem] h-[3.62rem]">
-          <LanguageSwitcher />
+          {/* Language is chosen automatically from the visitor's location — see middleware.ts. */}
           <Link className="cursor-pointer hover:text-custome-red" href="/search">
             <IoSearch size={25} />
           </Link>

@@ -49,7 +49,7 @@ export default async function LocaleLayout({
   const initialDisclaimerAccepted = !disclaimerEnabled || cookieAccepted;
 
   return (
-    <html lang={locale}>
+    <html lang={locale} dir={RTL_LOCALES.has(locale) ? 'rtl' : 'ltr'}>
       <body className="bg-black text-white relative flex flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers initialDisclaimerAccepted={initialDisclaimerAccepted}>{children}</Providers>
@@ -58,6 +58,9 @@ export default async function LocaleLayout({
     </html>
   );
 }
+
+/** Arabic and Hebrew read right-to-left; the shell flips with `dir`. */
+const RTL_LOCALES = new Set(['ar', 'he', 'fa', 'ur']);
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));

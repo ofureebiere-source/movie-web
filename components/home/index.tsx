@@ -1,128 +1,133 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import HeroSection from './hero-section';
 import MovieList from '../commons/movie-list';
 import DailyUpdateBanner from './daily-update-banner';
 import ContinueWatchingSection from './continue-watching-section';
 import BecauseYouWatchedSection from './because-you-watched-section';
 import TrendingSection from './trending-section';
-import { getTranslations, getLocale } from 'next-intl/server';
+import type { TrendingItem } from './trending-slider';
 import { localizedCategory } from 'constants/i18n-mappings';
-import {
-  getNewlyAddedFeed,
-  getFormatRail,
-  getGenreRail,
-  getTrendingRail,
-} from 'services/catalog-service';
+import { loadHomeRails, type HomeRails } from 'lib/catalog-client';
 import type { Locale } from 'i18n/routing';
 
-// Browse-by-genre rails, Netflix style. Slugs come from the catalog taxonomy
-// and double as the link target (`/movies/type/<slug>`).
-const GENRE_ROW_SLUGS = ['hanh-dong', 'tinh-cam', 'kinh-di'];
+/**
+ * The home page.
+ *
+ * Client-rendered on purpose: the catalogue is fetched from the visitor's
+ * browser (see `lib/catalog-client`). That is not a style choice — the
+ * catalogue host is behind Cloudflare, which answers Vercel's datacenter IPs
+ * with a 403 bot challenge, so a server-side fetch returns an interstitial
+ * instead of JSON and the page renders empty. The visitor's own IP is not
+ * challenged.
+ *
+ * `trending` is the one exception: it is a static file read at build time by
+ * the server component that wraps this one, and handed down as a prop, so it
+ * needs no request at all.
+ */
+export default function HomePage({ trending }: { trending: TrendingItem[] }) {
+  const t = useTranslations('home.lists');
+  const locale = useLocale() as Locale;
+  const [rails, setRails] = useState<HomeRails | null>(null);
 
-export default async function HomePage() {
-  const t = await getTranslations('home.lists');
-  const locale = (await getLocale()) as Locale;
+  useEffect(() => {
+    let cancelled = false;
+    loadHomeRails(locale)
+      .then((data) => {
+        if (!cancelled) setRails(data);
+      })
+      .catch(() => {
+        // Every rail already degrades to empty; a total failure means the
+        // catalogue is unreachable, and the rows below simply stay hidden.
+        if (!cancelled) setRails(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [locale]);
 
-  // `Promise.all` is safe here ONLY because every one of these resolves to
-  // an empty value on failure rather than rejecting — see `safeRail` in the
-  // catalog service. One upstream hiccup must cost one rail, not the page.
-  const [
-    latest,
-    hero,
-    theatrical,
-    singleMovies,
-    tvSeries,
-    cartoonMovies,
-    voiced,
-    tvShows,
-    ...genreResults
-  ] = await Promise.all([
-    getNewlyAddedFeed(locale),
-    getTrendingRail(locale, 5),
-    getFormatRail('phim-chieu-rap', locale),
-    getFormatRail('phim-le', locale),
-    getFormatRail('phim-bo', locale),
-    getFormatRail('hoat-hinh', locale),
-    getFormatRail('phim-thuyet-minh', locale),
-    getFormatRail('tv-shows', locale),
-    ...GENRE_ROW_SLUGS.map((slug) => getGenreRail(slug, locale)),
-  ]);
-  const newlyAdded = latest.items;
-
-  // Trending already falls back to theatrical releases on its own; this
-  // second fallback only matters when the catalog itself is down.
-  const heroMovies = (hero.length > 0 ? hero : newlyAdded).slice(0, 5);
-
-  // The catalog reports the real "updated today" count for the whole catalog —
-  // counting the rail's 14 rows would cap the banner at 14.
-  const addedTodayCount = latest.updatedToday;
+  // First paint: chrome and the personalized rows, which read from local
+  // storage and need no network. The catalogue rows fill in underneath.
+  if (!rails) {
+    return (
+      <div className="h-full">
+        <HeroSection movies={[]} />
+        <DailyUpdateBanner count={0} />
+        <div className="space-y-8">
+          <ContinueWatchingSection />
+          <BecauseYouWatchedSection />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full">
-      <HeroSection movies={heroMovies} />
-      <DailyUpdateBanner count={addedTodayCount} />
+      <HeroSection movies={rails.heroMovies} />
+      <DailyUpdateBanner count={rails.addedTodayCount} />
       <div className="space-y-8">
         <ContinueWatchingSection />
         <BecauseYouWatchedSection />
-        <TrendingSection />
-        {newlyAdded.length > 0 && (
-          <MovieList listName={t('newlyUpdated')} movies={newlyAdded} isNewlyMovieItem={true} />
+        <TrendingSection items={trending} />
+        {rails.newlyAdded.length > 0 && (
+          <MovieList listName={t('newlyUpdated')} movies={rails.newlyAdded} isNewlyMovieItem={true} />
         )}
-        {theatrical.length > 0 && (
+        {rails.theatrical.length > 0 && (
           <MovieList
-            movies={theatrical}
+            movies={rails.theatrical}
             listName={t('theatricalNewlyUpdated')}
             isNewlyMovieItem={false}
           />
         )}
-        {singleMovies.length > 0 && (
+        {rails.singleMovies.length > 0 && (
           <MovieList
-            movies={singleMovies}
+            movies={rails.singleMovies}
             listName={t('singleNewlyUpdated')}
             isNewlyMovieItem={false}
           />
         )}
-        {tvSeries.length > 0 && (
+        {rails.tvSeries.length > 0 && (
           <MovieList
-            movies={tvSeries}
+            movies={rails.tvSeries}
             listName={t('tvSeriesNewlyUpdated')}
             isNewlyMovieItem={false}
           />
         )}
-        {cartoonMovies.length > 0 && (
+        {rails.cartoonMovies.length > 0 && (
           <MovieList
-            movies={cartoonMovies}
+            movies={rails.cartoonMovies}
             listName={t('cartoonNewlyUpdated')}
             isNewlyMovieItem={false}
           />
         )}
-        {voiced.length > 0 && (
+        {rails.voiced.length > 0 && (
           <MovieList
-            movies={voiced}
+            movies={rails.voiced}
             listName={t('voicedNewlyUpdated')}
             isNewlyMovieItem={false}
           />
         )}
-        {tvShows.length > 0 && (
+        {rails.tvShows.length > 0 && (
           <MovieList
-            movies={tvShows}
+            movies={rails.tvShows}
             listName={t('tvShowsNewlyUpdated')}
             isNewlyMovieItem={false}
           />
         )}
 
         {/* Browse-by-genre discovery rows */}
-        {GENRE_ROW_SLUGS.map((slug, i) => {
-          const items = genreResults[i] ?? [];
-          if (items.length === 0) return null;
-          return (
+        {rails.genreRows.map(({ slug, items }) =>
+          items.length === 0 ? null : (
             <MovieList
               key={slug}
               movies={items}
               listName={localizedCategory(slug, locale)}
               isNewlyMovieItem={false}
             />
-          );
-        })}
+          )
+        )}
       </div>
     </div>
   );

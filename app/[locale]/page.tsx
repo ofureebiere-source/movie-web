@@ -1,7 +1,9 @@
 import HomePage from '@/components/home';
 import { Metadata } from 'next';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { routing } from 'i18n/routing';
+import { loadTrendingItems } from 'services/trending';
+import type { Locale } from 'i18n/routing';
 
 /**
  * Home page metadata.
@@ -46,6 +48,19 @@ export async function generateMetadata({
   };
 }
 
-export default function Home() {
-  return <HomePage />;
+/**
+ * The home route.
+ *
+ * Only the trending row is resolved here; it comes from a static file and so
+ * costs nothing. Every other row is fetched in the visitor's browser by
+ * `HomePage`, because the catalogue host blocks Vercel's IPs — see
+ * `lib/catalog-client` for why.
+ */
+export default async function Home({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
+  const trending = await loadTrendingItems(locale as Locale);
+
+  return <HomePage trending={trending} />;
 }

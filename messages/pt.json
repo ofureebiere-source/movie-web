@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "Carregando...",
+    "loadingMovies": "Carregando filmes...",
+    "error": "Algo deu errado",
+    "retry": "Tentar novamente",
+    "close": "Fechar",
+    "yes": "Sim",
+    "no": "Não",
+    "unknown": "Desconhecido"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "Filmes",
+      "tvSeries": "Séries",
+      "cartoons": "Animação",
+      "tvShows": "Programas de TV",
+      "categories": "Gêneros",
+      "countries": "Países"
+    },
+    "search": "Pesquisar filmes"
+  },
+  "home": {
+    "continueWatching": "Continuar assistindo",
+    "topPicks": "Escolhido para você",
+    "trending": {
+      "title": "Em alta esta semana"
+    },
+    "lists": {
+      "newlyUpdated": "Atualizados recentemente",
+      "singleNewlyUpdated": "Filmes recentes",
+      "tvSeriesNewlyUpdated": "Séries recentes",
+      "cartoonNewlyUpdated": "Animação recente",
+      "tvShowsNewlyUpdated": "Programas recentes",
+      "theatricalNewlyUpdated": "Lançamentos de cinema",
+      "voicedNewlyUpdated": "Dublagem vietnamita"
+    }
+  },
+  "bottomNav": {
+    "home": "Início",
+    "search": "Pesquisar",
+    "myList": "Minha lista",
+    "profile": "Perfil"
+  },
+  "lists": {
+    "endOfList": "🎬 Você chegou ao fim",
+    "errorLoading": "❌ Falha ao carregar filmes",
+    "emptyCategory": "Ainda não há filmes nesta categoria",
+    "searchPlaceholder": "Digite o título..."
+  },
+  "search": {
+    "promptTitle": "Encontre um filme para assistir",
+    "promptSubtitle": "Digite um título acima ou explore por gênero",
+    "browseByGenre": "Explorar por gênero",
+    "trending": "Em alta",
+    "suggestions": "Você pode gostar"
+  },
+  "filter": {
+    "browse": "Explorar",
+    "filtersLabel": "Filtros",
+    "genre": "Gênero",
+    "country": "País",
+    "year": "Ano",
+    "sort": "Ordenar",
+    "all": "Todos",
+    "clear": "Limpar filtros",
+    "sortLatest": "Recentes",
+    "lang": "Áudio",
+    "langVietsub": "Legendas em vietnamita",
+    "langVoiceover": "Narração",
+    "langDubbed": "Dublagem"
+  },
+  "movie": {
+    "watch": "Assistir filme",
+    "moreLikeThis": "Títulos semelhantes",
+    "share": "Compartilhar"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. Todos os direitos reservados.",
+    "disclaimer": "A Netflix-pro não hospeda nenhum conteúdo neste site. Todo o conteúdo é proveniente de terceiros."
+  }
+}

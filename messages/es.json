@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "loadingMovies": "Cargando películas...",
+    "error": "Algo salió mal",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "yes": "Sí",
+    "no": "No",
+    "unknown": "Desconocido"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "Películas",
+      "tvSeries": "Series",
+      "cartoons": "Animación",
+      "tvShows": "Programas de TV",
+      "categories": "Géneros",
+      "countries": "Países"
+    },
+    "search": "Buscar películas"
+  },
+  "home": {
+    "continueWatching": "Seguir viendo",
+    "topPicks": "Recomendado para ti",
+    "trending": {
+      "title": "Tendencias de la semana"
+    },
+    "lists": {
+      "newlyUpdated": "Recién actualizado",
+      "singleNewlyUpdated": "Películas recientes",
+      "tvSeriesNewlyUpdated": "Series recientes",
+      "cartoonNewlyUpdated": "Animación reciente",
+      "tvShowsNewlyUpdated": "Programas recientes",
+      "theatricalNewlyUpdated": "Estrenos de cine",
+      "voicedNewlyUpdated": "Doblaje vietnamita"
+    }
+  },
+  "bottomNav": {
+    "home": "Inicio",
+    "search": "Buscar",
+    "myList": "Mi lista",
+    "profile": "Perfil"
+  },
+  "lists": {
+    "endOfList": "🎬 Has llegado al final",
+    "errorLoading": "❌ No se pudieron cargar las películas",
+    "emptyCategory": "Aún no hay películas en esta categoría",
+    "searchPlaceholder": "Introduce el título..."
+  },
+  "search": {
+    "promptTitle": "Encuentra una película",
+    "promptSubtitle": "Escribe un título arriba o explora por género",
+    "browseByGenre": "Explorar por género",
+    "trending": "Tendencias",
+    "suggestions": "Quizá te guste"
+  },
+  "filter": {
+    "browse": "Explorar",
+    "filtersLabel": "Filtros",
+    "genre": "Género",
+    "country": "País",
+    "year": "Año",
+    "sort": "Ordenar",
+    "all": "Todos",
+    "clear": "Borrar filtros",
+    "sortLatest": "Recientes",
+    "lang": "Audio",
+    "langVietsub": "Subtítulos en vietnamita",
+    "langVoiceover": "Voz en off",
+    "langDubbed": "Doblaje"
+  },
+  "movie": {
+    "watch": "Ver película",
+    "moreLikeThis": "Títulos similares",
+    "share": "Compartir"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. Todos los derechos reservados.",
+    "disclaimer": "Netflix-pro no aloja ningún contenido en este sitio. Todo el contenido proviene de terceros."
+  }
+}

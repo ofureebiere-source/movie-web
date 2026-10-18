@@ -9,8 +9,8 @@ import type Movie from 'types/movie';
  *
  * Rendered as a responsive GRID (Netflix-style "More Like This") rather than a
  * carousel: it fills the centered content container with even gaps and reads
- * as a "browse more" block instead of a cramped single row. Self-contained, so
- * it doesn't depend on the home page's `HomePageLoadingProvider`.
+ * as a "browse more" block instead of a cramped single row. Self-contained: it
+ * takes its titles as a prop and fetches nothing of its own.
  */
 interface RelatedMoviesProps {
   title: string;

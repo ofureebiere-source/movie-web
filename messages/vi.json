@@ -27,11 +27,6 @@
       "categories": "Thể loại",
       "countries": "Quốc gia"
     },
-    "language": {
-      "selectLanguage": "Chọn ngôn ngữ",
-      "viName": "Tiếng Việt",
-      "enName": "English"
-    },
     "search": "Tìm kiếm phim"
   },
   "home": {
@@ -301,7 +296,6 @@
     "menu": {
       "personalInfo": "Thông tin cá nhân",
       "security": "Bảo mật",
-      "language": "Ngôn ngữ",
       "support": "Hỗ trợ"
     },
     "personalInfo": {
@@ -358,16 +352,6 @@
         "userNotFound": "Không tìm thấy người dùng"
       }
     },
-    "language": {
-      "heading": "Cài đặt ngôn ngữ",
-      "description": "Chọn ngôn ngữ hiển thị cho giao diện ứng dụng. Thay đổi này sẽ được áp dụng ngay lập tức.",
-      "current": "Ngôn ngữ hiện tại",
-      "additional": "Cài đặt bổ sung",
-      "autoDetect": "Tự động phát hiện ngôn ngữ từ trình duyệt",
-      "showNative": "Hiển thị tên ngôn ngữ bằng tiếng bản địa",
-      "infoHeading": "💡 Thông tin",
-      "infoMessage": "Việc thay đổi ngôn ngữ sẽ ảnh hưởng đến toàn bộ giao diện ứng dụng. Một số nội dung có thể vẫn hiển thị bằng ngôn ngữ gốc nếu chưa được dịch."
-    },
     "support": {
       "heading": "Hỗ trợ",
       "intro": "Chúng tôi luôn sẵn sàng hỗ trợ bạn. Chọn phương thức liên hệ phù hợp nhất với bạn.",
@@ -416,7 +400,7 @@
         "q2": "Tôi quên mật khẩu, phải làm sao?",
         "a2": "Sử dụng tính năng \"Quên mật khẩu\" trên trang đăng nhập. Chúng tôi sẽ gửi link đặt lại mật khẩu qua email của bạn.",
         "q3": "Làm sao để xóa tài khoản?",
-        "a3": "Liên hệ với chúng tôi qua email support@moviex.com để được hỗ trợ xóa tài khoản."
+        "a3": "Liên hệ với chúng tôi qua email support@netflix-pro.com để được hỗ trợ xóa tài khoản."
       },
       "hours": {
         "heading": "Giờ hỗ trợ",
@@ -481,9 +465,9 @@
       "sciFi": "Phim Viễn Tưởng",
       "newest": "Phim Mới"
     },
-    "copyright": "© 2024 MOVIEX. Tất cả các quyền được bảo lưu.",
-    "disclaimer": "MOVIEX không lưu trữ bất kỳ nội dung nào trên trang web này. Tất cả nội dung đều được lấy từ các nguồn bên thứ ba.",
-    "seo": "Xem phim online chất lượng cao tại MOVIEX - Trang web xem phim trực tuyến hàng đầu Việt Nam",
+    "copyright": "© 2024 Netflix-pro. Tất cả các quyền được bảo lưu.",
+    "disclaimer": "Netflix-pro không lưu trữ bất kỳ nội dung nào trên trang web này. Tất cả nội dung đều được lấy từ các nguồn bên thứ ba.",
+    "seo": "Xem phim online chất lượng cao tại Netflix-pro - Trang web xem phim trực tuyến hàng đầu Việt Nam",
     "tmdbAttribution": "This product uses the TMDB API but is not endorsed or certified by TMDB."
   },
   "errors": {

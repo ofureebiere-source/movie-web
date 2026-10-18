@@ -5,37 +5,55 @@ import { EffectFade, Autoplay } from 'swiper/modules';
 import NewlyMovie from 'types/newly-movie';
 import HeroMovieItem from '../commons/hero-movie-item';
 import { useEffect, useRef, useState } from 'react';
-import { getDetailMovieServerAction, getHeroLogoUrlsServerAction } from 'app/actions';
+import { useLocale } from 'next-intl';
+import { getMovieDetail } from 'lib/catalog-client';
 import DetailMovie from 'types/detail-movie';
 import HeroSectionSkeleton from './hero-section-skeleton';
-import { useHomePageLoadingContext } from '../context/home-page-loading-context';
 import { markHomeReady } from 'lib/home-ready';
 import { FaChevronRight } from 'react-icons/fa6';
 
+/**
+ * The hero carousel.
+ *
+ * List rows carry no synopsis, so the detail for each slide is fetched here.
+ * Failures are dropped rather than thrown — a hero with four slides is fine,
+ * a home page that breaks because one title 404'd is not.
+ *
+ * Logos are not fetched: there is no keyless logo source, so every slide
+ * falls back to its title as text (see `utils/movie-logo`).
+ */
 export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
+  const locale = useLocale();
   const [detailMovies, setDetailMovies] = useState<DetailMovie[]>([]);
-  const [logoUrls, setLogoUrls] = useState<Record<string, string | null>>({});
   const [hasFetched, setHasFetched] = useState<boolean>(false);
   const swiperRef = useRef<any>(null);
 
-  const { setISLoadingHomePage } = useHomePageLoadingContext();
-
   useEffect(() => {
     let cancelled = false;
+
+    if (movies.length === 0) {
+      setDetailMovies([]);
+      setHasFetched(true);
+      markHomeReady();
+      return;
+    }
+
     setHasFetched(false);
 
     const getDescriptionMovies = async () => {
-      // Fetch details + logos in parallel — logos hit TMDB's cached endpoint
-      // and shouldn't gate the hero render if they're slow.
-      const [data, logos] = await Promise.all([
-        getDetailMovieServerAction(movies),
-        getHeroLogoUrlsServerAction(movies),
-      ]);
+      const settled = await Promise.allSettled(
+        movies.map((movie) => getMovieDetail(movie.slug, locale))
+      );
       if (cancelled) return;
-      setDetailMovies(data);
-      setLogoUrls(logos);
+      setDetailMovies(
+        settled
+          .filter(
+            (r): r is PromiseFulfilledResult<DetailMovie | null> => r.status === 'fulfilled'
+          )
+          .map((r) => r.value)
+          .filter((d): d is DetailMovie => d !== null)
+      );
       setHasFetched(true);
-      setISLoadingHomePage(false);
       // Critical above-the-fold content is resolved — tell the brand intro the
       // home is ready so it can hand off without a skeleton/pop-in flash.
       markHomeReady();
@@ -46,7 +64,7 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
     return () => {
       cancelled = true;
     };
-  }, [movies, setISLoadingHomePage]);
+  }, [movies, locale]);
 
   const handleClickToNextSlide = () => {
     swiperRef.current?.slideNext();
@@ -54,6 +72,19 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
 
   if (!hasFetched) {
     return <HeroSectionSkeleton />;
+  }
+
+  // Nothing to show (catalogue unreachable, or every detail failed). Render
+  // the first list item as a text-only slide so the hero is never blank.
+  if (detailMovies.length === 0) {
+    if (movies.length === 0) return null;
+    return (
+      <div className="relative h-[60vh] md:h-[80vh] flex items-end">
+        <div className="container-wrapper px-4 md:px-0 pb-16">
+          <h1 className="text-4xl md:text-6xl font-bold">{movies[0].name}</h1>
+        </div>
+      </div>
+    );
   }
 
   // Build a quick lookup so we can pair each DetailMovie with its source NewlyMovie
@@ -75,7 +106,7 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
               <HeroMovieItem
                 detailMovie={movie}
                 listItem={listItemBySlug.get(movie.movie.slug)}
-                logoUrl={logoUrls[movie.movie.slug] ?? null}
+                logoUrl={null}
                 onNextSlide={handleClickToNextSlide}
                 priority={index === 0}
               />

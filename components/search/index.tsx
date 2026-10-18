@@ -1,6 +1,7 @@
 'use client';
-import { searchingMovie } from 'app/actions';
+import { searchingMovie } from 'lib/catalog-client';
 import { useEffect, useState } from 'react';
+import { useLocale } from 'next-intl';
 import NewlyMovie from 'types/newly-movie';
 import { isNotNull } from 'utils/movie-utils';
 import RegularMovieItem from '../commons/regular-movie-item';
@@ -16,6 +17,7 @@ export default function SearchMoviePage({
   movieName: string;
   suggestions: SearchSuggestion[];
 }) {
+  const locale = useLocale();
   const [movies, setMovies] = useState<NewlyMovie[]>([]);
   // Seed the spinner true when arriving with a query in the URL so we don't
   // flash the "no results" state before the first fetch resolves.
@@ -27,7 +29,7 @@ export default function SearchMoviePage({
     const fetchData = async () => {
       if (isNotNull(movieName)) {
         setIsFetching(true);
-        const res = await searchingMovie(movieName);
+        const res = await searchingMovie(movieName, locale);
         const items = res.items;
         setMovies(items);
         setIsFetching(false);

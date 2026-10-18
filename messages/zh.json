@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "loadingMovies": "正在加载影片...",
+    "error": "出了点问题",
+    "retry": "重试",
+    "close": "关闭",
+    "yes": "是",
+    "no": "否",
+    "unknown": "未知"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "电影",
+      "tvSeries": "电视剧",
+      "cartoons": "动画",
+      "tvShows": "电视节目",
+      "categories": "类型",
+      "countries": "国家"
+    },
+    "search": "搜索影片"
+  },
+  "home": {
+    "continueWatching": "继续观看",
+    "topPicks": "为你推荐",
+    "trending": {
+      "title": "本周热门"
+    },
+    "lists": {
+      "newlyUpdated": "最新更新",
+      "singleNewlyUpdated": "最新电影",
+      "tvSeriesNewlyUpdated": "最新电视剧",
+      "cartoonNewlyUpdated": "最新动画",
+      "tvShowsNewlyUpdated": "最新电视节目",
+      "theatricalNewlyUpdated": "院线新片",
+      "voicedNewlyUpdated": "越南语配音"
+    }
+  },
+  "bottomNav": {
+    "home": "首页",
+    "search": "搜索",
+    "myList": "我的列表",
+    "profile": "我的"
+  },
+  "lists": {
+    "endOfList": "🎬 已经到底了",
+    "errorLoading": "❌ 加载影片失败",
+    "emptyCategory": "此分类暂无影片",
+    "searchPlaceholder": "输入影片名称..."
+  },
+  "search": {
+    "promptTitle": "找一部影片观看",
+    "promptSubtitle": "在上方输入片名，或按类型浏览",
+    "browseByGenre": "按类型浏览",
+    "trending": "当前热门",
+    "suggestions": "你可能喜欢"
+  },
+  "filter": {
+    "browse": "浏览",
+    "filtersLabel": "筛选",
+    "genre": "类型",
+    "country": "国家",
+    "year": "年份",
+    "sort": "排序",
+    "all": "全部",
+    "clear": "清除筛选",
+    "sortLatest": "最新",
+    "lang": "音轨",
+    "langVietsub": "越南语字幕",
+    "langVoiceover": "配音",
+    "langDubbed": "译制"
+  },
+  "movie": {
+    "watch": "观看影片",
+    "moreLikeThis": "更多类似影片",
+    "share": "分享"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. 保留所有权利。",
+    "disclaimer": "Netflix-pro 不托管本网站的任何内容。所有内容均来自第三方。"
+  }
+}

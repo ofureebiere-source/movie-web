@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { GrNext, GrPrevious } from 'react-icons/gr';
 import firebaseServices from 'services/firebase-services';
 import { getRecentMovies as getLocalRecentMovies } from 'lib/recent-movies-storage';
-import { getBecauseYouWatched } from 'app/actions';
+import { getBecauseYouWatched } from 'lib/catalog-client';
 import RegularMovieItem from '../commons/regular-movie-item';
 import type { IRecentMovie } from 'types/recent-movie';
 import type Movie from 'types/movie';
@@ -23,6 +23,7 @@ import type Movie from 'types/movie';
  */
 export default function BecauseYouWatchedSection() {
   const t = useTranslations('home');
+  const locale = useLocale();
   const user = useSelector((state: any) => state.auth.user);
 
   const [items, setItems] = useState<Movie[] | null>(null);
@@ -48,7 +49,7 @@ export default function BecauseYouWatchedSection() {
 
       // 2. Same-genre suggestions for the most-recent title
       const source = list[0];
-      const raw = (await getBecauseYouWatched(source.slug)) as Movie[];
+      const raw = (await getBecauseYouWatched(source.slug, locale)) as Movie[];
 
       // Exclude everything the user has already watched (and the source itself)
       const watchedSlugs = new Set(list.map((m) => m.slug));

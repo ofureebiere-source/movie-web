@@ -40,7 +40,7 @@ export default async function MaintenancePage({
 
       <header className={styles.hero}>
         <div className={styles.heroBody}>
-          <div className={styles.wordmark}>MOVIEX</div>
+          <div className={styles.wordmark}>Netflix-pro</div>
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.note}>{t('note')}</p>
         </div>
@@ -77,7 +77,7 @@ export default async function MaintenancePage({
       )}
 
       <footer className={`${styles.footer} ${hasSchedule ? '' : styles.footerBare}`}>
-        © {new Date().getFullYear()} MOVIEX
+        © {new Date().getFullYear()} Netflix-pro
       </footer>
     </div>
   );

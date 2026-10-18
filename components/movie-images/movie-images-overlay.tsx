@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { GrNext, GrPrevious } from 'react-icons/gr';
 import { IoClose } from 'react-icons/io5';
 import MovieImage from 'types/movie-image';
+import { tmdbImageUrl } from 'lib/tmdb-image';
 import 'swiper/css';
 import 'swiper/css/navigation';
 
@@ -108,7 +109,7 @@ export const MovieImagesOverlay = ({
                 <div className="relative w-full h-full flex items-center justify-center">
                   <div className="relative w-full h-full max-w-5xl max-h-[80vh]">
                     <Image
-                      src={`${process.env.NEXT_PUBLIC_TMDB_IMG_DOMAIN}/t/p/original${image.file_path}`}
+                      src={tmdbImageUrl(image.file_path, 'original')}
                       alt={`Movie Image ${index + 1}`}
                       fill
                       className="object-contain"

@@ -1,0 +1,82 @@
+{
+  "common": {
+    "loading": "불러오는 중...",
+    "loadingMovies": "영화를 불러오는 중...",
+    "error": "문제가 발생했습니다",
+    "retry": "다시 시도",
+    "close": "닫기",
+    "yes": "예",
+    "no": "아니요",
+    "unknown": "알 수 없음"
+  },
+  "header": {
+    "menu": {
+      "singleMovies": "영화",
+      "tvSeries": "TV 시리즈",
+      "cartoons": "애니메이션",
+      "tvShows": "TV 프로그램",
+      "categories": "장르",
+      "countries": "국가"
+    },
+    "search": "영화 검색"
+  },
+  "home": {
+    "continueWatching": "이어보기",
+    "topPicks": "추천 작품",
+    "trending": {
+      "title": "이번 주 인기"
+    },
+    "lists": {
+      "newlyUpdated": "최신 업데이트",
+      "singleNewlyUpdated": "최신 영화",
+      "tvSeriesNewlyUpdated": "최신 TV 시리즈",
+      "cartoonNewlyUpdated": "최신 애니메이션",
+      "tvShowsNewlyUpdated": "최신 TV 프로그램",
+      "theatricalNewlyUpdated": "극장 개봉작",
+      "voicedNewlyUpdated": "베트남어 더빙"
+    }
+  },
+  "bottomNav": {
+    "home": "홈",
+    "search": "검색",
+    "myList": "내 목록",
+    "profile": "프로필"
+  },
+  "lists": {
+    "endOfList": "🎬 끝까지 보셨습니다",
+    "errorLoading": "❌ 영화를 불러오지 못했습니다",
+    "emptyCategory": "이 카테고리에 아직 영화가 없습니다",
+    "searchPlaceholder": "영화 제목을 입력하세요..."
+  },
+  "search": {
+    "promptTitle": "볼 영화 찾기",
+    "promptSubtitle": "위에 제목을 입력하거나 장르로 둘러보세요",
+    "browseByGenre": "장르별 보기",
+    "trending": "지금 인기",
+    "suggestions": "이런 작품은 어떠세요"
+  },
+  "filter": {
+    "browse": "둘러보기",
+    "filtersLabel": "필터",
+    "genre": "장르",
+    "country": "국가",
+    "year": "연도",
+    "sort": "정렬",
+    "all": "전체",
+    "clear": "필터 지우기",
+    "sortLatest": "최신",
+    "lang": "오디오",
+    "langVietsub": "베트남어 자막",
+    "langVoiceover": "더빙",
+    "langDubbed": "더빙판"
+  },
+  "movie": {
+    "watch": "영화 보기",
+    "moreLikeThis": "비슷한 작품",
+    "share": "공유"
+  },
+  "footer": {
+    "copyright": "© 2024 Netflix-pro. 모든 권리 보유.",
+    "disclaimer": "Netflix-pro는 이 사이트의 어떤 콘텐츠도 호스팅하지 않습니다. 모든 콘텐츠는 제3자로부터 제공됩니다."
+  }
+}

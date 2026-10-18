@@ -6,8 +6,6 @@ import Movie from 'types/movie';
 import RegularMovieItem from './regular-movie-item';
 import { GrNext, GrPrevious } from 'react-icons/gr';
 import { useRef } from 'react';
-import { useHomePageLoadingContext } from '../context/home-page-loading-context';
-import MovieListSkeleton from './movie-list-skeleton';
 
 interface MovieListProps {
   listName: string;
@@ -16,8 +14,6 @@ interface MovieListProps {
 }
 
 export default function MovieList({ listName, movies, isNewlyMovieItem }: MovieListProps) {
-  const { isLoadingHomePage } = useHomePageLoadingContext();
-
   const swiperRef = useRef<any>(null);
 
   const handlePrevSlide = () => {
@@ -27,8 +23,6 @@ export default function MovieList({ listName, movies, isNewlyMovieItem }: MovieL
   const handleNextSlide = () => {
     swiperRef.current?.slideNext();
   };
-
-  if (isLoadingHomePage) return <MovieListSkeleton />;
 
   return (
     <div className="container-wrapper space-y-4">

@@ -42,10 +42,10 @@ export default function Footer() {
 
       <div className="container mx-auto px-4 md:px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-20">
-          {/* Left Column - About MOVIEX */}
+          {/* Left Column - About Netflix-pro */}
           <div className="space-y-5">
             <Link href="/" className="inline-block">
-              <h2 className="text-4xl font-bold text-red-600 tracking-tight">MOVIEX</h2>
+              <h2 className="text-4xl font-bold text-red-600 tracking-tight">Netflix-pro</h2>
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed">{t('description')}</p>
 

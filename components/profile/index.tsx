@@ -6,11 +6,10 @@ import { RootState } from '../../redux/store';
 import Image from 'next/image';
 import PersonalInfo from './personal-info';
 import SecuritySettings from './security-settings';
-import LanguageSettings from './language-settings';
 import SupportContact from './support-contact';
 import { useTranslations } from 'next-intl';
 
-export type ProfileSection = 'personal' | 'security' | 'language' | 'support';
+export type ProfileSection = 'personal' | 'security' | 'support';
 
 export default function Profile() {
   const t = useTranslations('profile');
@@ -36,8 +35,6 @@ export default function Profile() {
         return <PersonalInfo user={user} />;
       case 'security':
         return <SecuritySettings user={user} />;
-      case 'language':
-        return <LanguageSettings />;
       case 'support':
         return <SupportContact />;
       default:
@@ -93,7 +90,6 @@ export default function Profile() {
                 {[
                   { id: 'personal', label: t('menu.personalInfo') },
                   { id: 'security', label: t('menu.security') },
-                  { id: 'language', label: t('menu.language') },
                   { id: 'support', label: t('menu.support') },
                 ].map((item) => {
                   const isActive = activeSection === item.id;

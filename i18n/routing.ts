@@ -11,7 +11,22 @@ import { createNavigation } from 'next-intl/navigation';
  *   Chosen for clean URL semantics and SEO clarity.
  */
 export const routing = defineRouting({
-  locales: ['vi', 'en'],
+  locales: [
+    'vi', // Tiếng Việt  — the catalogue's own language, and the default
+    'en', // English
+    'zh', // 中文
+    'ko', // 한국어
+    'ja', // 日本語
+    'th', // ไทย
+    'id', // Bahasa Indonesia
+    'es', // Español
+    'fr', // Français
+    'pt', // Português
+    'de', // Deutsch
+    'ru', // Русский
+    'hi', // हिन्दी
+    'ar', // العربية
+  ],
   defaultLocale: 'vi',
   localePrefix: 'always',
 });
