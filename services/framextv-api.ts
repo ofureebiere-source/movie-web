@@ -297,73 +297,112 @@ async function apiFetch<T>(
     if (value === undefined || value === null || value === '') continue;
     search.set(key, String(value));
   }
+  const query = search.toString();
 
-  const url = presetUrl ?? `${API_BASE}${path}${search.toString() ? `?${search}` : ''}`;
+  const directUrl = presetUrl ?? `${API_BASE}${path}${query ? `?${query}` : ''}`;
 
   if (revalidate > 0) {
-    const cached = readCache<T>(url, revalidate);
+    const cached = readCache<T>(directUrl, revalidate);
     if (cached !== null) return cached;
-    const pending = inflight.get(url);
+    const pending = inflight.get(directUrl);
     if (pending) return pending as Promise<T>;
   }
 
   const request = (async (): Promise<T> => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    try {
-      const res = await fetch(url, {
-        headers: { accept: 'application/json' },
-        signal: controller.signal,
-        // Cross-origin read; the API opts in with `allow-origin: *`.
-        mode: 'cors',
-        cache: 'no-store',
-      });
-
-      const contentType = res.headers.get('content-type') ?? '';
-      if (!contentType.includes('application/json')) {
-        // The challenge page is HTML served with a 403. Naming it here saves
-        // whoever reads the next failure report from re-deriving this.
-        throw new CatalogApiError(
-          `Catalogue returned non-JSON (${res.status}, ${contentType || 'no content-type'})`,
-          res.status,
-          path
-        );
-      }
-      if (!res.ok) {
-        throw new CatalogApiError(`Catalogue responded ${res.status}`, res.status, path);
-      }
-
-      const body = (await res.json()) as T & { success?: unknown };
-      // This backend answers unknown paths with a 200 `{status:"ok",name:…}`
-      // health payload rather than a 404, so "did we get the field we asked
-      // for" is the real success test — callers check the shape.
-      if (body?.success === false && !(body as { error?: unknown }).error) {
-        throw new CatalogApiError('Catalogue reported success:false', 404, path);
-      }
-      if (revalidate > 0) writeCache(url, body);
-      return body;
-    } catch (err) {
-      if (err instanceof CatalogApiError) throw err;
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new CatalogApiError(`Catalogue timed out after ${TIMEOUT_MS}ms`, 408, path);
-      }
-      throw new CatalogApiError(
-        err instanceof Error ? err.message : 'Catalogue request failed',
-        0,
-        path
-      );
-    } finally {
-      clearTimeout(timer);
+    const body = await fetchWithFallback<T>(directUrl, path, query);
+    if (revalidate > 0) writeCache(directUrl, body);
+    return body;
+  })().catch((err: unknown) => {
+    if (err instanceof CatalogApiError) throw err;
+    if (err instanceof Error && err.name === 'AbortError') {
+      throw new CatalogApiError(`Catalogue timed out after ${TIMEOUT_MS}ms`, 408, path);
     }
-  })();
+    throw new CatalogApiError(
+      err instanceof Error ? err.message : 'Catalogue request failed',
+      0,
+      path
+    );
+  });
 
   if (revalidate > 0) {
-    inflight.set(url, request);
-    request.finally(() => inflight.delete(url)).catch(() => {
+    inflight.set(directUrl, request);
+    request.finally(() => inflight.delete(directUrl)).catch(() => {
       /* the consumer handles the rejection */
     });
   }
   return request;
+}
+
+/**
+ * Read a catalogue path, preferring the browser's own connection.
+ *
+ * The direct read is tried first because it is the fastest path and the
+ * film/series endpoints allow it (`access-control-allow-origin: *`). It cannot
+ * be the only path, though, for two independent reasons:
+ *
+ *  - The `/anime/api/*` endpoints send no CORS header at all, so the browser
+ *    refuses to hand the response to us no matter what. Those calls only ever
+ *    succeed through the same-origin Edge proxy in `app/api/catalog`.
+ *  - A visitor behind a filtering proxy or a restrictive extension can have
+ *    the direct read blocked while the proxy still works.
+ *
+ * So a failure falls through to the proxy rather than surfacing. Each attempt
+ * gets its own timeout, so a direct read that hangs does not consume the
+ * proxy's budget too.
+ */
+async function fetchWithFallback<T>(
+  directUrl: string,
+  path: string,
+  query: string
+): Promise<T> {
+  const proxyUrl = `/api/catalog${path}${query ? `?${query}` : ''}`;
+  const attempts = directUrl === proxyUrl ? [proxyUrl] : [directUrl, proxyUrl];
+
+  let lastError: unknown;
+  for (const url of attempts) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      return await readJson<T>(url, path, controller.signal);
+    } catch (err) {
+      lastError = err;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new CatalogApiError('Catalogue request failed', 0, path);
+}
+
+async function readJson<T>(url: string, path: string, signal: AbortSignal): Promise<T> {
+  const res = await fetch(url, {
+    headers: { accept: 'application/json' },
+    signal,
+    mode: 'cors',
+    cache: 'no-store',
+  });
+
+  const contentType = res.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    // The challenge page is HTML served with a 403. Naming it here saves
+    // whoever reads the next failure report from re-deriving this.
+    throw new CatalogApiError(
+      `Catalogue returned non-JSON (${res.status}, ${contentType || 'no content-type'})`,
+      res.status,
+      path
+    );
+  }
+  if (!res.ok) {
+    throw new CatalogApiError(`Catalogue responded ${res.status}`, res.status, path);
+  }
+
+  const body = (await res.json()) as T & { success?: unknown };
+  // This backend answers unknown paths with a 200 `{status:"ok",name:…}`
+  // health payload rather than a 404, so "did we get the field we asked
+  // for" is the real success test — callers check the shape.
+  if (body?.success === false && !(body as { error?: unknown }).error) {
+    throw new CatalogApiError('Catalogue reported success:false', 404, path);
+  }
+  return body;
 }
 
 // ============================================================================
