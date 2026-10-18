@@ -146,12 +146,47 @@ segment. Locales in `RTL_LOCALES` (`ar`, `he`, `fa`, `ur`) render `dir="rtl"`.
 
 ## Catalogue
 
-`services/framextv-api.ts` talks to the framextv backend; `lib/catalog-client.ts`
-fetches it **in the browser**, because the provider blocks datacenter IPs and the
-Vercel runtime is one. `NEXT_PUBLIC_CATALOG_API_BASE` (falling back to
-`CATALOG_API_BASE`) sets the base and must carry the `NEXT_PUBLIC_` prefix or
-Next will not inline it into the client bundle. `components/commons/prefetch-link.tsx`
-warms a browse page on hover/focus so it paints with rows instead of a skeleton.
+`services/framextv-api.ts` talks to the framextv backend. Reads happen **in the
+browser first**, because the provider's site origin blocks datacenter IPs and the
+Vercel Node runtime is one, then fall through to `app/api/catalog/[...path]`,
+an **Edge-runtime** passthrough. Two independent reasons the fallback is not
+optional:
+
+- Cloudflare answers the Node serverless pool with a 403 challenge on every
+  host and every endpoint (verified), but does **not** challenge the Edge IP
+  pool. Edge is the only server-side path that works in production.
+- `/anime/api/*` sends no `access-control-allow-origin` at all, so the browser
+  can never read it directly, whatever origin it is on. Anime only ever loads
+  through the proxy.
+
+The proxy allows only `/api/` and `/anime/api/` prefixes so it cannot be aimed
+at arbitrary hosts. `hooks/useResolvedStream.ts` uses the same direct-then-proxy
+order for playback, since the anime stream endpoint has the same CORS gap.
+
+`NEXT_PUBLIC_CATALOG_API_BASE` (falling back to `CATALOG_API_BASE`) sets the
+base and must carry the `NEXT_PUBLIC_` prefix or Next will not inline it into
+the client bundle. `components/commons/prefetch-link.tsx` warms a browse page on
+hover/focus so it paints with rows instead of a skeleton.
+
+`/` redirects to a locale via `middleware.ts` `pickLocaleFromGeo`, so a
+datacenter client (a US CI runner, a curl from Vercel) sees `/` → `/en` even
+with `Accept-Language: vi`; the geo header wins. That is expected, not a bug.
+
+## Brand
+
+The product name is **Netflix-pro**, defined once in `constants/brand.ts`
+(`SITE_NAME`, `WORDMARK_LEAD`, `WORDMARK_ACCENT`) and mirrored in each locale's
+`footer.copyright` / `footer.disclaimer`. The owner asked for the name back
+after an earlier brand-free pass; do not re-scrub it.
+
+## Buttons
+
+Every interactive surface wears the `glass-btn` classes from `app/globals.css`
+(a translucent frosted pane with `backdrop-filter`). Do not give a button a
+solid `bg-white` / `bg-red-600` / `bg-gray-*` fill — the owner asked for
+glass-morphism throughout and solid colours to be removed. Variants:
+`glass-btn-primary` (the one tinted action per surface), `glass-btn-active`
+(selected chip), `glass-btn-sm`, `glass-btn-icon`, `glass-btn-block`.
 
 
 ## Images
@@ -159,5 +194,6 @@ warms a browse page on hover/focus so it paints with rows instead of a skeleton.
 `next.config.mjs` uses a **custom** loader (`image-loader.ts`) that routes every
 image through `app/api/image` (self-hosted `sharp`), deliberately not Vercel's
 metered Image Optimization API. `app/api/image/route.ts` re-validates host and
-width independently and allows only `image.tmdb.org`, `phimimg.com` and
-`lh3.googleusercontent.com`. If images 404, suspect that allow-list or `sharp`.
+width independently and allows only the hosts in its `ALLOWED_HOSTS` set
+(TMDB, `phimimg.com`, Google avatars, `media.kitsu.app` plus Kitsu's Backblaze
+bucket, AniList, Crunchyroll). If images 404, suspect that allow-list or `sharp`.
