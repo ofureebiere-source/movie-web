@@ -67,7 +67,7 @@ export default function DisclaimerModal() {
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#141414] to-[#0a0a0a] border border-white/[0.06] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]">
           <div className="relative px-9 pt-10 pb-8">
             <div className="flex justify-center mb-7">
-              <Image src={Logo} alt="MovieX" className="w-11 h-11" />
+              <Image src={Logo} alt="Logo" className="w-11 h-11" />
             </div>
 
             <p className="text-center text-[10px] font-medium tracking-[0.32em] uppercase text-white/40 mb-4">

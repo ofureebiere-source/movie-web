@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 
 export const metadata: Metadata = {
-  title: 'MovieX',
+  title: 'Watch Movies Online',
   description: 'Xem phim online miễn phí',
 };
 

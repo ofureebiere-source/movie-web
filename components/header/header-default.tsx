@@ -38,7 +38,7 @@ export default function HeaderDefault({
     <header className="absolute top-0 left-0 right-0 z-20">
       <div className="header-container flex items-center justify-between container-wrapper">
         <Link className="block" href="/">
-          <Image src={logo} alt="MovieX" className="w-32" />
+          <Image src={logo} alt="Logo" className="w-32" />
         </Link>
         <ul className="flex flex-grow justify-center items-center font-semibold text-lg">
           <li className="px-8">

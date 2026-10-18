@@ -216,7 +216,7 @@
   "disclaimer": {
     "eyebrow": "Lưu ý",
     "title": "Tuyên bố miễn trừ trách nhiệm",
-    "intro": "MovieX là một dự án phi thương mại được tạo ra cho mục đích học tập.",
+    "intro": "Đây là một dự án phi thương mại được tạo ra cho mục đích học tập.",
     "points": {
       "purpose": "Chỉ phục vụ mục đích học tập và nghiên cứu",
       "thirdParty": "Nội dung được cung cấp bởi các nguồn bên thứ ba",
@@ -228,7 +228,7 @@
   },
   "auth": {
     "login": {
-      "title": "Đăng nhập khoản MovieX",
+      "title": "Đăng nhập tài khoản",
       "email": "Email:",
       "password": "Mật khẩu:",
       "submit": "Đăng nhập",
@@ -239,7 +239,7 @@
       "failedToast": "Đăng nhập thất bại"
     },
     "signup": {
-      "title": "Đăng ký khoản MovieX",
+      "title": "Tạo tài khoản",
       "username": "Tên tài khoản:",
       "email": "Email:",
       "password": "Mật khẩu:",
@@ -260,7 +260,7 @@
   },
   "recent": {
     "title": "Phim xem gần đây",
-    "subtitle": "MovieX giờ đã có tính năng lưu tiến trình tất cả phim mà bạn đã xem"
+    "subtitle": "Tiến trình xem tất cả phim bạn đã xem giờ đã được lưu"
   },
   "profile": {
     "loginRequired": {
@@ -432,7 +432,7 @@
     }
   },
   "footer": {
-    "description": "MovieX - Trang xem phim online chất lượng cao miễn phí Vietsub, thuyết minh, lồng tiếng Full HD. Kho phim mới không lỗ, phim chiếu rạp, phim bộ, phim lẻ từ nhiều quốc gia như Việt Nam, Hàn Quốc, Trung Quốc, Thái Lan, Nhật Bản, Âu Mỹ... đã đang thể loại. Khám phá nền tảng phim trực tuyến hay nhất 2024 chất lượng 4K!",
+    "description": "Trang xem phim online chất lượng cao miễn phí Vietsub, thuyết minh, lồng tiếng Full HD. Kho phim mới, phim chiếu rạp, phim bộ, phim lẻ từ nhiều quốc gia như Việt Nam, Hàn Quốc, Trung Quốc, Thái Lan, Nhật Bản, Âu Mỹ...",
     "info": {
       "heading": "Thông tin",
       "faq": "Hỏi đáp",
@@ -477,23 +477,23 @@
     "genericError": "Có lỗi xảy ra"
   },
   "metadata": {
-    "homeTitle": "MovieX - Xem Phim Online | Phim Lẻ | TV Show | Phim Bộ | Hoạt Hình | Vietsub | Lồng Tiếng Cập Nhật Liên Tục",
-    "homeDescription": "Xem phim online với hàng nghìn phim lẻ, TV show, phim bộ thuộc nhiều thể loại hấp dẫn, đã được lồng tiếng và cập nhật mới nhất mỗi ngày. Trải nghiệm xem phim chất lượng cao hoàn toàn miễn phí tại MovieX.",
+    "homeTitle": "Xem Phim Online | Phim Lẻ | TV Show | Phim Bộ | Hoạt Hình | Vietsub | Lồng Tiếng Cập Nhật Liên Tục",
+    "homeDescription": "Xem phim online với hàng nghìn phim lẻ, TV show, phim bộ thuộc nhiều thể loại hấp dẫn, đã được lồng tiếng và cập nhật mới nhất mỗi ngày. Trải nghiệm xem phim chất lượng cao hoàn toàn miễn phí.",
     "searchTitle": "Tìm kiếm phim",
     "recentTitle": "Phim xem gần đây",
     "collectionTitle": "Bộ sưu tập phim",
     "browse": {
-      "genreTitle": "Phim {name} mới cập nhật | MovieX",
+      "genreTitle": "Phim {name} mới cập nhật",
       "genreDescription": "Phim {name} mới nhất, cập nhật mỗi ngày — Vietsub, thuyết minh và lồng tiếng.",
-      "countryTitle": "Phim {name} mới cập nhật | MovieX",
+      "countryTitle": "Phim {name} mới cập nhật",
       "countryDescription": "Phim {name} mới nhất, cập nhật mỗi ngày — Vietsub, thuyết minh và lồng tiếng.",
-      "formatTitle": "{name} mới cập nhật | MovieX",
+      "formatTitle": "{name} mới cập nhật",
       "formatDescription": "{name} mới nhất, cập nhật mỗi ngày — Vietsub, thuyết minh và lồng tiếng."
     }
   },
   "maintenance": {
     "title": "Website đang tạm dừng hoạt động",
-    "note": "MovieX đang được bảo trì. Mình sẽ mở lại ngay khi xong.",
+    "note": "Trang đang được bảo trì. Chúng tôi sẽ mở lại ngay khi xong.",
     "scrollCue": "Cuộn xuống xem lịch chiếu rạp Việt Nam",
     "cinema": {
       "upcomingTitle": "Sắp chiếu tại rạp Việt Nam",

@@ -216,7 +216,7 @@
   "disclaimer": {
     "eyebrow": "Notice",
     "title": "Disclaimer",
-    "intro": "MovieX is a non-commercial project created for educational purposes.",
+    "intro": "This is a non-commercial project created for educational purposes.",
     "points": {
       "purpose": "Educational and research purposes only",
       "thirdParty": "Content provided by third-party sources",
@@ -228,7 +228,7 @@
   },
   "auth": {
     "login": {
-      "title": "Sign in to MovieX",
+      "title": "Sign in to your account",
       "email": "Email:",
       "password": "Password:",
       "submit": "Sign in",
@@ -239,7 +239,7 @@
       "failedToast": "Sign in failed"
     },
     "signup": {
-      "title": "Sign up for MovieX",
+      "title": "Create your account",
       "username": "Username:",
       "email": "Email:",
       "password": "Password:",
@@ -260,7 +260,7 @@
   },
   "recent": {
     "title": "Recently watched",
-    "subtitle": "MovieX now saves your watch progress for every movie you view"
+    "subtitle": "Your watch progress is now saved for every movie you view"
   },
   "profile": {
     "loginRequired": {
@@ -432,7 +432,7 @@
     }
   },
   "footer": {
-    "description": "MovieX - Free high-quality online movie streaming with Vietsub, dubbing, voiceover Full HD. Vast library of new releases, theater hits, TV series, and movies from Vietnam, Korea, China, Thailand, Japan, US/Europe and more across many genres. Discover the best 4K streaming platform of 2024!",
+    "description": "Free high-quality online movie streaming with Vietsub, dubbing and voiceover in Full HD. A vast library of new releases, theater hits, TV series and movies from Vietnam, Korea, China, Thailand, Japan, US and Europe across many genres.",
     "info": {
       "heading": "Information",
       "faq": "FAQ",
@@ -477,22 +477,22 @@
     "genericError": "Something went wrong"
   },
   "metadata": {
-    "homeTitle": "MovieX - Watch Movies Online | Movies | TV Shows | Series | Animation | Subtitled | Dubbed",
-    "homeDescription": "Watch thousands of movies, TV shows, and series across many genres online — subtitled or dubbed and updated daily. Enjoy high-quality streaming for free at MovieX.",
+    "homeTitle": "Watch Movies Online | Movies | TV Shows | Series | Animation | Subtitled | Dubbed",
+    "homeDescription": "Watch thousands of movies, TV shows and series across many genres online — subtitled or dubbed and updated daily, with free high-quality streaming.",
     "searchTitle": "Search movies",
     "recentTitle": "Recently watched",
     "collectionTitle": "Movie collection",
     "browse": {
-      "genreTitle": "{name} movies & series | MovieX",
+      "genreTitle": "{name} movies & series",
       "genreDescription": "The newest {name} titles, updated daily — with Vietnamese subtitles, voiceover or dub.",
-      "countryTitle": "Movies & series from {name} | MovieX",
+      "countryTitle": "Movies & series from {name}",
       "countryDescription": "The newest titles from {name}, updated daily — with Vietnamese subtitles, voiceover or dub.",
-      "formatTitle": "{name} | MovieX",
+      "formatTitle": "{name}",
       "formatDescription": "{name}: the newest titles, updated daily — with Vietnamese subtitles, voiceover or dub."
     }
   },
   "maintenance": {
-    "title": "MovieX is temporarily offline",
+    "title": "We are temporarily offline",
     "note": "The site is down for maintenance. It will be back as soon as the work is done.",
     "scrollCue": "Scroll down for what's coming to US cinemas",
     "cinema": {
