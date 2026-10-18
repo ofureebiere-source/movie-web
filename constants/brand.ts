@@ -10,15 +10,13 @@
  * the second one in the accent colour. Keeping the split here rather than in
  * the component means the mark cannot drift from the name.
  *
- * Chosen to match the served page title ("Watch Movies Online") and to avoid
- * any trademarked streaming-service name — this is a standalone service, and
- * naming it after another company's product is both a legal risk and a lie
- * about who runs it.
+ * `WORDMARK_LEAD` / `WORDMARK_ACCENT` split it for the wordmark, which paints
+ * the second half in the accent colour.
  */
-export const SITE_NAME = 'Watch Movies Online';
+export const SITE_NAME = 'Netflix-pro';
 
-export const WORDMARK_LEAD = 'Watch Movies';
-export const WORDMARK_ACCENT = 'Online';
+export const WORDMARK_LEAD = 'Netflix';
+export const WORDMARK_ACCENT = '-pro';
 
 /** Support address shown in the profile and the copyright disclaimer. */
-export const SUPPORT_EMAIL = 'support@watchmoviesonline.app';
+export const SUPPORT_EMAIL = 'support@netflix-pro.com';

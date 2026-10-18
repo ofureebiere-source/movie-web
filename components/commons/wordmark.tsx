@@ -23,7 +23,7 @@ export default function Wordmark({ compact = false, onClick }: { compact?: boole
         }`}
       >
         {WORDMARK_LEAD}
-        <span className="text-custome-red"> {WORDMARK_ACCENT}</span>
+        <span className="text-custome-red">{WORDMARK_ACCENT}</span>
       </span>
     </Link>
   );
