@@ -431,10 +431,10 @@ async function findAnimeRow(id: string): Promise<FxAnimeItem | null> {
 export async function browseAnime(
   page: number,
   locale: string,
-  genreSlug?: string
+  options: { genreSlug?: string; year?: string } = {}
 ): Promise<CatalogPage> {
-  const genre = animeGenreName(genreSlug);
-  const result = await discover('anime', { page, genre });
+  const genre = animeGenreName(options.genreSlug);
+  const result = await discover('anime', { page, genre, year: options.year });
   return {
     items: adaptAnimeItems(result.items as FxAnimeItem[], { locale }),
     totalItems: result.totalItems,

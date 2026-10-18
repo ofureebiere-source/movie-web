@@ -104,7 +104,20 @@
       "horror": "공포",
       "sports": "스포츠",
       "thriller": "스릴러"
-    }
+    },
+    "searchPlaceholder": "애니 검색…",
+    "sortLabel": "정렬",
+    "sortNewest": "최신순",
+    "sortOldest": "오래된순",
+    "sortRating": "평점 높은순",
+    "sortTitle": "제목 A–Z",
+    "yearLabel": "연도",
+    "allYears": "전체 연도",
+    "noResults": "이 필터에 맞는 애니가 없습니다.",
+    "searchResults": "결과",
+    "clear": "초기화",
+    "sortLoadedOnly": "불러온 작품 기준 정렬",
+    "sortDefault": "기본 순서"
   },
   "person": {
     "title": "인물",

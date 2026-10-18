@@ -104,7 +104,20 @@
       "horror": "ホラー",
       "sports": "スポーツ",
       "thriller": "スリラー"
-    }
+    },
+    "searchPlaceholder": "アニメを検索…",
+    "sortLabel": "並び替え",
+    "sortNewest": "新しい順",
+    "sortOldest": "古い順",
+    "sortRating": "評価が高い順",
+    "sortTitle": "タイトル A–Z",
+    "yearLabel": "年",
+    "allYears": "すべての年",
+    "noResults": "この条件に一致するアニメはありません。",
+    "searchResults": "結果",
+    "clear": "クリア",
+    "sortLoadedOnly": "読み込み済みの作品を並び替え",
+    "sortDefault": "デフォルト順"
   },
   "person": {
     "title": "人物",

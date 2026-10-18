@@ -104,7 +104,20 @@
       "horror": "हॉरर",
       "sports": "खेल",
       "thriller": "थ्रिलर"
-    }
+    },
+    "searchPlaceholder": "एनीमे खोजें…",
+    "sortLabel": "क्रमबद्ध करें",
+    "sortNewest": "नवीनतम पहले",
+    "sortOldest": "पुराने पहले",
+    "sortRating": "सर्वाधिक रेटेड",
+    "sortTitle": "शीर्षक A–Z",
+    "yearLabel": "वर्ष",
+    "allYears": "सभी वर्ष",
+    "noResults": "इन फ़िल्टरों से कोई एनीमे मेल नहीं खाता।",
+    "searchResults": "परिणाम",
+    "clear": "साफ़ करें",
+    "sortLoadedOnly": "अब तक लोड किए गए शीर्षक क्रमबद्ध करता है",
+    "sortDefault": "डिफ़ॉल्ट क्रम"
   },
   "person": {
     "title": "व्यक्ति",

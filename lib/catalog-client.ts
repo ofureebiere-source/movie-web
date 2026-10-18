@@ -138,13 +138,28 @@ export async function getMoviesByCountry(
 
 // ---- Anime ----------------------------------------------------------------
 
-/** One page of the anime catalogue, optionally narrowed to a genre. */
+/** One page of the anime catalogue, optionally narrowed to a genre and year. */
 export async function getAnime(
   page: number,
   locale: string,
-  genreSlug?: string
+  options: { genreSlug?: string; year?: string } = {}
 ): Promise<CatalogPage> {
-  return browseAnime(page, locale, genreSlug);
+  return browseAnime(page, locale, options);
+}
+
+/**
+ * Keyword search from the anime page.
+ *
+ * The provider's `/api/search` indexes films, series and anime in one index —
+ * there is no anime-only search endpoint (its `/anime/api/search` 404s, and its
+ * anime `discover` ignores a query parameter). So this is the ordinary title
+ * search: results are keyed by TMDB id and resolve on the standard title route,
+ * which means every result is playable. Searching "naruto" on the anime page
+ * finds Naruto; it can also surface a live-action title, which is a harmless
+ * consequence of the shared index rather than a dead end.
+ */
+export async function searchAnime(query: string, page: number, locale: string): Promise<CatalogPage> {
+  return searchTitles(query, locale, page);
 }
 
 /** Every rail the anime landing page renders. */

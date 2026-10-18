@@ -104,7 +104,20 @@
       "horror": "สยองขวัญ",
       "sports": "กีฬา",
       "thriller": "ระทึกขวัญ"
-    }
+    },
+    "searchPlaceholder": "ค้นหาอนิเมะ…",
+    "sortLabel": "จัดเรียง",
+    "sortNewest": "ใหม่ที่สุด",
+    "sortOldest": "เก่าที่สุด",
+    "sortRating": "คะแนนสูงสุด",
+    "sortTitle": "ชื่อ A–Z",
+    "yearLabel": "ปี",
+    "allYears": "ทุกปี",
+    "noResults": "ไม่มีอนิเมะที่ตรงกับตัวกรองนี้",
+    "searchResults": "ผลลัพธ์",
+    "clear": "ล้าง",
+    "sortLoadedOnly": "จัดเรียงเรื่องที่โหลดแล้ว",
+    "sortDefault": "ค่าเริ่มต้น"
   },
   "person": {
     "title": "บุคคล",

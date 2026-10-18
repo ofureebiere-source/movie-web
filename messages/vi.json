@@ -492,7 +492,20 @@
       "horror": "Kinh dị",
       "sports": "Thể thao",
       "thriller": "Giật gân"
-    }
+    },
+    "searchPlaceholder": "Tìm anime…",
+    "sortLabel": "Sắp xếp",
+    "sortNewest": "Mới nhất",
+    "sortOldest": "Cũ nhất",
+    "sortRating": "Đánh giá cao",
+    "sortTitle": "Tên A–Z",
+    "yearLabel": "Năm",
+    "allYears": "Tất cả các năm",
+    "noResults": "Không có anime nào khớp với bộ lọc này.",
+    "searchResults": "Kết quả",
+    "clear": "Xóa bộ lọc",
+    "sortLoadedOnly": "Sắp xếp các tựa đã tải",
+    "sortDefault": "Thứ tự mặc định"
   },
   "person": {
     "title": "Diễn viên",

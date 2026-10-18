@@ -492,7 +492,20 @@
       "horror": "Horror",
       "sports": "Sports",
       "thriller": "Thriller"
-    }
+    },
+    "searchPlaceholder": "Search anime…",
+    "sortLabel": "Sort",
+    "sortNewest": "Newest first",
+    "sortOldest": "Oldest first",
+    "sortRating": "Highest rated",
+    "sortTitle": "Title A–Z",
+    "yearLabel": "Year",
+    "allYears": "All years",
+    "noResults": "No anime match these filters.",
+    "searchResults": "Results",
+    "clear": "Clear",
+    "sortLoadedOnly": "Sorts the titles loaded so far",
+    "sortDefault": "Default order"
   },
   "person": {
     "title": "Person",

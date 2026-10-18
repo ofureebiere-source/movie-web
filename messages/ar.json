@@ -104,7 +104,20 @@
       "horror": "رعب",
       "sports": "رياضة",
       "thriller": "إثارة"
-    }
+    },
+    "searchPlaceholder": "ابحث عن أنمي…",
+    "sortLabel": "ترتيب",
+    "sortNewest": "الأحدث أولاً",
+    "sortOldest": "الأقدم أولاً",
+    "sortRating": "الأعلى تقييماً",
+    "sortTitle": "العنوان A–Z",
+    "yearLabel": "السنة",
+    "allYears": "كل السنوات",
+    "noResults": "لا يوجد أنمي مطابق لهذه المرشحات.",
+    "searchResults": "النتائج",
+    "clear": "مسح",
+    "sortLoadedOnly": "يرتب الأعمال المحمّلة حتى الآن",
+    "sortDefault": "الترتيب الافتراضي"
   },
   "person": {
     "title": "شخص",

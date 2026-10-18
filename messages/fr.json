@@ -104,7 +104,20 @@
       "horror": "Horreur",
       "sports": "Sport",
       "thriller": "Thriller"
-    }
+    },
+    "searchPlaceholder": "Rechercher un anime…",
+    "sortLabel": "Trier",
+    "sortNewest": "Plus récents",
+    "sortOldest": "Plus anciens",
+    "sortRating": "Mieux notés",
+    "sortTitle": "Titre A–Z",
+    "yearLabel": "Année",
+    "allYears": "Toutes les années",
+    "noResults": "Aucun anime ne correspond à ces filtres.",
+    "searchResults": "Résultats",
+    "clear": "Effacer",
+    "sortLoadedOnly": "Trie les titres déjà chargés",
+    "sortDefault": "Ordre par défaut"
   },
   "person": {
     "title": "Personne",

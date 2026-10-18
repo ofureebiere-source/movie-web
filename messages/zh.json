@@ -104,7 +104,20 @@
       "horror": "恐怖",
       "sports": "体育",
       "thriller": "惊悚"
-    }
+    },
+    "searchPlaceholder": "搜索动漫…",
+    "sortLabel": "排序",
+    "sortNewest": "最新优先",
+    "sortOldest": "最早优先",
+    "sortRating": "评分最高",
+    "sortTitle": "名称 A–Z",
+    "yearLabel": "年份",
+    "allYears": "全部年份",
+    "noResults": "没有符合这些筛选条件的动漫。",
+    "searchResults": "结果",
+    "clear": "清除",
+    "sortLoadedOnly": "对已加载的作品排序",
+    "sortDefault": "默认排序"
   },
   "person": {
     "title": "人物",

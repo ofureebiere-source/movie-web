@@ -6,14 +6,18 @@ import Movie from 'types/movie';
 import RegularMovieItem from './regular-movie-item';
 import { GrNext, GrPrevious } from 'react-icons/gr';
 import { useRef } from 'react';
+import { Link } from 'i18n/routing';
 
 interface MovieListProps {
   listName: string;
   movies: NewlyMovie[] | Movie[];
   isNewlyMovieItem: boolean;
+  /** When set, the heading becomes a link to the full list — e.g. the anime
+   *  rail heading opens that genre's paged page. */
+  href?: string;
 }
 
-export default function MovieList({ listName, movies, isNewlyMovieItem }: MovieListProps) {
+export default function MovieList({ listName, movies, isNewlyMovieItem, href }: MovieListProps) {
   const swiperRef = useRef<any>(null);
 
   const handlePrevSlide = () => {
@@ -24,14 +28,24 @@ export default function MovieList({ listName, movies, isNewlyMovieItem }: MovieL
     swiperRef.current?.slideNext();
   };
 
+  const heading = (
+    <h2 className="relative inline-block pl-4 text-xl md:text-2xl font-bold tracking-tight">
+      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 md:h-7 bg-gradient-to-b from-red-500 to-red-700 rounded-full"></span>
+      {listName}
+    </h2>
+  );
+
   return (
     <div className="container-wrapper space-y-4">
       {/* Section header — Netflix-style with red accent bar */}
       <div className="px-4 md:px-0">
-        <h2 className="relative inline-block pl-4 text-xl md:text-2xl font-bold tracking-tight">
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 md:h-7 bg-gradient-to-b from-red-500 to-red-700 rounded-full"></span>
-          {listName}
-        </h2>
+        {href ? (
+          <Link href={href} prefetch={false} className="transition-opacity hover:opacity-80">
+            {heading}
+          </Link>
+        ) : (
+          heading
+        )}
       </div>
 
       {/*

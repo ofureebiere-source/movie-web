@@ -104,7 +104,20 @@
       "horror": "Horor",
       "sports": "Olahraga",
       "thriller": "Thriller"
-    }
+    },
+    "searchPlaceholder": "Cari anime…",
+    "sortLabel": "Urutkan",
+    "sortNewest": "Terbaru",
+    "sortOldest": "Terlama",
+    "sortRating": "Rating tertinggi",
+    "sortTitle": "Judul A–Z",
+    "yearLabel": "Tahun",
+    "allYears": "Semua tahun",
+    "noResults": "Tidak ada anime yang cocok dengan filter ini.",
+    "searchResults": "Hasil",
+    "clear": "Hapus",
+    "sortLoadedOnly": "Mengurutkan judul yang sudah dimuat",
+    "sortDefault": "Urutan bawaan"
   },
   "person": {
     "title": "Tokoh",

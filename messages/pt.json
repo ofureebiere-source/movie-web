@@ -104,7 +104,20 @@
       "horror": "Terror",
       "sports": "Esportes",
       "thriller": "Suspense"
-    }
+    },
+    "searchPlaceholder": "Buscar anime…",
+    "sortLabel": "Ordenar",
+    "sortNewest": "Mais recentes",
+    "sortOldest": "Mais antigos",
+    "sortRating": "Melhor avaliados",
+    "sortTitle": "Título A–Z",
+    "yearLabel": "Ano",
+    "allYears": "Todos os anos",
+    "noResults": "Nenhum anime corresponde a estes filtros.",
+    "searchResults": "Resultados",
+    "clear": "Limpar",
+    "sortLoadedOnly": "Ordena os títulos já carregados",
+    "sortDefault": "Ordem padrão"
   },
   "person": {
     "title": "Pessoa",

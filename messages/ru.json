@@ -104,7 +104,20 @@
       "horror": "Ужасы",
       "sports": "Спорт",
       "thriller": "Триллер"
-    }
+    },
+    "searchPlaceholder": "Поиск аниме…",
+    "sortLabel": "Сортировка",
+    "sortNewest": "Сначала новые",
+    "sortOldest": "Сначала старые",
+    "sortRating": "По рейтингу",
+    "sortTitle": "Название A–Z",
+    "yearLabel": "Год",
+    "allYears": "Все годы",
+    "noResults": "Нет аниме, соответствующих этим фильтрам.",
+    "searchResults": "Результаты",
+    "clear": "Сбросить",
+    "sortLoadedOnly": "Сортирует уже загруженные тайтлы",
+    "sortDefault": "По умолчанию"
   },
   "person": {
     "title": "Персона",

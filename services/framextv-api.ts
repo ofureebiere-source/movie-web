@@ -24,9 +24,12 @@
  *     ignored (verified: identical result pages). Country browse is therefore
  *     served by `lib/framextv-taxonomy`'s static taxonomy, which keeps the
  *     existing `/movies/country/*` routes alive without pretending to filter.
- *  2. **No rated sort.** `sort_by`/`order` are ignored; only `genre` and
- *     `year` narrow a list. The filter bar's year sort is dropped rather than
- *     faked over a single page.
+ *  2. **No sort.** `sort_by`, `order`, `sort_field`/`sort_type` and every
+ *     `sortBy` value are all ignored (verified: identical result pages, and
+ *     `sort=…` 400s). Genre and year DO narrow — year through `seasonYear`,
+ *     not `year`. Since the upstream will not order results, the anime grid
+ *     sorts the pages it has loaded in the browser, and says so, rather than
+ *     offering a control that reorders nothing.
  *
  * Playback is the backend's `/api/stream` m3u8 (CORS `*`, reachable from any
  * country, 60+ subtitle tracks), with framextv's own `/embed/{type}/{id}` as
@@ -437,9 +440,19 @@ export async function discover(
     // Anime filters by genre NAME (`Action`), not the numeric TMDB id the
     // film/series endpoints take — so a numeric `genre` is dropped rather
     // than sent and silently ignored.
+    //
+    // Its year parameter is `seasonYear`, not the `year` the film endpoint
+    // takes. This is not cosmetic: `/anime/api/discover?year=2020` is accepted
+    // and ignored (verified — it returns the unfiltered page), so sending
+    // `year` would leave a year filter that looks applied and filters nothing.
+    // `seasonYear=2020` genuinely narrows (877 results against 22,513).
     const body = await apiFetch<FxList>(
       '/anime/api/discover',
-      { page: params.page ?? 1, genre: typeof params.genre === 'string' ? params.genre : undefined },
+      {
+        page: params.page ?? 1,
+        genre: typeof params.genre === 'string' ? params.genre : undefined,
+        seasonYear: params.year,
+      },
       REVALIDATE.list
     );
     return toPage(body, '/anime/api/discover');

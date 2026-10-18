@@ -25,7 +25,10 @@ export default function AnimeGenrePage({ slug }: { slug: string }) {
 
   if (!isKnownAnimeGenre(slug)) notFound();
 
-  const fetcher = useMemo(() => (page: number) => getAnime(page, locale, slug), [locale, slug]);
+  const fetcher = useMemo(
+    () => (page: number) => getAnime(page, locale, { genreSlug: slug }),
+    [locale, slug]
+  );
 
   const { items, totalItems, isLoading, isLoadingMore, hasMore, error, sentinelRef, retry } =
     useInfinitePagination<NewlyMovie>({ fetcher, resetKey: `${locale}|${slug}` });
