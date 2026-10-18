@@ -65,7 +65,7 @@ export default function DetailPageClient({ slug }: { slug: string }) {
         <button
           type="button"
           onClick={() => setAttempt((n) => n + 1)}
-          className="rounded-full bg-red-600 px-6 py-2 font-medium text-white transition-colors hover:bg-red-700"
+          className="glass-btn glass-btn-primary"
         >
           Thử lại
         </button>

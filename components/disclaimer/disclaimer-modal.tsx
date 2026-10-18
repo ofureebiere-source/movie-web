@@ -103,7 +103,7 @@ export default function DisclaimerModal() {
             <button
               type="button"
               onClick={acceptDisclaimer}
-              className="w-full rounded-xl bg-white text-black py-3.5 text-[13.5px] font-semibold tracking-tight transition-all duration-300 hover:bg-white/90 active:scale-[0.99]"
+              className="glass-btn glass-btn-primary glass-btn-block rounded-xl py-3.5"
             >
               {t('agree')}
             </button>

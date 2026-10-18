@@ -60,7 +60,7 @@ export default function MovieContent({
         <Link
           key={index}
           href={`/movies/country/${item.slug}`}
-          className="inline-block rounded-full border border-gray-600 px-3 py-1 text-xs transition-all duration-300 hover:border-white hover:bg-white hover:text-black"
+          className="glass-btn glass-btn-sm"
         >
           {localizedCountry(item.slug, locale)}
         </Link>
@@ -113,7 +113,7 @@ export default function MovieContent({
                   <span
                     key={s.slug}
                     aria-current="page"
-                    className="rounded-md bg-white px-3 py-1.5 text-sm font-semibold text-black"
+                    className="glass-btn glass-btn-sm glass-btn-active"
                   >
                     {localizedSeason(`Phần ${s.season}`, locale)}
                   </span>
@@ -122,7 +122,7 @@ export default function MovieContent({
                     key={s.slug}
                     href={`/movies/${s.slug}`}
                     title={s.name}
-                    className="rounded-md border border-gray-600 px-3 py-1.5 text-sm transition-colors hover:border-white hover:bg-white hover:text-black"
+                    className="glass-btn glass-btn-sm"
                   >
                     {localizedSeason(`Phần ${s.season}`, locale)}
                   </Link>

@@ -68,10 +68,8 @@ export default function Profile() {
                     <button
                       key={item.id}
                       onClick={() => setActiveSection(item.id as ProfileSection)}
-                      className={`flex min-h-[44px] flex-shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-4 text-sm font-medium transition-colors lg:w-full lg:justify-start ${
-                        isActive
-                          ? 'bg-custome-red text-white'
-                          : 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+                      className={`glass-btn glass-btn-sm min-h-[44px] flex-shrink-0 rounded-lg lg:w-full lg:justify-start ${
+                        isActive ? 'glass-btn-primary' : 'text-gray-300 hover:text-white'
                       }`}
                     >
                       {item.label}

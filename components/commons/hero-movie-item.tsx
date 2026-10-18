@@ -198,12 +198,10 @@ export default function HeroMovieItem({
           <div className="space-x-5 flex items-center">
             <Link
               href={`/movies/${movie.slug}`}
-              className="inline-block py-3 px-5 bg-white text-black rounded-md"
+              className="glass-btn glass-btn-primary"
             >
-              <div className="flex align-top space-x-2">
-                <FaPlay size={18} />
-                <span className="block leading-4 font-semibold">{t('watch')}</span>
-              </div>
+              <FaPlay size={18} />
+              <span className="block leading-4 font-semibold">{t('watch')}</span>
             </Link>
             <BtnAddToCollection variant="primary" detailMovie={detailMovie} />
           </div>
@@ -299,12 +297,10 @@ export default function HeroMovieItem({
           <div className="space-y-3 pt-1">
             <Link
               href={`/movies/${movie.slug}`}
-              className="block w-full bg-white text-black rounded-lg py-3 px-4 text-center font-semibold"
+              className="glass-btn glass-btn-primary glass-btn-block"
             >
-              <div className="flex items-center justify-center gap-x-2">
-                <FaPlay size={16} />
-                <span>{t('watch')}</span>
-              </div>
+              <FaPlay size={16} />
+              <span>{t('watch')}</span>
             </Link>
             <div className="w-full">
               <BtnAddToCollection variant="primary" detailMovie={detailMovie} />

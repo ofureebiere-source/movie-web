@@ -98,7 +98,7 @@ export default function NotificationSettings() {
             type="button"
             onClick={enable}
             disabled={busy || permission === 'unsupported'}
-            className="flex items-center gap-2 rounded-lg bg-custome-red px-6 py-3 text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+            className="glass-btn glass-btn-primary"
           >
             <IoNotifications size={16} />
             <span>{busy ? t('enabling') : t('turnOn')}</span>

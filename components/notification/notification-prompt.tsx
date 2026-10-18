@@ -71,7 +71,7 @@ export default function NotificationPrompt() {
           type="button"
           onClick={enable}
           disabled={busy}
-          className="shrink-0 rounded-lg bg-custome-red px-3 py-1.5 font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
+          className="glass-btn glass-btn-sm glass-btn-primary"
         >
           {busy ? 'Enabling…' : 'Enable'}
         </button>

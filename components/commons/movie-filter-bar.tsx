@@ -202,7 +202,7 @@ export default function MovieFilterBar({
               key={f.param}
               type="button"
               onClick={() => setParam(f.param, '')}
-              className="flex items-center gap-1.5 rounded-full border border-brand/50 bg-brand-muted px-3 py-1 text-xs text-white transition-colors hover:border-brand"
+              className="glass-btn glass-btn-sm glass-btn-primary"
             >
               {f.label}
               <IoClose size={14} className="text-brand" />
@@ -262,10 +262,8 @@ function FilterDropdown({
       ? `flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
           open ? 'text-white' : 'text-gray-300 hover:text-white'
         }`
-      : `flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ${
-          active
-            ? 'border-brand bg-white/5 text-white'
-            : 'border-white/15 text-gray-300 hover:border-white/30'
+      : `glass-btn glass-btn-sm ${
+          active ? 'glass-btn-active' : 'border-white/15 text-gray-300 hover:border-white/30'
         }`;
 
   return (

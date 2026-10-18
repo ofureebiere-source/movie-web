@@ -34,7 +34,7 @@ export default function InfiniteScrollSentinel({
         <div className="text-red-400 text-sm">{t('errorLoading')}</div>
         <button
           onClick={onRetry}
-          className="px-4 py-2 rounded bg-white text-black text-sm font-semibold hover:bg-neutral-200 transition-colors"
+          className="glass-btn glass-btn-sm"
         >
           {tCommon('retry')}
         </button>

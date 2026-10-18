@@ -140,8 +140,8 @@ export default function BtnAddToCollection({ variant, detailMovie }: BtnAddToCol
     <button
       className={
         variant === 'primary'
-          ? 'flex items-center space-x-2 bg-[#717171] py-3 px-5 rounded-md text-white transition duration-200 ease-in-out hover:bg-[#5a5a5a]' // Thay đổi màu nền khi hover
-          : 'flex items-center bg-white px-3 py-2 rounded-md gap-x-2 text-black font-semibold transition duration-200 ease-in-out hover:bg-gray-200' // Thay đổi màu nền khi hover
+          ? 'glass-btn glass-btn-primary'
+          : 'glass-btn'
       }
       onClick={toogleMovieToUserCollection}
       disabled={isHandling || isLoading}

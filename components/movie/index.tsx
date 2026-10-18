@@ -206,7 +206,7 @@ export default function MoviePage({
                   {movie.movie.category.map((item, index) => (
                     <Link
                       key={index}
-                      className="block rounded-2xl border border-gray-600 px-3 py-1 text-xs transition-all duration-300 hover:border-white hover:bg-white hover:text-black lg:text-sm"
+                      className="glass-btn glass-btn-sm"
                       href={`/movies/type/${item.slug}`}
                     >
                       {localizedCategory(item.slug, locale)}
@@ -288,7 +288,7 @@ export default function MoviePage({
               {movie.movie.category.map((item, index) => (
                 <Link
                   key={index}
-                  className="block rounded-2xl border border-gray-600 px-3 py-1 text-xs transition-all duration-300 hover:border-white hover:bg-white hover:text-black"
+                  className="glass-btn glass-btn-sm"
                   href={`/movies/type/${item.slug}`}
                 >
                   {localizedCategory(item.slug, locale)}

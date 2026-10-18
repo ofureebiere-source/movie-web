@@ -108,7 +108,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
         {!isEditing && (
           <button
             onClick={handleEdit}
-            className="px-4 py-2 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+            className="glass-btn glass-btn-sm glass-btn-primary"
           >
             {t('edit')}
           </button>
@@ -137,7 +137,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
               )}
             </div>
             {isEditing && (
-              <label className="absolute -bottom-1 -right-1 bg-custome-red text-white p-1 rounded-full cursor-pointer hover:bg-red-700 transition-colors">
+              <label className="glass-btn glass-btn-icon absolute -bottom-1 -right-1 cursor-pointer">
                 <IoCamera size={12} />
                 <input
                   type="file"
@@ -228,7 +228,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex items-center space-x-2 px-6 py-3 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="glass-btn glass-btn-primary"
             >
               {isLoading ? (
                 <LoadingSpinerBtn />
@@ -242,7 +242,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
             <button
               type="button"
               onClick={handleCancel}
-              className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              className="glass-btn"
             >
               <IoClose size={16} />
               <span>{tCommon('cancel')}</span>

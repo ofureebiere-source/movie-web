@@ -125,7 +125,7 @@ export default function SupportContact() {
                     toast.info('Tính năng này sẽ sớm được triển khai');
                   }
                 }}
-                className="w-full px-4 py-2 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                className="glass-btn glass-btn-sm glass-btn-primary glass-btn-block"
               >
                 {method.action}
               </button>
@@ -269,7 +269,7 @@ export default function SupportContact() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="flex items-center space-x-2 px-6 py-3 bg-custome-red text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="glass-btn glass-btn-primary"
               >
                 {isSubmitting ? (
                   <LoadingSpinerBtn />
@@ -283,7 +283,7 @@ export default function SupportContact() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                className="glass-btn"
               >
                 Hủy
               </button>

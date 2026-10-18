@@ -38,7 +38,7 @@ export default function ShareButton({ title }: { title: string }) {
       type="button"
       onClick={handleShare}
       aria-label={t('share')}
-      className="flex items-center gap-x-2 rounded-md bg-white/15 px-4 py-2 font-semibold text-white transition duration-200 ease-in-out hover:bg-white/25"
+      className="glass-btn"
     >
       <FaShareAlt size={16} />
       <span className="leading-4">{t('share')}</span>

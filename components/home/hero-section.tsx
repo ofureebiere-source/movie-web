@@ -117,10 +117,10 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
       {/* Desktop Navigation Button — mobile button is rendered inside HeroMovieItem
           so it can vertically center on the variable-height poster image. */}
       <div
-        className="hidden lg:block absolute z-10 top-[18rem] right-6 border border-white p-4 rounded-full group hover:border-black hover:bg-white cursor-pointer transition-all duration-300"
+        className="glass-btn glass-btn-icon hidden lg:block absolute z-10 top-[18rem] right-6 group cursor-pointer"
         onClick={handleClickToNextSlide}
       >
-        <FaChevronRight className="text-white group-hover:text-black transition-colors duration-300" />
+        <FaChevronRight className="text-white transition-colors duration-300" />
       </div>
     </div>
   );

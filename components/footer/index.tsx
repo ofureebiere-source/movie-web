@@ -53,7 +53,7 @@ export default function Footer() {
             <div className="flex items-center space-x-4 pt-2">
               <Link
                 href="/"
-                className="bg-gray-900 hover:bg-red-600 text-white p-2 rounded-full transition-colors duration-300"
+                className="glass-btn glass-btn-icon"
                 aria-label="GitHub"
               >
                 <FaGithub size={24} />

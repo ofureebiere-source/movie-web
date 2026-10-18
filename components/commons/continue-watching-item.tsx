@@ -79,7 +79,7 @@ export default function ContinueWatchingItem({
             onClick={handleDelete}
             aria-label={tCard('removeFromRecent')}
             title={tCard('removeFromRecent')}
-            className="absolute top-1.5 right-1.5 z-20 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto touch:opacity-100 touch:pointer-events-auto transition-opacity duration-200 flex items-center justify-center w-9 h-9 md:w-8 md:h-8 rounded-full bg-black/60 hover:bg-red-600 backdrop-blur-sm"
+            className="glass-btn glass-btn-icon absolute top-1.5 right-1.5 z-20 w-9 h-9 md:w-8 md:h-8 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto touch:opacity-100 touch:pointer-events-auto transition-opacity duration-200"
           >
             <IoClose className="text-white text-base md:text-lg" />
           </button>
