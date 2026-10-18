@@ -3,32 +3,52 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 /**
- * Temporary diagnostic: reports what the catalogue host returns when called
- * from the Vercel runtime. Removed once the outbound call is confirmed.
+ * Temporary diagnostic: the catalogue host sits behind Cloudflare and answers
+ * Vercel's datacenter IPs with a 403 bot challenge. This probes which header
+ * sets and which alternate hosts get through. Removed once a strategy wins.
  */
-export async function GET() {
-  const base = (process.env.CATALOG_API_BASE ?? 'https://api.framextv.tech').replace(/\/+$/, '');
-  const url = `${base}/api/discover?type=movie&page=1`;
-  const out: Record<string, unknown> = { base, url, node: process.version };
+const BROWSER_HEADERS: Record<string, string> = {
+  'user-agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+  referer: 'https://framextv.xyz/',
+  origin: 'https://framextv.xyz',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-site',
+};
 
+async function probe(label: string, url: string, headers?: Record<string, string>) {
   const started = Date.now();
+  const out: Record<string, unknown> = { label, url };
   try {
-    const res = await fetch(url, {
-      headers: { accept: 'application/json' },
-      cache: 'no-store',
-    });
+    const res = await fetch(url, { headers, cache: 'no-store' });
     out.status = res.status;
     out.contentType = res.headers.get('content-type');
-    out.server = res.headers.get('server');
-    out.cfRay = res.headers.get('cf-ray');
     const text = await res.text();
     out.ms = Date.now() - started;
-    out.bodyPrefix = text.slice(0, 400);
-    out.bodyLength = text.length;
+    out.len = text.length;
+    out.ok = text.trimStart().startsWith('{');
+    if (!out.ok) out.prefix = text.slice(0, 120);
   } catch (err) {
     out.ms = Date.now() - started;
     out.error = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    out.cause = err instanceof Error && err.cause ? String(err.cause) : undefined;
   }
-  return NextResponse.json(out);
+  return out;
+}
+
+export async function GET() {
+  const path = '/api/discover?type=movie&page=1';
+  const results = await Promise.all([
+    probe('plain', `https://api.framextv.tech${path}`),
+    probe('browser-headers', `https://api.framextv.tech${path}`, BROWSER_HEADERS),
+    probe('ua-only', `https://api.framextv.tech${path}`, {
+      'user-agent': BROWSER_HEADERS['user-agent'],
+      accept: 'application/json',
+    }),
+    probe('host-api.xyz', `https://api.framextv.xyz${path}`, BROWSER_HEADERS),
+    probe('host-site', `https://framextv.xyz${path}`, BROWSER_HEADERS),
+  ]);
+  return NextResponse.json({ node: process.version, results });
 }
