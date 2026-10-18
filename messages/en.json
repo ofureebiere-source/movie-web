@@ -246,29 +246,6 @@
     "agree": "Accept & Continue",
     "learnMore": "Learn more"
   },
-  "auth": {
-    "login": {
-      "title": "Sign in to your account",
-      "email": "Email:",
-      "password": "Password:",
-      "submit": "Sign in",
-      "google": "Sign in with Google",
-      "noAccount": "Don't have an account?",
-      "signupLink": "Sign up",
-      "successToast": "Signed in successfully",
-      "failedToast": "Sign in failed"
-    },
-    "signup": {
-      "title": "Create your account",
-      "username": "Username:",
-      "email": "Email:",
-      "password": "Password:",
-      "submit": "Sign up",
-      "haveAccount": "Already have an account?",
-      "loginLink": "Sign in",
-      "successToast": "Account created successfully"
-    }
-  },
   "accountMenu": {
     "collection": "Collection",
     "recent": "Recently watched",

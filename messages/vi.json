@@ -246,29 +246,6 @@
     "agree": "Đồng ý & Tiếp tục",
     "learnMore": "Tìm hiểu thêm"
   },
-  "auth": {
-    "login": {
-      "title": "Đăng nhập tài khoản",
-      "email": "Email:",
-      "password": "Mật khẩu:",
-      "submit": "Đăng nhập",
-      "google": "Đăng nhập bằng Google",
-      "noAccount": "Bạn chưa có tài khoản?",
-      "signupLink": "Đăng ký",
-      "successToast": "Đăng nhập thành công",
-      "failedToast": "Đăng nhập thất bại"
-    },
-    "signup": {
-      "title": "Tạo tài khoản",
-      "username": "Tên tài khoản:",
-      "email": "Email:",
-      "password": "Mật khẩu:",
-      "submit": "Đăng ký",
-      "haveAccount": "Bạn đã có tài khoản?",
-      "loginLink": "Đăng Nhập",
-      "successToast": "Đăng ký tài khoản thành công"
-    }
-  },
   "accountMenu": {
     "collection": "Bộ sưu tập",
     "recent": "Phim xem gần đây",
