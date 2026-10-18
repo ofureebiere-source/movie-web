@@ -31,13 +31,15 @@ async function probe(label: string, url: string) {
 }
 
 export async function GET() {
-  const base = 'https://api.framextv.tech';
+  const api = 'https://api.framextv.tech';
+  const site = 'https://framextv.xyz';
   const results = await Promise.all([
-    probe('film-discover', `${base}/api/discover?type=movie&page=1`),
-    probe('film-home', `${base}/api/home`),
-    probe('anime-discover', `${base}/anime/api/discover?page=1`),
-    probe('anime-stream', `${base}/anime/api/stream?id=16498&type=anime&episode=1`),
-    probe('film-stream', `${base}/api/stream?id=969681&type=movie`),
+    probe('api-anime-discover', `${api}/anime/api/discover?page=1`),
+    probe('api-anime-stream', `${api}/anime/api/stream?id=16498&type=anime&episode=1`),
+    probe('site-anime-discover', `${site}/anime/api/discover?page=1`),
+    probe('site-anime-stream', `${site}/anime/api/stream?id=16498&type=anime&episode=1`),
+    probe('site-root', `${site}/`),
+    probe('api-anime-discover-2', `${api}/anime/api/discover?page=2`),
   ]);
   return NextResponse.json({ node: process.version, results });
 }
