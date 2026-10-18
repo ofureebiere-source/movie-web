@@ -105,5 +105,16 @@
       "sports": "Esportes",
       "thriller": "Suspense"
     }
+  },
+  "person": {
+    "title": "Pessoa",
+    "metaDescription": "Biografia e filmografia.",
+    "unavailable": "Não foi possível carregar esta pessoa.",
+    "retry": "Tentar novamente",
+    "knownFor": "Conhecido por",
+    "born": "Nascimento",
+    "died": "Falecimento",
+    "biography": "Biografia",
+    "filmography": "Filmografia"
   }
 }

@@ -7,24 +7,35 @@ import { tmdbImageUrl } from 'lib/tmdb-image';
 /**
  * Cast member card.
  *
- * Clicking a cast member used to open their page on an external site in a new
- * tab. That is a redirect off the app, and it is the thing this component no
- * longer does: the card is now an in-site link to a search for that person's
- * name, so the visitor stays on the site and gets a real, playable result set
- * back.
+ * Clicking a cast member opens *that person's* page — who they are, their
+ * dates and a filmography whose entries link back into this catalogue.
  *
- * There is no person page to link to — the catalogue's search is title-only
- * and exposes no filmography — so search is the honest in-site destination.
+ * The two earlier behaviours are both wrong and both worth naming, because
+ * each looked reasonable at the time:
+ *
+ *  1. It used to open the person's page on an external site in a new tab,
+ *     which is a redirect off the app.
+ *  2. It then linked to a title search for the person's name, which returns
+ *     films *about* them (documentaries, "X: Behind the Scenes") rather than
+ *     the person, and which carried none of their details.
+ *
+ * The name travels in the query string so the person page can render a title
+ * and a heading before its own fetch resolves, and so a shared link is
+ * self-describing.
  */
 export default function ActorItem({ actor }: { actor: Actor | string }) {
   const name = typeof actor === 'string' ? actor : actor.name;
   const character = typeof actor === 'string' ? undefined : actor.character;
+  // A cast entry with no TMDB id cannot resolve to a person page; linking
+  // anyway would mint a URL that 404s back to the catalogue.
+  const personId = typeof actor === 'string' ? undefined : actor.id || undefined;
   const imgSrc =
     typeof actor !== 'string' && actor.profile_path
       ? tmdbImageUrl(actor.profile_path, 'profile')
       : ActorImgDefault;
-  // The search page reads `?name=`, not `?q=`.
-  const href = `/search?name=${encodeURIComponent(name)}`;
+  const href = personId
+    ? `/person/${personId}?name=${encodeURIComponent(name)}`
+    : `/search?name=${encodeURIComponent(name)}`;
 
   return (
     <Link href={href} title={name} className="group block w-full text-center">

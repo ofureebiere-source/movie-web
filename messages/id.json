@@ -105,5 +105,16 @@
       "sports": "Olahraga",
       "thriller": "Thriller"
     }
+  },
+  "person": {
+    "title": "Tokoh",
+    "metaDescription": "Biografi dan daftar karya.",
+    "unavailable": "Tidak dapat memuat informasi orang ini.",
+    "retry": "Coba lagi",
+    "knownFor": "Dikenal karena",
+    "born": "Lahir",
+    "died": "Meninggal",
+    "biography": "Biografi",
+    "filmography": "Daftar karya"
   }
 }

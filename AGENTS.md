@@ -196,4 +196,41 @@ image through `app/api/image` (self-hosted `sharp`), deliberately not Vercel's
 metered Image Optimization API. `app/api/image/route.ts` re-validates host and
 width independently and allows only the hosts in its `ALLOWED_HOSTS` set
 (TMDB, `phimimg.com`, Google avatars, `media.kitsu.app` plus Kitsu's Backblaze
-bucket, AniList, Crunchyroll). If images 404, suspect that allow-list or `sharp`.
+bucket, AniList, Crunchyroll, and `upload.wikimedia.org` /
+`commons.wikimedia.org` for person portraits). If images 404, suspect that
+allow-list or `sharp`. Portrait URLs arrive as
+`commons.wikimedia.org/wiki/Special:FilePath/<file>?width=400`, which redirects
+to `upload.wikimedia.org`; both hosts must stay allowed.
+
+## People (cast pages)
+
+`/person/{tmdbId}` is an in-site person page: portrait, biography, birth/death
+dates, occupations and a clickable filmography. It is fed entirely by **keyless**
+sources in `services/person-service.ts` — no TMDB credential is involved:
+
+- **Wikidata SPARQL** (`query.wikidata.org`) maps a TMDB person id to a Q-id via
+  **P4985**, then reads P18 (portrait), P569/P570 (dates), P106 (occupations)
+  and a description. Filmography is **P161** (cast member).
+- **Wikipedia REST** (`/api/rest_v1/page/summary/...`) supplies the biography
+  extract, via the `enwiki` sitelink.
+
+Two non-obvious rules, both load-bearing:
+
+- The filmography query **requires** a TMDB id (`P4947` movie / `P4983` TV,
+  read with `UNION`, not two `OPTIONAL`s). Without that requirement Wikidata
+  returns talk-show spots, commercials and crew credits — "Ruth's Chris
+  Employees", "Halloween Candy (ft. Edward Norton)" — which are noise and
+  unplayable anyway. Requiring the id also lets every credit link to a real
+  `/movies/{slug}` page, so there are no dead-end rows.
+- `CACHE_VERSION` in `person-service.ts` must be bumped whenever `PersonDetail`
+  changes shape. Results are cached in `sessionStorage` for 24h, so without a
+  bump a deploy that changes the shape leaves returning visitors on their own
+  stale copy. This bit us once: a clean filmography still rendered the old
+  noisy one until the version changed.
+
+Cast cards on a title page (`components/actor/actor-item.tsx`) link **in-site**
+to `/person/{id}?name=...`. They used to open the upstream site in a new tab.
+The `?name=` param is only a fallback label while the fetch resolves.
+
+`app/api/image/route.ts` and `next.config.mjs` must both allow the Wikimedia
+hosts, or portraits 404.

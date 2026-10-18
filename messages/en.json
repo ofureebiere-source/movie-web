@@ -493,5 +493,16 @@
       "sports": "Sports",
       "thriller": "Thriller"
     }
+  },
+  "person": {
+    "title": "Person",
+    "metaDescription": "Biography and filmography.",
+    "unavailable": "Could not load this person.",
+    "retry": "Try again",
+    "knownFor": "Known for",
+    "born": "Born",
+    "died": "Died",
+    "biography": "Biography",
+    "filmography": "Filmography"
   }
 }

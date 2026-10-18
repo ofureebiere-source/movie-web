@@ -105,5 +105,16 @@
       "sports": "体育",
       "thriller": "惊悚"
     }
+  },
+  "person": {
+    "title": "人物",
+    "metaDescription": "生平与作品年表。",
+    "unavailable": "无法加载此人信息。",
+    "retry": "重试",
+    "knownFor": "知名作品",
+    "born": "出生",
+    "died": "逝世",
+    "biography": "生平",
+    "filmography": "作品年表"
   }
 }

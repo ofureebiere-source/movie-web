@@ -19,6 +19,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'media.kitsu.app' },
       { protocol: 'https', hostname: 's4.anilist.co' },
       { protocol: 'https', hostname: 'img1.ak.crunchyroll.com' },
+      // Person portraits, resolved through Wikidata's Special:FilePath.
+      { protocol: 'https', hostname: 'upload.wikimedia.org' },
+      { protocol: 'https', hostname: 'commons.wikimedia.org' },
     ],
   },
   skipTrailingSlashRedirect: true,

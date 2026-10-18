@@ -17,6 +17,8 @@ const ALLOWED_HOSTS = new Set([
   'kitsu-production-media.s3.us-west-002.backblazeb2.com', // newer Kitsu posters
   's4.anilist.co',           // anime banners and character portraits
   'img1.ak.crunchyroll.com', // anime episode stills
+  'upload.wikimedia.org',    // person portraits (Wikimedia Commons)
+  'commons.wikimedia.org',   // Special:FilePath redirect for the same portraits
 ]);
 
 // Next.js default imageSizes + deviceSizes — keep in sync with next.config.mjs.

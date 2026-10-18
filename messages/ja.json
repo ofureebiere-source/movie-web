@@ -105,5 +105,16 @@
       "sports": "スポーツ",
       "thriller": "スリラー"
     }
+  },
+  "person": {
+    "title": "人物",
+    "metaDescription": "経歴と出演作品。",
+    "unavailable": "この人物の情報を読み込めませんでした。",
+    "retry": "再試行",
+    "knownFor": "代表作",
+    "born": "生年月日",
+    "died": "没年月日",
+    "biography": "経歴",
+    "filmography": "出演作品"
   }
 }

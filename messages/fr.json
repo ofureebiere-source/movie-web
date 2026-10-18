@@ -105,5 +105,16 @@
       "sports": "Sport",
       "thriller": "Thriller"
     }
+  },
+  "person": {
+    "title": "Personne",
+    "metaDescription": "Biographie et filmographie.",
+    "unavailable": "Impossible de charger cette personne.",
+    "retry": "Réessayer",
+    "knownFor": "Connu pour",
+    "born": "Naissance",
+    "died": "Décès",
+    "biography": "Biographie",
+    "filmography": "Filmographie"
   }
 }

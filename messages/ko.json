@@ -105,5 +105,16 @@
       "sports": "스포츠",
       "thriller": "스릴러"
     }
+  },
+  "person": {
+    "title": "인물",
+    "metaDescription": "약력과 출연 작품.",
+    "unavailable": "이 인물의 정보를 불러올 수 없습니다.",
+    "retry": "다시 시도",
+    "knownFor": "대표작",
+    "born": "출생",
+    "died": "사망",
+    "biography": "약력",
+    "filmography": "출연 작품"
   }
 }

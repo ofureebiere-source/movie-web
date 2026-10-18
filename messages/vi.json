@@ -493,5 +493,16 @@
       "sports": "Thể thao",
       "thriller": "Giật gân"
     }
+  },
+  "person": {
+    "title": "Diễn viên",
+    "metaDescription": "Tiểu sử và danh sách phim.",
+    "unavailable": "Không tải được thông tin người này.",
+    "retry": "Thử lại",
+    "knownFor": "Nổi tiếng với",
+    "born": "Sinh",
+    "died": "Mất",
+    "biography": "Tiểu sử",
+    "filmography": "Danh sách phim"
   }
 }
