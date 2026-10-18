@@ -1,28 +1,39 @@
 import { NextResponse } from 'next/server';
 
+export const runtime = 'edge';
 export const dynamic = 'force-dynamic';
 
 /**
  * TEMPORARY diagnostic — removed in the next commit.
  *
- * Decides the anime-catalogue access strategy. The anime endpoints
- * (`/anime/api/*`) send no `access-control-allow-origin`, so the browser
- * cannot read them; the film endpoints do, so they are read client-side. If
- * this runtime can reach the anime endpoints, a server-side proxy fixes it.
+ * The Node.js serverless runtime is refused by the catalogue's Cloudflare
+ * edge (403 challenge, every host). This checks whether the Edge runtime's
+ * different IP pool and header set fare any better.
  */
-async function probe(label: string, url: string) {
+const BROWSER_HEADERS: Record<string, string> = {
+  'user-agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  accept: 'application/json, text/plain, */*',
+  'accept-language': 'en-US,en;q=0.9,vi;q=0.8',
+  referer: 'https://framextv.xyz/',
+  origin: 'https://framextv.xyz',
+  'sec-fetch-dest': 'empty',
+  'sec-fetch-mode': 'cors',
+  'sec-fetch-site': 'same-origin',
+};
+
+async function probe(label: string, url: string, headers?: Record<string, string>) {
   const started = Date.now();
-  const out: Record<string, unknown> = { label, url };
+  const out: Record<string, unknown> = { label, url, edge: true };
   try {
-    const res = await fetch(url, { headers: { accept: 'application/json' }, cache: 'no-store' });
+    const res = await fetch(url, { headers, cache: 'no-store' });
     out.status = res.status;
     out.contentType = res.headers.get('content-type');
-    out.cfRay = res.headers.get('cf-ray');
     const text = await res.text();
     out.ms = Date.now() - started;
     out.len = text.length;
     out.isJson = text.trimStart().startsWith('{');
-    if (!out.isJson) out.prefix = text.slice(0, 100);
+    if (!out.isJson) out.prefix = text.slice(0, 80);
   } catch (err) {
     out.ms = Date.now() - started;
     out.error = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
@@ -31,15 +42,12 @@ async function probe(label: string, url: string) {
 }
 
 export async function GET() {
-  const api = 'https://api.framextv.tech';
-  const site = 'https://framextv.xyz';
+  const base = 'https://api.framextv.tech';
   const results = await Promise.all([
-    probe('api-anime-discover', `${api}/anime/api/discover?page=1`),
-    probe('api-anime-stream', `${api}/anime/api/stream?id=16498&type=anime&episode=1`),
-    probe('site-anime-discover', `${site}/anime/api/discover?page=1`),
-    probe('site-anime-stream', `${site}/anime/api/stream?id=16498&type=anime&episode=1`),
-    probe('site-root', `${site}/`),
-    probe('api-anime-discover-2', `${api}/anime/api/discover?page=2`),
+    probe('edge-plain-film', `${base}/api/home`),
+    probe('edge-browser-film', `${base}/api/home`, BROWSER_HEADERS),
+    probe('edge-plain-anime', `${base}/anime/api/discover?page=1`),
+    probe('edge-browser-anime', `${base}/anime/api/discover?page=1`, BROWSER_HEADERS),
   ]);
-  return NextResponse.json({ node: process.version, results });
+  return NextResponse.json({ runtime: 'edge', results });
 }
