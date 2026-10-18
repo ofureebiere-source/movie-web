@@ -272,10 +272,7 @@
   "accountMenu": {
     "collection": "Bộ sưu tập",
     "recent": "Phim xem gần đây",
-    "profile": "Thông tin cá nhân",
-    "logout": "Đăng xuất",
-    "forgetDevice": "Quên thiết bị này",
-    "confirmForget": "Nhấn lần nữa để xóa"
+    "profile": "Thông tin cá nhân"
   },
   "collection": {
     "title": "Bộ sưu tập phim của bạn"
@@ -285,130 +282,88 @@
     "subtitle": "Tiến trình xem tất cả phim bạn đã xem giờ đã được lưu"
   },
   "profile": {
-    "loginRequired": {
-      "title": "Vui lòng đăng nhập",
-      "message": "Bạn cần đăng nhập để xem thông tin cá nhân"
-    },
     "page": {
-      "title": "Thông tin cá nhân",
-      "subtitle": "Quản lý thông tin tài khoản và cài đặt của bạn"
+      "title": "Trang cá nhân",
+      "subtitle": "Phim đã lưu và tuỳ chọn thông báo của bạn"
     },
     "menu": {
       "personalInfo": "Thông tin cá nhân",
-      "security": "Bảo mật",
+      "notifications": "Thông báo",
       "support": "Hỗ trợ"
     },
-    "personalInfo": {
-      "heading": "Thông tin cá nhân",
-      "edit": "Chỉnh sửa",
-      "avatar": "Ảnh đại diện",
-      "avatarHelp": "JPG, PNG hoặc GIF. Tối đa 2MB.",
-      "displayName": "Tên hiển thị",
-      "displayNameRequired": "Tên hiển thị là bắt buộc",
-      "displayNameMinLength": "Tên phải có ít nhất 2 ký tự",
-      "email": "Email",
-      "invalidEmail": "Email không hợp lệ",
-      "accountInfo": "Thông tin tài khoản",
-      "accountId": "ID tài khoản",
-      "createdAt": "Ngày tạo",
-      "successToast": "Cập nhật thông tin thành công",
-      "errorToast": "Có lỗi xảy ra khi cập nhật thông tin"
-    },
-    "security": {
-      "heading": "Bảo mật tài khoản",
-      "changePassword": "Đổi mật khẩu",
-      "passwordLabel": "Mật khẩu",
-      "passwordSecure": "Mật khẩu của bạn đã được bảo mật",
-      "twoFactor": "Xác thực 2 lớp",
-      "twoFactorInactive": "Chưa được kích hoạt",
-      "form": {
-        "title": "Thay đổi mật khẩu",
-        "current": "Mật khẩu hiện tại",
-        "currentRequired": "Mật khẩu hiện tại là bắt buộc",
-        "new": "Mật khẩu mới",
-        "newRequired": "Mật khẩu mới là bắt buộc",
-        "newMinLength": "Mật khẩu phải có ít nhất 6 ký tự",
-        "confirm": "Xác nhận mật khẩu mới",
-        "confirmRequired": "Xác nhận mật khẩu là bắt buộc",
-        "confirmMismatch": "Mật khẩu xác nhận không khớp",
-        "requirements": "Yêu cầu mật khẩu:",
-        "req1": "• Ít nhất 6 ký tự",
-        "req2": "• Nên bao gồm chữ hoa, chữ thường và số",
-        "req3": "• Tránh sử dụng thông tin cá nhân"
-      },
-      "tips": {
-        "heading": "Mẹo bảo mật",
-        "tip1": "Không chia sẻ mật khẩu với bất kỳ ai",
-        "tip2": "Đăng xuất khỏi các thiết bị công cộng",
-        "tip3": "Thay đổi mật khẩu định kỳ"
-      },
-      "toasts": {
-        "mismatch": "Mật khẩu mới và xác nhận mật khẩu không khớp",
-        "success": "Đổi mật khẩu thành công",
-        "error": "Có lỗi xảy ra khi đổi mật khẩu",
-        "wrongCurrent": "Mật khẩu hiện tại không chính xác",
-        "weakNew": "Mật khẩu mới quá yếu",
-        "reauth": "Vui lòng đăng nhập lại để thay đổi mật khẩu",
-        "userNotFound": "Không tìm thấy người dùng"
-      }
+    "notifications": {
+      "heading": "Thông báo",
+      "subtitle": "Nhận thông báo khi có phim bạn muốn xem được phát hành.",
+      "statusHeading": "Trạng thái thông báo",
+      "stateOn": "Đang bật cho trình duyệt này.",
+      "stateOff": "Đang tắt. Bật lên để nhận thông báo phim mới và gợi ý.",
+      "stateBlocked": "Đã bị chặn. Hãy cho phép thông báo cho trang này trong cài đặt trình duyệt.",
+      "stateUnsupported": "Trình duyệt này không hỗ trợ thông báo.",
+      "turnOn": "Bật thông báo",
+      "turnOff": "Tắt thông báo",
+      "enabling": "Đang bật…",
+      "howHeading": "Cách hoạt động",
+      "how1": "Phim mới và gợi ý dựa trên phim bạn xem sẽ được gửi tới trình duyệt này.",
+      "how2": "Thông báo cần quyền của trình duyệt, bạn có thể thu hồi bất cứ lúc nào.",
+      "how3": "Không có gì được đăng đi đâu cả. Chỉ là những gì bạn được thông báo."
     },
     "support": {
       "heading": "Hỗ trợ",
-      "intro": "Chúng tôi luôn sẵn sàng hỗ trợ bạn. Chọn phương thức liên hệ phù hợp nhất với bạn.",
+      "intro": "Chúng tôi luôn sẵn sàng giúp bạn. Chọn cách liên hệ phù hợp nhất.",
       "methods": {
-        "emailTitle": "Email hỗ trợ",
+        "emailTitle": "Hỗ trợ qua email",
         "emailDesc": "Gửi email cho chúng tôi",
         "emailAction": "Gửi email",
-        "chatTitle": "Chat trực tuyến",
-        "chatDesc": "Trò chuyện với nhân viên hỗ trợ",
-        "chatAvail": "Có sẵn 24/7",
-        "chatAction": "Bắt đầu chat",
+        "chatTitle": "Trò chuyện trực tuyến",
+        "chatDesc": "Trò chuyện với đội hỗ trợ",
+        "chatAvail": "Hỗ trợ 24/7",
+        "chatAction": "Bắt đầu trò chuyện",
         "phoneTitle": "Điện thoại",
-        "phoneDesc": "Gọi điện trực tiếp",
+        "phoneDesc": "Gọi trực tiếp cho chúng tôi",
         "phoneAction": "Gọi ngay"
       },
       "form": {
         "heading": "Gửi tin nhắn hỗ trợ",
         "name": "Họ và tên",
-        "nameRequired": "Họ và tên là bắt buộc",
+        "nameRequired": "Vui lòng nhập họ và tên",
         "email": "Email",
-        "emailRequired": "Email là bắt buộc",
+        "emailRequired": "Vui lòng nhập email",
         "emailInvalid": "Email không hợp lệ",
         "category": "Loại vấn đề",
         "categoryRequired": "Vui lòng chọn loại vấn đề",
         "categoryPlaceholder": "Chọn loại vấn đề",
         "subject": "Tiêu đề",
-        "subjectRequired": "Tiêu đề là bắt buộc",
+        "subjectRequired": "Vui lòng nhập tiêu đề",
         "content": "Nội dung",
-        "contentRequired": "Nội dung là bắt buộc",
+        "contentRequired": "Vui lòng nhập nội dung",
         "contentMinLength": "Nội dung phải có ít nhất 10 ký tự",
         "contentPlaceholder": "Mô tả chi tiết vấn đề của bạn...",
         "submit": "Gửi tin nhắn"
       },
       "categories": {
-        "tech": "Vấn đề kỹ thuật",
+        "tech": "Lỗi kỹ thuật",
         "account": "Tài khoản",
         "payment": "Thanh toán",
-        "feature": "Tính năng",
+        "feature": "Đề xuất tính năng",
         "bugReport": "Báo lỗi",
         "other": "Khác"
       },
       "faq": {
         "heading": "Câu hỏi thường gặp",
-        "q1": "Làm thế nào để đổi mật khẩu?",
-        "a1": "Vào phần \"Bảo mật\" trong menu bên trái và chọn \"Đổi mật khẩu\". Bạn cần nhập mật khẩu hiện tại và mật khẩu mới.",
-        "q2": "Tôi quên mật khẩu, phải làm sao?",
-        "a2": "Sử dụng tính năng \"Quên mật khẩu\" trên trang đăng nhập. Chúng tôi sẽ gửi link đặt lại mật khẩu qua email của bạn.",
-        "q3": "Làm sao để xóa tài khoản?",
-        "a3": "Liên hệ với chúng tôi qua email support@netflix-pro.com để được hỗ trợ xóa tài khoản."
+        "q1": "Làm sao để lưu một bộ phim?",
+        "a1": "Mở phim và dùng nút thêm. Danh sách được lưu trong trình duyệt này.",
+        "q2": "Lịch sử xem của tôi ở đâu?",
+        "a2": "Mở menu tài khoản và chọn \"Phim xem gần đây\".",
+        "q3": "Làm sao bật hoặc tắt thông báo?",
+        "a3": "Vào mục \"Thông báo\" ở menu bên trái."
       },
       "hours": {
         "heading": "Giờ hỗ trợ",
-        "schedule": "Thứ 2 - Thứ 6: 8:00 - 18:00 (GMT+7)\nThứ 7 - Chủ nhật: 9:00 - 17:00 (GMT+7)"
+        "schedule": "Thứ 2 - Thứ 6: 8:00 - 18:00 (GMT+7)\nThứ 7 - CN: 9:00 - 17:00 (GMT+7)"
       },
       "toasts": {
-        "sent": "Tin nhắn của bạn đã được gửi thành công! Chúng tôi sẽ phản hồi trong vòng 24 giờ.",
-        "error": "Có lỗi xảy ra khi gửi tin nhắn. Vui lòng thử lại."
+        "sent": "Tin nhắn đã được gửi thành công! Chúng tôi sẽ phản hồi trong 24 giờ.",
+        "error": "Gửi tin nhắn thất bại. Vui lòng thử lại."
       }
     }
   },

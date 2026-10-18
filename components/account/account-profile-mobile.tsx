@@ -1,20 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { removeUser } from '../../redux/slices/user-slice';
-import { forgetDevice } from '../../lib/device';
 import { Link } from 'i18n/routing';
 import AccountDefaultImg from '../../public/account-default-img.jpg';
 import Image from 'next/image';
-import {
-  IoChevronDown,
-  IoChevronUp,
-  IoPerson,
-  IoBookmark,
-  IoTime,
-  IoTrash,
-} from 'react-icons/io5';
+import { IoChevronDown, IoChevronUp, IoPerson, IoBookmark, IoTime } from 'react-icons/io5';
 import { useTranslations } from 'next-intl';
 
 interface AccountProfileMobileProps {
@@ -22,29 +12,18 @@ interface AccountProfileMobileProps {
   onCloseMenu: () => void;
 }
 
+/**
+ * The account drawer on small screens.
+ *
+ * Same rule as the desktop dropdown: the viewer's saved things are here, the
+ * device identity is not. See `account-profile-dropdown.tsx` for why.
+ */
 export default function AccountProfileMobile({
   authenticatedUser,
   onCloseMenu,
 }: AccountProfileMobileProps) {
   const t = useTranslations('accountMenu');
-  const dispatch = useDispatch();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isConfirmingForget, setIsConfirmingForget] = useState(false);
-
-  const deviceId: string = authenticatedUser.device?.id ?? authenticatedUser.id ?? '';
-
-  const handleForgetDevice = () => {
-    // Two-step on purpose: this is a destructive action inside a menu that is
-    // already under the user's thumb on a phone.
-    if (!isConfirmingForget) {
-      setIsConfirmingForget(true);
-      return;
-    }
-    forgetDevice();
-    dispatch(removeUser());
-    onCloseMenu();
-    window.location.href = '/';
-  };
 
   const toggleExpanded = () => {
     setIsExpanded(!isExpanded);
@@ -66,11 +45,8 @@ export default function AccountProfileMobile({
             height={40}
           />
           <div className="flex-1 min-w-0">
-            <p className="text-white font-medium text-sm truncate" data-private>
-              {authenticatedUser.name || 'Thiết bị'}
-            </p>
-            <p className="text-gray-400 text-xs truncate font-mono" data-private>
-              {deviceId.slice(0, 12)}
+            <p className="text-white font-medium text-sm truncate">
+              {authenticatedUser.name || 'Netflix-pro'}
             </p>
           </div>
         </div>
@@ -113,17 +89,6 @@ export default function AccountProfileMobile({
             <IoPerson size={18} />
             <span className="text-sm font-medium">{t('profile')}</span>
           </Link>
-
-          {/* Forget device */}
-          <button
-            onClick={handleForgetDevice}
-            className="flex items-center space-x-3 p-3 rounded-lg w-full text-red-400 hover:text-red-300 hover:bg-red-900/20 transition-colors"
-          >
-            <IoTrash size={18} />
-            <span className="text-sm font-medium">
-              {isConfirmingForget ? t('confirmForget') : t('forgetDevice')}
-            </span>
-          </button>
         </div>
       )}
     </div>

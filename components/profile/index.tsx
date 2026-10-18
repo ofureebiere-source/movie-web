@@ -3,13 +3,12 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
-import Image from 'next/image';
 import PersonalInfo from './personal-info';
-import SecuritySettings from './security-settings';
+import NotificationSettings from './notification-settings';
 import SupportContact from './support-contact';
 import { useTranslations } from 'next-intl';
 
-export type ProfileSection = 'personal' | 'security' | 'support';
+export type ProfileSection = 'personal' | 'notifications' | 'support';
 
 export default function Profile() {
   const t = useTranslations('profile');
@@ -33,8 +32,8 @@ export default function Profile() {
     switch (activeSection) {
       case 'personal':
         return <PersonalInfo user={user} />;
-      case 'security':
-        return <SecuritySettings user={user} />;
+      case 'notifications':
+        return <NotificationSettings />;
       case 'support':
         return <SupportContact />;
       default:
@@ -56,40 +55,11 @@ export default function Profile() {
           {/* Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-black/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4 lg:p-6">
-              {/* User Info */}
-              <div className="mb-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    {user.photo ? (
-                      <Image
-                        src={user.photo}
-                        alt="Avatar"
-                        width={48}
-                        height={48}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-white font-semibold text-lg">
-                        {user.name?.charAt(0)?.toUpperCase() ||
-                          user.email?.charAt(0)?.toUpperCase() ||
-                          'U'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm truncate">
-                      {user.name || 'User'}
-                    </p>
-                    <p className="text-gray-400 text-xs truncate">{user.email}</p>
-                  </div>
-                </div>
-              </div>
-
               {/* Menu Items — horizontal scroll strip on mobile, vertical sidebar on lg */}
               <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0">
                 {[
                   { id: 'personal', label: t('menu.personalInfo') },
-                  { id: 'security', label: t('menu.security') },
+                  { id: 'notifications', label: t('menu.notifications') },
                   { id: 'support', label: t('menu.support') },
                 ].map((item) => {
                   const isActive = activeSection === item.id;

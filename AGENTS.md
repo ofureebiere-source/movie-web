@@ -12,6 +12,14 @@
   any served page. Verify with a grep of the served HTML, not the source tree
   (`package.json` `name` and `package-lock.json` still carry it and are not
   served; that is acceptable).
+- **Brand text hides in images.** The header wordmark used to be
+  `public/logo.png`, a bitmap that spelled the old name — invisible to a text
+  grep of the HTML, and it shipped for several sessions because of that. It has
+  been deleted and replaced by the text wordmark in
+  `components/commons/wordmark.tsx`. Do not reintroduce a logo image. When
+  auditing brand, rasterise every asset in `public/` and read it, not just grep.
+  `public/mini-logo.png` (an "M" monogram) and `app/favicon.ico` are deliberately
+  kept and carry no name.
 
 ## Branch / commit conventions
 
@@ -103,6 +111,27 @@ The app is **keyless**: no Firebase, no TMDB token, no service account. A
 checkout with an empty environment builds and runs (`npm ci && npm run build`).
 Titles come from the framextv catalogue, accounts are per-browser device
 identities, and comments/watch progress stay in the browser.
+
+## Device identity and notifications
+
+There is no sign-up and no sign-in. `lib/device.ts` mints a random id on first
+load and keeps it in `localStorage`; that id is the account, and collections,
+comments and watch history are keyed by it. `components/context/auth-conext.tsx`
+publishes it to Redux so the existing screens read `state.auth.user` unchanged.
+
+**The device identity is never shown to the viewer.** It used to be: the account
+menu printed the id and a device name, the profile page had a "device" section
+with rename and forget buttons. That read as something the viewer had signed up
+for when they had not, so it was removed. The registration still happens — it is
+what gives the recommendation engine and notifications a stable subject. Do not
+surface it again.
+
+Notifications are the one thing the viewer *does* control, so they get a screen
+instead: `components/profile/notification-settings.tsx`, and a one-time bar
+(`components/notification/notification-prompt.tsx`) shown only while the browser
+permission is still undecided. `lib/push.ts` asks for permission and mints a
+per-device token paired with the device id. There is no push service credential
+yet — the token is the seam where one goes.
 
 ## Routes
 

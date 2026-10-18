@@ -1,5 +1,4 @@
-import logo from '../../public/logo.png';
-import Image from 'next/image';
+import Wordmark from '../commons/wordmark';
 import { IoSearch } from 'react-icons/io5';
 import SubType from './sub-type';
 import SubCountries from './sub-countries';
@@ -40,9 +39,7 @@ export default function HeaderFixed({
       }`}
     >
       <div className="header-container flex items-center justify-between container-wrapper">
-        <Link className="block" href="/">
-          <Image src={logo} alt="Picture of the author" className="w-32" />
-        </Link>
+        <Wordmark />
         <ul className="flex flex-grow justify-center items-center font-semibold text-lg">
           <li className="px-8">
             <Link

@@ -1,7 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import logo from '../../public/logo.png';
-import Image from 'next/image';
+import Wordmark from '../commons/wordmark';
 import { IoSearch, IoMenu, IoClose, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import { Link } from 'i18n/routing';
 import { usePathname } from 'i18n/routing';
@@ -90,10 +89,8 @@ export default function HeaderMobile({
             {isMobileMenuOpen ? <IoClose size={24} /> : <IoMenu size={24} />}
           </button>
 
-          {/* Logo */}
-          <Link className="block" href="/" onClick={closeMobileMenu}>
-            <Image src={logo} alt="Logo" className="w-24 h-auto" />
-          </Link>
+          {/* Wordmark */}
+          <Wordmark compact />
 
           {/* Right side actions */}
           <div className="flex items-center gap-2">
@@ -118,7 +115,7 @@ export default function HeaderMobile({
           >
             {/* Menu Header */}
             <div className="flex items-center justify-between p-4 border-b border-gray-800">
-              <Image src={logo} alt="Logo" className="w-20 h-auto" />
+              <Wordmark compact onClick={closeMobileMenu} />
               <button
                 onClick={closeMobileMenu}
                 className="text-white hover:text-custome-red transition-colors"

@@ -1,12 +1,12 @@
-import logo from '../../public/logo.png';
-import Image from 'next/image';
+import { Link } from 'i18n/routing';
+import Wordmark from '../commons/wordmark';
 import { IoSearch } from 'react-icons/io5';
 import SubType from './sub-type';
 import SubCountries from './sub-countries';
 import { useSelector } from 'react-redux';
 import AccountProfileIcon from '../account/account-profile-icon';
 import { useEffect, useState } from 'react';
-import { usePathname, Link } from 'i18n/routing';
+import { usePathname } from 'i18n/routing';
 import PrefetchLink from '../commons/prefetch-link';
 import Notification from '../notification';
 import { INotificationDropdownState } from 'types/notification';
@@ -36,9 +36,7 @@ export default function HeaderDefault({
   return (
     <header className="absolute top-0 left-0 right-0 z-20">
       <div className="header-container flex items-center justify-between container-wrapper">
-        <Link className="block" href="/">
-          <Image src={logo} alt="Logo" className="w-32" />
-        </Link>
+        <Wordmark />
         <ul className="flex flex-grow justify-center items-center font-semibold text-lg">
           <li className="px-8">
             <PrefetchLink

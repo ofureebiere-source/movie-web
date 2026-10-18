@@ -5,7 +5,6 @@ import { isMaintenanceMode } from './lib/maintenance';
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-const PROTECTED_PATHS = ['/movies/collection', '/movies/recent'];
 const LOCALE_PREFIX_REGEX = new RegExp(`^/(${routing.locales.join('|')})(?=/|$)`);
 const LOCALE_COOKIE = 'NEXT_LOCALE';
 const LOCALE_COOKIE_MAX_AGE_SEC = 60 * 60 * 24 * 365;
@@ -96,7 +95,6 @@ function resolveMaintenanceLocale(request: NextRequest): string {
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const pathWithoutLocale = pathname.replace(LOCALE_PREFIX_REGEX, '') || '/';
   const isMaintenancePath = pathname.startsWith(MAINTENANCE_PREFIX);
 
   // ---- Maintenance gate ----
@@ -119,13 +117,10 @@ export default function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // Auth gate
-  const isProtected = PROTECTED_PATHS.some((p) => pathWithoutLocale.startsWith(p));
-  if (isProtected && !request.cookies.has('accessToken')) {
-    const match = pathname.match(LOCALE_PREFIX_REGEX);
-    const locale = match?.[1] ?? routing.defaultLocale;
-    return NextResponse.redirect(new URL(`/${locale}`, request.url));
-  }
+  // No auth gate: the app is keyless. Collections and watch history live in
+  // the browser, so there is no session to check and nothing to protect a
+  // route from — the old `accessToken` cookie is never set any more, and
+  // gating on it would bounce viewers away from their own saved list.
 
   // Geo auto-detect — only for first-time bare-URL visitors. Manual choice
   // (stored in NEXT_LOCALE) wins forever after.
