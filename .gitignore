@@ -9,16 +9,16 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
-# production
+# vite / build output
+/.vite/
+/dist/
+/dist-ssr/
 /build
 
 # misc
 .DS_Store
 *.pem
+*.local
 
 # debug
 npm-debug.log*
@@ -34,7 +34,6 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
 # firebase admin private key
 firebase-admin.json
