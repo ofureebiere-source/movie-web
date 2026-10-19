@@ -63,7 +63,7 @@ export function TrailerModal({
       role="dialog"
       aria-modal="true"
       aria-label={title ? `${title} Trailer` : 'Media Trailer'}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
+      className="media-surface fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
       onClick={onClose}
     >
       <div
@@ -154,7 +154,7 @@ export function DetailHero({
   const typeLabel = detail.type === 'anime' ? 'Anime' : detail.type === 'tv' ? 'TV Series' : 'Movie';
 
   return (
-    <div className="relative w-full overflow-hidden bg-black text-white">
+    <div className="media-surface relative w-full overflow-hidden bg-black text-white">
       {detail.backdrop && (
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden opacity-35">
           <img

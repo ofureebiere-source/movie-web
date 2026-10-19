@@ -54,7 +54,7 @@ export default function Hero({ item, isLoading = false }: { item?: FxItem | null
   const overview = item.overview || item.synopsis;
 
   return (
-    <div className="relative w-full h-[50vh] sm:h-[48vh] md:h-[46vh] min-h-[380px] sm:min-h-[420px] max-h-[500px] overflow-hidden bg-black select-none border-b border-zinc-900/60">
+    <div className="media-surface relative w-full h-[50vh] sm:h-[48vh] md:h-[46vh] min-h-[380px] sm:min-h-[420px] max-h-[500px] overflow-hidden bg-black select-none border-b border-zinc-900/60">
       {backdrop && (
         <div className="absolute inset-0">
           <img

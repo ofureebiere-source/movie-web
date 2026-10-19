@@ -264,7 +264,7 @@ export default function Player({
       data-testid="video-player"
       onMouseMove={showControls}
       onMouseLeave={() => playing && setControlsVisible(false)}
-      className={`relative w-full bg-black overflow-hidden ${ASPECT_CLASS[aspect] || 'aspect-video'} group`}
+      className={`media-surface relative w-full bg-black overflow-hidden ${ASPECT_CLASS[aspect] || 'aspect-video'} group`}
     >
       <video
         ref={videoRef}

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bookmark, Clock, Film, Home, Search, Sparkles, Tv, Code2 } from 'lucide-react';
 import { WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
 import MobileNav from './MobileNav';
+import ThemeToggle from './ThemeToggle';
 
 /**
  * The sticky top bar.
@@ -93,6 +94,7 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
+            <ThemeToggle />
             <Link
               to="/search"
               title="Search movies, TV series, anime (/)"
