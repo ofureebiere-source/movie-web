@@ -21,7 +21,7 @@ export default function Layout() {
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-white selection:text-black w-full overflow-x-clip">
+    <div className="min-h-screen page-bg text-zinc-100 flex flex-col font-sans selection:bg-white selection:text-black w-full overflow-x-clip">
       <Header />
       <main className="flex-1 w-full pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] sm:pb-0">
         <Outlet />

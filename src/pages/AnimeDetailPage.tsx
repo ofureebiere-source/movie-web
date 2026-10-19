@@ -124,7 +124,7 @@ export default function AnimeDetailPage() {
   const prequels = related.filter((item) => item.relationType === 'PREQUEL');
 
   return (
-    <div className="w-full min-h-screen bg-black text-zinc-100 flex flex-col pb-16">
+    <div className="w-full min-h-screen page-bg text-zinc-100 flex flex-col pb-16">
       <DetailHero
         detail={detail}
         playUrl={playUrl}

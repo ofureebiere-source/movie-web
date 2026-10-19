@@ -38,7 +38,7 @@ export default function InstallBanner() {
   return (
     <div
       data-testid="install-banner"
-      className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:bottom-4 sm:left-auto sm:right-4 z-40 max-w-sm mx-auto sm:mx-0 bg-zinc-950/95 border border-zinc-800 backdrop-blur-md rounded-2xl p-3 shadow-2xl flex items-center gap-3"
+      className="glass-panel fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:bottom-4 sm:left-auto sm:right-4 z-40 max-w-sm mx-auto sm:mx-0 bg-zinc-950/95 border border-zinc-800 backdrop-blur-md rounded-2xl p-3 shadow-2xl flex items-center gap-3"
     >
       <div className="w-8 h-8 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
         <Download className="w-4 h-4" />
@@ -51,7 +51,7 @@ export default function InstallBanner() {
         <a
           href={APP_DOWNLOAD_URL}
           data-testid="install-banner-download"
-          className="px-2.5 py-1 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-bold transition-colors cursor-pointer"
+          className="accent-active px-2.5 py-1 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-bold transition-colors cursor-pointer"
         >
           Install
         </a>

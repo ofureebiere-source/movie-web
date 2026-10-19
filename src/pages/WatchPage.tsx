@@ -185,14 +185,14 @@ export default function WatchPage() {
   if (!mediaKey) return <NotFoundPage />;
   if (detailLoading) {
     return (
-      <div className="w-full min-h-screen bg-black flex items-center justify-center">
+      <div className="w-full min-h-screen page-bg flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
       </div>
     );
   }
   if (!detail) {
     return (
-      <div className="w-full min-h-screen bg-black text-zinc-100 flex flex-col items-center justify-center gap-4 px-4 text-center">
+      <div className="w-full min-h-screen page-bg text-zinc-100 flex flex-col items-center justify-center gap-4 px-4 text-center">
         <p className="text-sm font-semibold text-white">This title could not be loaded.</p>
         <Link to="/" className="px-4 py-2 rounded-lg bg-white text-black text-xs font-bold">
           Back to Home
@@ -212,7 +212,7 @@ export default function WatchPage() {
   const activeProviders = (providers.data ?? []).filter((provider) => provider.id);
 
   return (
-    <div className="w-full min-h-screen bg-black text-zinc-100">
+    <div className="w-full min-h-screen page-bg text-zinc-100">
       <div className="w-full bg-black">
         {!releaseState.isReleased ? (
           <div className="w-full aspect-video bg-zinc-950 border-b border-zinc-900 flex flex-col items-center justify-center gap-3">

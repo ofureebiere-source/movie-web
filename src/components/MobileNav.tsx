@@ -21,7 +21,7 @@ export default function MobileNav() {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-lg border-t border-white/[0.05] flex items-center justify-around px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] sm:hidden shadow-2xl"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-black/95 glass-panel backdrop-blur-lg border-t border-white/[0.05] flex items-center justify-around px-2 pt-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom,0px))] sm:hidden shadow-2xl"
     >
       {ITEMS.map((item) => {
         const active = item.match(pathname);
@@ -31,7 +31,7 @@ export default function MobileNav() {
             key={item.path}
             to={item.path}
             className={`flex flex-col items-center justify-center py-1 px-2.5 rounded-lg transition-all active:scale-95 cursor-pointer min-w-[54px] min-h-[44px] ${
-              active ? 'text-white font-bold' : 'text-zinc-500 hover:text-zinc-300'
+              active ? 'accent-active text-white font-bold' : 'text-zinc-500 hover:text-zinc-300'
             }`}
           >
             <Icon className={`w-4 h-4 mb-0.5 ${active ? 'text-white' : 'text-zinc-500'}`} />

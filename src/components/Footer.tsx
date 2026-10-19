@@ -24,7 +24,7 @@ const LINKS: { label: string; to: string }[] = [
 
 export default function Footer() {
   return (
-    <footer className="border-t border-zinc-900 bg-black mt-auto py-6 px-4 sm:px-6 w-full overflow-hidden">
+    <footer className="border-t border-zinc-900 page-bg mt-auto py-6 px-4 sm:px-6 w-full overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-400">
         <div className="flex items-center space-x-2.5 shrink-0">
           <span className="font-bold text-white tracking-wide">

@@ -1,54 +1,47 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export type Theme = 'dark' | 'light';
 
-const STORAGE_KEY = 'netflixpro_theme';
+const LIGHT_QUERY = '(prefers-color-scheme: light)';
 
 /**
- * The reference ships a single dark scheme with no toggle. Light mode is our
- * addition, so it follows the platform preference until the visitor chooses
- * explicitly — after that the choice sticks and stops tracking the OS.
+ * The theme follows the device, with no toggle and no stored override.
+ *
+ * There is deliberately no localStorage key: a stored choice would outlive the
+ * device setting and leave the site stuck on a theme the visitor can no longer
+ * change from here. `prefers-color-scheme` is the single source of truth, and
+ * the change listener below keeps an open tab in step when the OS flips.
  */
-function readInitialTheme(): Theme {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === 'dark' || stored === 'light') return stored;
-  } catch {
-    /* storage disabled — fall through to the media query */
-  }
+function readDeviceTheme(): Theme {
   if (typeof window !== 'undefined' && window.matchMedia) {
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    return window.matchMedia(LIGHT_QUERY).matches ? 'light' : 'dark';
   }
   return 'dark';
 }
 
 /**
- * Applies the theme to <html data-theme> and keeps it in sync.
+ * Applies the device theme to <html data-theme> and follows it live.
  *
- * The attribute is set before React paints (see the inline script in
- * index.html) so there is no flash of the wrong theme on load; this hook just
- * takes over from there.
+ * The attribute is also set before React paints (see the inline script in
+ * index.html) so there is no flash of the wrong theme on load; this hook takes
+ * over from there and re-applies on every device change.
  */
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(readInitialTheme);
+  const [theme, setTheme] = useState<Theme>(readDeviceTheme);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const query = window.matchMedia(LIGHT_QUERY);
+    const onChange = (event: MediaQueryListEvent) => setTheme(event.matches ? 'light' : 'dark');
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', theme);
     root.style.colorScheme = theme;
-    try {
-      localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      /* storage disabled — the choice just won't persist */
-    }
   }, [theme]);
 
-  const setTheme = useCallback((next: Theme) => setThemeState(next), []);
-
-  const toggleTheme = useCallback(
-    () => setThemeState((current) => (current === 'dark' ? 'light' : 'dark')),
-    [],
-  );
-
-  return { theme, setTheme, toggleTheme };
+  return { theme };
 }

@@ -43,7 +43,7 @@ export default function HomePage() {
   const rails = data?.rails;
 
   return (
-    <div className="min-h-full bg-black text-zinc-100 flex flex-col font-sans w-full">
+    <div className="min-h-full page-bg text-zinc-100 flex flex-col font-sans w-full">
       <Hero item={hero} isLoading={isLoading} />
 
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">

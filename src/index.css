@@ -1,16 +1,18 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   frameXTV design tokens — ported verbatim.
+   frameXTV design tokens — dark scheme ported verbatim.
 
    frameXTV.xyz's built stylesheet opens with `:root{--bg-primary:#000;
    --bg-secondary:#09090b;--bg-card:#121215;--border-color:#27272a;
    --border-hover:#3f3f46;--text-main:#fff;--text-muted:#a1a1aa;
-   --accent-white:#fff}`. The surface ramp is fixed dark — the reference site
-   has no light scheme and no toggle, so neither does this port. The Tailwind
-   v4 `@theme` block below mirrors the compiled `:root` from
-   `index-BthaaTwn.css` so the same `zinc-*` / `rose-*` / `amber-*` utilities
-   resolve to the same oklch values.
+   --accent-white:#fff}`. The Tailwind v4 `@theme` block below mirrors the
+   compiled `:root` from `index.html`'s `index-BthaaTwn.css` so the same
+   `zinc-*` / `rose-*` / `amber-*` utilities resolve to the same oklch values.
+
+   Dark is the reference's own scheme and is unchanged. Light is our addition:
+   it follows the device (`prefers-color-scheme`), with no toggle, and is built
+   from an accent-blue gradient over white with glassmorphism surfaces.
    ========================================================================== */
 
 :root {
@@ -51,34 +53,59 @@
   /* Media surfaces (the player, poster chips, hover scrims) stay black in
      both themes — video does not get lighter because the page did. */
   --media-black: #000;
+
+  /* Light-mode furniture. Dark leaves these at their neutral values so the
+     shared rules below are no-ops here. */
+  --page-gradient: none;
+  --page-bg: #000;
+  --accent-blue: #2563eb;
+  --glass-bg: transparent;
+  --glass-border: transparent;
+  --glass-shadow: none;
+  --glass-blur: 0px;
 }
 
+/* Light follows the device. The page is a soft accent-blue gradient over
+   white; cards and controls are glassmorphism panels on top of it. */
 [data-theme='light'] {
   color-scheme: light;
 
-  --bg-primary: #fff;
-  --bg-secondary: #fafafa;
-  --bg-card: #fff;
-  --border-color: #e4e4e7;
-  --border-hover: #d4d4d8;
-  --text-main: #09090b;
-  --text-muted: #52525b;
-  --accent-white: #09090b;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8ff;
+  --bg-card: #ffffff;
+  --border-color: #dbe3f4;
+  --border-hover: #bfcdf0;
+  --text-main: #0b1220;
+  --text-muted: #5b6478;
+  --accent-white: #0b1220;
 
-  --fg-strong: #09090b;
-  --fg-inverse: #fff;
+  --fg-strong: #0b1220;
+  --fg-inverse: #ffffff;
 
-  --surface-100: #18181b;
-  --surface-200: #27272a;
-  --surface-300: #3f3f46;
-  --surface-400: #52525b;
-  --surface-500: #71717a;
-  --surface-600: #a1a1aa;
-  --surface-700: #d4d4d8;
-  --surface-800: #e4e4e7;
-  --surface-850: #f4f4f5;
-  --surface-900: #fafafa;
-  --surface-950: #fff;
+  --surface-100: #0b1220;
+  --surface-200: #1e293b;
+  --surface-300: #334155;
+  --surface-400: #475569;
+  --surface-500: #64748b;
+  --surface-600: #94a3b8;
+  --surface-700: #cbd5e1;
+  --surface-800: #e2e8f0;
+  --surface-850: #eef2ff;
+  --surface-900: #f6f8ff;
+  --surface-950: #ffffff;
+
+  /* Accent-blue gradient wash, brightest at the top so the sticky header and
+     the hero sit on the deepest part of it. */
+  --page-gradient:
+    radial-gradient(1200px 600px at 15% -10%, rgba(37, 99, 235, 0.18), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(56, 189, 248, 0.16), transparent 55%),
+    linear-gradient(180deg, #eef4ff 0%, #ffffff 45%);
+  --page-bg: transparent;
+  --accent-blue: #2563eb;
+  --glass-bg: rgba(255, 255, 255, 0.62);
+  --glass-border: rgba(37, 99, 235, 0.16);
+  --glass-shadow: 0 8px 30px rgba(37, 99, 235, 0.1);
+  --glass-blur: 14px;
 }
 
 @theme {
@@ -142,11 +169,76 @@ body {
 
 body {
   background-color: var(--bg-primary);
+  background-image: var(--page-gradient);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--text-main);
   margin: 0;
   min-height: 100dvh;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------ */
+/* Light-mode glassmorphism                                            */
+/* ------------------------------------------------------------------ */
+
+/* Scoped to light so dark is untouched: in dark mode the reference's own
+   `bg-black/95` header and `bg-zinc-900` cards stand as they are.
+
+   The rules are unlayered, and Tailwind's utilities live in `@layer
+   utilities`, so these win over the component's `bg-*` class without needing
+   `!important`. `--glass-bg` is translucent white, not opaque: the point is
+   that the accent-blue gradient shows through the panel. */
+[data-theme='light'] .glass-panel {
+  background-color: var(--glass-bg);
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+/* Controls (nav pills, buttons) get the frosted treatment without the drop
+   shadow, which would read as a heavy card on a small target. */
+[data-theme='light'] .glass-control {
+  background-color: var(--glass-bg);
+  border-color: var(--glass-border);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+/* The poster keeps its artwork, so only the frame is glassed: a translucent
+   plate behind the image would wash the poster out. */
+[data-theme='light'] .glass-frame {
+  border-color: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+/* The page shell. In dark mode this is the reference's `bg-black`; in light
+   mode it goes transparent so the accent-blue gradient on `body` shows
+   through. Unlayered, so it wins over the `bg-black` utility on the element
+   itself (`--fg-inverse` would otherwise paint it solid white and hide the
+   gradient). Media surfaces keep their own `bg-black` and are unaffected. */
+.page-bg {
+  background-color: var(--page-bg);
+}
+
+/* Selected nav pill / primary action. Dark keeps the reference's inverted
+   white pill; light switches to the accent blue, which is the one strong
+   colour on the light scheme. */
+[data-theme='light'] .accent-active {
+  background-color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.28);
+}
+
+/* Any `text-black` / `fill-black` inside an accent-blue pill must stay white,
+   or the label would vanish into the blue. */
+[data-theme='light'] .accent-active,
+[data-theme='light'] .accent-active * {
+  color: #fff;
+  fill: currentColor;
 }
 
 /* `#root` is the Vite mount point; the reference SPA renders into one too. */

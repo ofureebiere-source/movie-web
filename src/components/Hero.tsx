@@ -97,14 +97,14 @@ export default function Hero({ item, isLoading = false }: { item?: FxItem | null
         <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
           <Link
             to={watchPath}
-            className="inline-flex items-center space-x-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs sm:text-sm font-bold transition-all shadow-md active:scale-[0.98]"
+            className="accent-active inline-flex items-center space-x-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs sm:text-sm font-bold transition-all shadow-md active:scale-[0.98]"
           >
             <Play className="w-4 h-4 fill-black" />
             <span>Watch Now</span>
           </Link>
           <Link
             to={detailPath}
-            className="inline-flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs sm:text-sm font-medium transition-all backdrop-blur-sm active:scale-[0.98]"
+            className="glass-control inline-flex items-center space-x-2 px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 hover:text-white text-xs sm:text-sm font-medium transition-all backdrop-blur-sm active:scale-[0.98]"
           >
             <Info className="w-4 h-4" />
             <span>Details</span>

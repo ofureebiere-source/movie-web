@@ -100,7 +100,7 @@ export default function MediaCard({
       className={`group/card relative flex flex-col ${widthClass} text-left cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/50 rounded-lg transition-transform duration-200 sm:active:scale-[0.98] ${className}`}
       title={`View ${displayTitle} Details`}
     >
-      <div className="media-surface relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-zinc-900 border border-white/[0.06] group-hover/card:border-white/[0.15] shadow-md transition-colors">
+      <div className="media-surface glass-frame relative aspect-[2/3] w-full rounded-lg overflow-hidden bg-zinc-900 border border-white/[0.06] group-hover/card:border-white/[0.15] shadow-md transition-colors">
         {displayPoster && !errored ? (
           <>
             <img

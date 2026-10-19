@@ -16,6 +16,7 @@ import HistoryPage from '@/pages/HistoryPage';
 import ApiPage from '@/pages/ApiPage';
 import ConfiguratorPage from '@/pages/ConfiguratorPage';
 import NotFoundPage from '@/pages/NotFoundPage';
+import { useTheme } from '@/lib/theme';
 
 /**
  * Routes.
@@ -38,6 +39,11 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  // Applies the device theme to <html> and follows it live. There is no
+  // toggle and no provider — the whole scheme is CSS on the root attribute, so
+  // this single call site is all the wiring it needs.
+  useTheme();
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

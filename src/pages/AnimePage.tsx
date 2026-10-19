@@ -82,7 +82,7 @@ export default function AnimePage() {
   }, []);
 
   return (
-    <div className="min-h-full bg-black text-zinc-100 flex flex-col font-sans w-full">
+    <div className="min-h-full page-bg text-zinc-100 flex flex-col font-sans w-full">
       <div className="border-b border-white/[0.04] bg-zinc-950/80 backdrop-blur-sm sticky top-14 z-40">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-11 flex items-center justify-between gap-2">
           <div className="flex items-center space-x-2">

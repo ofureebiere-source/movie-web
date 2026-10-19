@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bookmark, Clock, Film, Home, Search, Sparkles, Tv, Code2 } from 'lucide-react';
 import { WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
 import MobileNav from './MobileNav';
-import ThemeToggle from './ThemeToggle';
 
 /**
  * The sticky top bar.
@@ -50,13 +49,13 @@ export default function Header() {
   const actionClass = (active: boolean) =>
     `p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg border transition-all flex items-center gap-1.5 text-xs font-medium cursor-pointer shrink-0 ${
       active
-        ? 'bg-white text-black border-white font-bold shadow-sm'
-        : 'bg-zinc-950/80 hover:bg-zinc-900 border-white/[0.08] text-zinc-300 hover:text-white hover:border-white/[0.15]'
+        ? 'accent-active bg-white text-black border-white font-bold shadow-sm'
+        : 'glass-control bg-zinc-950/80 hover:bg-zinc-900 border-white/[0.08] text-zinc-300 hover:text-white hover:border-white/[0.15]'
     }`;
 
   return (
     <>
-      <header className="border-b border-white/[0.05] bg-black/95 backdrop-blur-md sticky top-0 z-50 w-full overflow-hidden">
+      <header className="border-b border-white/[0.05] bg-black/95 glass-panel backdrop-blur-md sticky top-0 z-50 w-full overflow-hidden">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center space-x-2 shrink-0">
             <Link
@@ -82,7 +81,7 @@ export default function Header() {
                   to={item.path}
                   className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
                     active
-                      ? 'bg-white text-black font-bold shadow-sm'
+                      ? 'accent-active bg-white text-black font-bold shadow-sm'
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
                   }`}
                 >
@@ -94,14 +93,13 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
-            <ThemeToggle />
             <Link
               to="/search"
               title="Search movies, TV series, anime (/)"
               className={`px-2.5 py-1.5 rounded-lg border transition-all flex items-center gap-2 text-xs font-medium cursor-pointer ${
                 isSearch
-                  ? 'bg-white text-black border-white font-bold shadow-sm'
-                  : 'bg-zinc-950/80 hover:bg-zinc-900 border-white/[0.08] text-zinc-300 hover:text-white hover:border-white/[0.15]'
+                  ? 'accent-active bg-white text-black border-white font-bold shadow-sm'
+                  : 'glass-control bg-zinc-950/80 hover:bg-zinc-900 border-white/[0.08] text-zinc-300 hover:text-white hover:border-white/[0.15]'
               }`}
             >
               <Search className={`w-3.5 h-3.5 ${isSearch ? 'text-black' : 'text-zinc-400'}`} />

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
@@ -27,75 +27,118 @@ import type { FxCastMember, FxDetail, FxItem, FxVideo } from '@/lib/api';
  * skeleton and the error card.
  */
 
-/** YouTube trailer, in a modal (the reference uses `youtube-nocookie`). */
-export function TrailerModal({
+/**
+ * The trailer player that morphs into the poster's own slot.
+ *
+ * Clicking Watch Trailer swaps the poster panel for this inline player — no
+ * modal, no scrim, no fixed overlay. The panel keeps the poster's exact
+ * position and 2:3 footprint, so the transition reads as the artwork turning
+ * into the video rather than a dialog appearing over it.
+ *
+ * `slotRef` is the poster panel itself, and `posterRef` the `<img>` inside it:
+ * the player animates from the poster's on-screen rect to the panel's, which
+ * is what makes the morph track the real layout (a narrower viewport stacks
+ * the panel differently) instead of a hard-coded start size.
+ */
+export function TrailerInline({
   video,
-  isOpen,
   onClose,
+  slotRef,
+  posterRef,
   title,
 }: {
-  video?: FxVideo;
-  isOpen: boolean;
+  video: FxVideo;
   onClose: () => void;
+  slotRef: React.RefObject<HTMLDivElement | null>;
+  posterRef: React.RefObject<HTMLImageElement | null>;
   title?: string;
 }) {
+  const [entered, setEntered] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    const frame = requestAnimationFrame(() => setEntered(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
     window.addEventListener('keydown', onKey);
-    const timer = setTimeout(() => closeRef.current?.focus(), 50);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      clearTimeout(timer);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, onClose]);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
-  if (!isOpen || !video || !video.key) return null;
+  // Transform the panel from the poster's rect to the panel's own, then release
+  // it. Kept in a layout effect so the start transform is applied before the
+  // first paint — otherwise the panel would flash at full size first.
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    const slot = slotRef.current;
+    if (!panel || !slot) return;
+    const to = panel.getBoundingClientRect();
+    const fromEl = posterRef.current ?? slot;
+    const from = fromEl.getBoundingClientRect();
+    if (!to.width || !to.height || !from.width || !from.height) return;
+
+    const scaleX = from.width / to.width;
+    const scaleY = from.height / to.height;
+    panel.style.transition = 'none';
+    panel.style.transformOrigin = 'top left';
+    panel.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${scaleX}, ${scaleY})`;
+    panel.style.opacity = '0.6';
+    panel.style.borderRadius = '0.75rem';
+
+    const frame = requestAnimationFrame(() => {
+      panel.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease-out, border-radius 420ms ease-out';
+      panel.style.transform = 'translate(0, 0) scale(1, 1)';
+      panel.style.opacity = '1';
+      panel.style.borderRadius = '0.75rem';
+    });
+    const done = window.setTimeout(() => {
+      panel.style.transition = '';
+      panel.style.transform = '';
+      panel.style.transformOrigin = '';
+      panel.style.opacity = '';
+    }, 480);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(done);
+    };
+  }, [slotRef, posterRef]);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
+
+  if (!video.key) return null;
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={title ? `${title} Trailer` : 'Media Trailer'}
-      className="media-surface fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md"
-      onClick={onClose}
+      ref={panelRef}
+      data-testid="trailer-inline"
+      role="region"
+      aria-label={title ? `${title} trailer` : 'Media trailer'}
+      className={`absolute inset-0 z-20 rounded-xl overflow-hidden bg-black border border-white/10 shadow-2xl ${entered ? 'opacity-100' : 'opacity-0'}`}
     >
-      <div
-        className="relative w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1`}
+        title={video.name || `${title || 'Title'} Official Trailer`}
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full border-0"
+      />
+      <button
+        ref={closeRef}
+        type="button"
+        data-testid="trailer-inline-close"
+        onClick={onClose}
+        aria-label="Close trailer"
+        className="absolute top-2 right-2 z-30 p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/15 transition-all active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
       >
-        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-850 bg-zinc-900/60">
-          <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-red-500" />
-            <h3 className="text-xs sm:text-sm font-semibold text-zinc-200 truncate">
-              {video.name || `${title || 'Title'} Official Trailer`}
-            </h3>
-          </div>
-          <button
-            ref={closeRef}
-            onClick={onClose}
-            aria-label="Close trailer"
-            className="p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-        <div className="relative aspect-video w-full bg-black">
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1`}
-            title={video.name || 'Official Trailer'}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            className="w-full h-full border-0"
-          />
-        </div>
-      </div>
+        <X className="w-4 h-4" />
+      </button>
     </div>
   );
 }
@@ -141,6 +184,8 @@ export function DetailHero({
   const [posterErrored, setPosterErrored] = useState(false);
   const [trailerOpen, setTrailerOpen] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
+  const posterSlotRef = useRef<HTMLDivElement | null>(null);
+  const posterImgRef = useRef<HTMLImageElement | null>(null);
 
   const { isReleased } = getReleaseState({
     mediaType: detail.type,
@@ -170,10 +215,14 @@ export function DetailHero({
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-8 sm:pb-12 z-10">
         <div className="flex flex-col md:flex-row items-start gap-6 sm:gap-8 lg:gap-10">
-          <div className="w-40 sm:w-52 md:w-60 lg:w-72 aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl shrink-0 mx-auto md:mx-0 relative">
+          <div
+            ref={posterSlotRef}
+            className="w-40 sm:w-52 md:w-60 lg:w-72 aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl shrink-0 mx-auto md:mx-0 relative"
+          >
             {detail.poster && !posterErrored ? (
               <>
                 <img
+                  ref={posterImgRef}
                   src={detail.poster}
                   alt={detail.title}
                   onLoad={() => setPosterLoaded(true)}
@@ -187,6 +236,15 @@ export function DetailHero({
                 <ImageOff className="w-10 h-10 mb-2 opacity-50" />
                 <span className="text-[11px] font-mono text-zinc-500 line-clamp-2">{detail.title}</span>
               </div>
+            )}
+            {trailerOpen && trailer && trailer.key && (
+              <TrailerInline
+                video={trailer}
+                title={detail.title}
+                slotRef={posterSlotRef}
+                posterRef={posterImgRef}
+                onClose={() => setTrailerOpen(false)}
+              />
             )}
           </div>
 
@@ -257,7 +315,7 @@ export function DetailHero({
                   <Link
                     to={playUrl}
                     data-testid="detail-play-btn"
-                    className="inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs sm:text-sm font-bold transition-all shadow-lg active:scale-[0.98] cursor-pointer w-full xs:w-auto"
+                    className="accent-active inline-flex items-center justify-center space-x-2 px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-200 text-black text-xs sm:text-sm font-bold transition-all shadow-lg active:scale-[0.98] cursor-pointer w-full xs:w-auto"
                   >
                     <Play className="w-4 h-4 fill-black" />
                     <span>{playLabel}</span>
@@ -334,10 +392,6 @@ export function DetailHero({
           </div>
         </div>
       </div>
-
-      {trailer && (
-        <TrailerModal video={trailer} isOpen={trailerOpen} onClose={() => setTrailerOpen(false)} title={detail.title} />
-      )}
     </div>
   );
 }
@@ -429,7 +483,7 @@ export function RecommendationsSection({ items, title = 'More Like This' }: { it
 /** The full-page detail skeleton. */
 export function DetailSkeleton() {
   return (
-    <div className="w-full min-h-screen bg-black text-zinc-100 flex flex-col animate-pulse select-none">
+    <div className="w-full min-h-screen page-bg text-zinc-100 flex flex-col animate-pulse select-none">
       <div className="w-full bg-zinc-950 border-b border-zinc-900 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col md:flex-row items-start gap-6 lg:gap-10">
           <div className="shrink-0 w-36 sm:w-48 lg:w-56 aspect-[2/3] rounded-xl bg-zinc-900 border border-zinc-850 mx-auto md:mx-0" />
