@@ -81,7 +81,9 @@
   "movie": {
     "watch": "ดูภาพยนตร์",
     "moreLikeThis": "เรื่องที่คล้ายกัน",
-    "share": "แชร์"
+    "share": "แชร์",
+    "trailer": "ตัวอย่าง",
+    "closeTrailer": "ปิดตัวอย่าง"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. สงวนลิขสิทธิ์ทั้งหมด",

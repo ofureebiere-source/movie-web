@@ -13,6 +13,7 @@ import ExternalReviews from '../comment/external-reviews';
 import MovieImage from 'types/movie-image';
 import MovieImageList from '../movie-images/movie-image-list';
 import RelatedMovies from './related-movies';
+import Trailer from './trailer';
 import type MovieType from 'types/movie';
 import { Link } from 'i18n/routing';
 import { useLocale, useTranslations } from 'next-intl';
@@ -139,10 +140,10 @@ export default function MovieContent({
         {/* Stills */}
         {images && images.length > 0 && <MovieImageList images={images} />}
 
-        {/* No trailer embed. The catalogue's trailer links are YouTube, and a
-            third-party frame is an off-site redirect in everything but name —
-            the same reason the cast, rating and attribution links are no
-            longer anchors. The synopsis and the stills carry the page. */}
+        {/* Trailer — served through a privacy front-end (Invidious), never a
+            raw YouTube frame, so no third-party cookies or branding land on
+            the page. Hidden when the catalogue has no trailer for the title. */}
+        {movie.movie.trailer_key && <Trailer trailerKey={movie.movie.trailer_key} />}
 
         {/* More like this — grid */}
         {relatedMovies.length > 0 && (

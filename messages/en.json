@@ -95,7 +95,9 @@
       "viewOnTmdb": "View on TMDB",
       "votes": "votes"
     },
-    "seasons": "Seasons"
+    "seasons": "Seasons",
+    "trailer": "Trailer",
+    "closeTrailer": "Close trailer"
   },
   "watch": {
     "episodeList": "Episodes",

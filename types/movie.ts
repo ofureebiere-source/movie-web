@@ -39,4 +39,11 @@ export default interface Movie extends NewlyMovie{
     status?: string,
     /** Planned episode count, when the catalog knows it. */
     episode_total?: number,
+    /**
+     * YouTube id of this title's trailer, when the catalogue has one.
+     *
+     * Kept as a bare id (not a URL) so the player can hand it to whichever
+     * front-end serves it — no third-party link is stored or rendered.
+     */
+    trailer_key?: string,
 }

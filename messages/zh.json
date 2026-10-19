@@ -81,7 +81,9 @@
   "movie": {
     "watch": "观看影片",
     "moreLikeThis": "更多类似影片",
-    "share": "分享"
+    "share": "分享",
+    "trailer": "预告片",
+    "closeTrailer": "关闭预告片"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. 保留所有权利。",

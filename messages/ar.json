@@ -81,7 +81,9 @@
   "movie": {
     "watch": "شاهد الفيلم",
     "moreLikeThis": "أعمال مشابهة",
-    "share": "مشاركة"
+    "share": "مشاركة",
+    "trailer": "المقطع الدعائي",
+    "closeTrailer": "إغلاق المقطع الدعائي"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. جميع الحقوق محفوظة.",

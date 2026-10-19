@@ -95,7 +95,9 @@
       "viewOnTmdb": "Xem trên TMDB",
       "votes": "votes"
     },
-    "seasons": "Các phần"
+    "seasons": "Các phần",
+    "trailer": "Trailer",
+    "closeTrailer": "Đóng trailer"
   },
   "watch": {
     "episodeList": "Danh sách tập phim",

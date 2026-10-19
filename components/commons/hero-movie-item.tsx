@@ -45,6 +45,13 @@ interface HeroMovieItemProps {
    */
   onNextSlide?: () => void;
   /**
+   * Starts playback without leaving the page. The hero is the one place a
+   * viewer expects "Watch now" to just play, so the button calls this rather
+   * than linking to the detail page — the card itself is still the way to the
+   * detail page.
+   */
+  onWatchNow?: () => void;
+  /**
    * True only for the slide that's actually visible on first paint. The
    * parent Swiper (`effect="fade"`) mounts every slide at once — if every
    * slide's poster requested `priority`, the browser would preload all of
@@ -67,6 +74,7 @@ export default function HeroMovieItem({
   listItem,
   logoUrl,
   onNextSlide,
+  onWatchNow,
   priority = false,
 }: HeroMovieItemProps) {
   const t = useTranslations('movie');
@@ -134,6 +142,15 @@ export default function HeroMovieItem({
         <div className="absolute inset-0 bg-gradient-to-t from-black to-10%"></div>
         <div className="absolute inset-0 bg-gradient-to-l from-black to-10%"></div>
 
+        {/* The poster is the card: clicking it opens the detail page. Sits
+            below the info cluster (which is later in the DOM), so the buttons
+            in that cluster keep their own clicks. */}
+        <Link
+          href={`/movies/${movie.slug}`}
+          aria-label={primaryTitle}
+          className="absolute inset-0 z-0"
+        />
+
         <div className="absolute w-2/4 bottom-[5rem] left-6 space-y-5">
           {/* Status badges row */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -196,13 +213,16 @@ export default function HeroMovieItem({
 
           <MovieSummary summary={movie.content || t('info.fallbackContent')} />
           <div className="space-x-5 flex items-center">
-            <Link
-              href={`/movies/${movie.slug}`}
+            {/* A button, not a Link: "Watch now" starts the film here. The
+                poster/backdrop above is the way to the detail page. */}
+            <button
+              type="button"
+              onClick={onWatchNow}
               className="glass-btn glass-btn-primary"
             >
               <FaPlay size={18} />
               <span className="block leading-4 font-semibold">{t('watch')}</span>
-            </Link>
+            </button>
             <BtnAddToCollection variant="primary" detailMovie={detailMovie} />
           </div>
         </div>
@@ -212,17 +232,20 @@ export default function HeroMovieItem({
           `pt-14` offsets the absolute mobile header so the poster top isn't clipped. */}
       <div className="lg:hidden flex flex-col w-full pt-14">
         {/* Fixed 16:9 box reserves height before the image loads → no CLS
-            (matches the hero skeleton's aspect ratio). */}
+            (matches the hero skeleton's aspect ratio). The poster is the card:
+            it opens the detail page, while "Watch now" below plays in place. */}
         <div className="relative w-full aspect-video">
-          <Image
-            {...heroImage}
-            alt={primaryTitle}
-            fill
-            priority={priority}
-            loading={priority ? undefined : 'lazy'}
-            sizes="100vw"
-            className="object-cover"
-          />
+          <Link href={`/movies/${movie.slug}`} aria-label={primaryTitle}>
+            <Image
+              {...heroImage}
+              alt={primaryTitle}
+              fill
+              priority={priority}
+              loading={priority ? undefined : 'lazy'}
+              sizes="100vw"
+              className="object-cover"
+            />
+          </Link>
           {/* Soft fade-out so the poster blends into the dark content area below */}
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black to-transparent pointer-events-none"></div>
 
@@ -295,13 +318,14 @@ export default function HeroMovieItem({
 
           {/* Action Buttons */}
           <div className="space-y-3 pt-1">
-            <Link
-              href={`/movies/${movie.slug}`}
+            <button
+              type="button"
+              onClick={onWatchNow}
               className="glass-btn glass-btn-primary glass-btn-block"
             >
               <FaPlay size={16} />
               <span>{t('watch')}</span>
-            </Link>
+            </button>
             <div className="w-full">
               <BtnAddToCollection variant="primary" detailMovie={detailMovie} />
             </div>

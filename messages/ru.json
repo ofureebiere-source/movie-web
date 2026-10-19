@@ -81,7 +81,9 @@
   "movie": {
     "watch": "Смотреть фильм",
     "moreLikeThis": "Похожие",
-    "share": "Поделиться"
+    "share": "Поделиться",
+    "trailer": "Трейлер",
+    "closeTrailer": "Закрыть трейлер"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. Все права защищены.",

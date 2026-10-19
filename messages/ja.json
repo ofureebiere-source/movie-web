@@ -81,7 +81,9 @@
   "movie": {
     "watch": "映画を観る",
     "moreLikeThis": "似ている作品",
-    "share": "共有"
+    "share": "共有",
+    "trailer": "予告編",
+    "closeTrailer": "予告編を閉じる"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. All rights reserved.",

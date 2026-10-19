@@ -1,4 +1,5 @@
 import type { FxItem, FxDetail, FxEpisode, FxSeason, FxAnimeItem, AniListMedia } from 'services/framextv-api';
+import { pickTrailerKey } from 'services/framextv-api';
 import { genreSlugForName, genreIdForSlug } from 'constants/framextv-taxonomy';
 import { CATEGORY_MAP, COUNTRY_MAP } from 'constants/i18n-mappings';
 import type NewlyMovie from 'types/newly-movie';
@@ -446,6 +447,7 @@ export function adaptDetail(
     content_lang: 'en',
     status: mediaTypeOf(detail) === 'tv' ? 'ongoing' : 'completed',
     episode_total: detail.number_of_seasons,
+    trailer_key: pickTrailerKey(detail) || undefined,
   };
 
   return { movie, episodes };

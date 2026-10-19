@@ -81,7 +81,9 @@
   "movie": {
     "watch": "Regarder le film",
     "moreLikeThis": "Titres similaires",
-    "share": "Partager"
+    "share": "Partager",
+    "trailer": "Bande-annonce",
+    "closeTrailer": "Fermer la bande-annonce"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. Tous droits réservés.",

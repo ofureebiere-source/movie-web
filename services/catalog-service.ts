@@ -13,6 +13,7 @@ import {
   getAniListMedia,
   CatalogApiError,
   type FxItem,
+  type FxPage,
   type FxAnimeItem,
 } from 'services/framextv-api';
 import {
@@ -84,10 +85,21 @@ async function mergedBrowse(
   params: { page: number; genre?: number; year?: number },
   locale: string
 ): Promise<CatalogPage> {
-  const [movies, tvs] = await Promise.all([
+  // Settled, not `all`: a genre the provider has no series for (Thriller, 53)
+  // returns an empty series page, and a transient failure on one media type
+  // must not blank a page whose other half loaded. A side that fails is
+  // treated as empty, so the page shows what did load.
+  const [movieResult, tvResult] = await Promise.allSettled([
     discover('movie', { page: params.page, genre: params.genre, year: params.year }),
     discover('tv', { page: params.page, genre: params.genre, year: params.year }),
   ]);
+
+  if (movieResult.status === 'rejected' && tvResult.status === 'rejected') {
+    throw movieResult.reason;
+  }
+  const empty: FxPage = { items: [], page: 1, totalPages: 1, totalItems: 0 };
+  const movies = movieResult.status === 'fulfilled' ? movieResult.value : empty;
+  const tvs = tvResult.status === 'fulfilled' ? tvResult.value : empty;
 
   const merged: FxItem[] = [];
   const max = Math.max(movies.items.length, tvs.items.length);

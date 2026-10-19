@@ -420,14 +420,20 @@ export interface FxPage {
 }
 
 function toPage(list: FxList | undefined, path: string): FxPage {
-  if (!list || !Array.isArray(list.results)) {
+  if (!list || typeof list !== 'object') {
     throw new CatalogApiError('Catalogue list response has no results', 0, path);
   }
+  // A filter the provider has no rows for answers `{"success":true,
+  // "totalResults":0,"results":null}` — a real, empty page, not a failure.
+  // Treating that as an error used to reject the whole browse page (the
+  // Thriller genre, where the series side is empty while the film side is
+  // not). Only a missing/non-object body is an error.
+  const results = Array.isArray(list.results) ? list.results : [];
   return {
-    items: list.results,
+    items: results,
     page: list.page ?? 1,
     totalPages: list.totalPages ?? 1,
-    totalItems: list.totalResults ?? list.results.length,
+    totalItems: list.totalResults ?? results.length,
   };
 }
 
@@ -474,6 +480,35 @@ export async function searchTitles(query: string, page = 1): Promise<FxPage> {
 /** The curated home payload: one hero plus named rails. */
 export async function getHome(): Promise<FxHome> {
   return apiFetch<FxHome>('/api/home', {}, REVALIDATE.list);
+}
+
+/**
+ * The trailer worth showing for a title, as a bare YouTube id.
+ *
+ * The catalogue returns two overlapping lists: `videos` (TMDB's own set, with
+ * typed entries) and `trailers` (a flat list whose `type` is unreliable — a
+ * full trailer is often labelled "Teaser"). `videos` is preferred because its
+ * type is trustworthy, and the ordering mirrors the metadata add-on's: an
+ * official trailer, then any trailer, then a teaser, then anything.
+ *
+ * Only YouTube entries are considered — the player is handed an id, so a
+ * non-YouTube `site` would produce a frame that cannot play.
+ */
+export function pickTrailerKey(detail: FxDetail | null | undefined): string {
+  if (!detail) return '';
+  const isYoutube = (v: FxVideo) => (v.site ?? 'YouTube').toLowerCase() === 'youtube' && !!v.key;
+  const rank = (v: FxVideo) => {
+    const type = (v.type ?? '').toLowerCase();
+    return type === 'trailer' ? 0 : type === 'teaser' ? 1 : 2;
+  };
+  const videos = (detail.videos ?? []).filter(isYoutube);
+  if (videos.length) {
+    const trailer = videos.filter((v) => rank(v) === 0);
+    const pool = trailer.length ? trailer : videos;
+    return [...pool].sort((a, b) => rank(a) - rank(b))[0].key;
+  }
+  const flat = (detail.trailers ?? []).filter(isYoutube);
+  return flat.length ? [...flat].sort((a, b) => rank(a) - rank(b))[0].key : '';
 }
 
 // ============================================================================

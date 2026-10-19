@@ -81,7 +81,9 @@
   "movie": {
     "watch": "Tonton film",
     "moreLikeThis": "Serupa",
-    "share": "Bagikan"
+    "share": "Bagikan",
+    "trailer": "Trailer",
+    "closeTrailer": "Tutup trailer"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. Hak cipta dilindungi.",

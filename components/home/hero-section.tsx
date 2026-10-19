@@ -11,6 +11,7 @@ import DetailMovie from 'types/detail-movie';
 import HeroSectionSkeleton from './hero-section-skeleton';
 import { markHomeReady } from 'lib/home-ready';
 import { FaChevronRight } from 'react-icons/fa6';
+import PlayerOverlay from '../watch/player-overlay';
 
 /**
  * The hero carousel.
@@ -26,6 +27,8 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
   const locale = useLocale();
   const [detailMovies, setDetailMovies] = useState<DetailMovie[]>([]);
   const [hasFetched, setHasFetched] = useState<boolean>(false);
+  /** The slide whose "Watch now" was pressed, or null. */
+  const [playing, setPlaying] = useState<DetailMovie | null>(null);
   const swiperRef = useRef<any>(null);
 
   useEffect(() => {
@@ -108,12 +111,16 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
                 listItem={listItemBySlug.get(movie.movie.slug)}
                 logoUrl={null}
                 onNextSlide={handleClickToNextSlide}
+                onWatchNow={() => setPlaying(movie)}
                 priority={index === 0}
               />
             </SwiperSlide>
           );
         })}
       </Swiper>
+      {/* Playback stays on the home page: "Watch now" opens the player over the
+          carousel rather than navigating to the watch route. */}
+      {playing && <PlayerOverlay movie={playing} onClose={() => setPlaying(null)} />}
       {/* Desktop Navigation Button — mobile button is rendered inside HeroMovieItem
           so it can vertically center on the variable-height poster image. */}
       <div

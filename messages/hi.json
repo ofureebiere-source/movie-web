@@ -81,7 +81,9 @@
   "movie": {
     "watch": "फ़िल्म देखें",
     "moreLikeThis": "इससे मिलती-जुलती",
-    "share": "साझा करें"
+    "share": "साझा करें",
+    "trailer": "ट्रेलर",
+    "closeTrailer": "ट्रेलर बंद करें"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. सर्वाधिकार सुरक्षित।",
