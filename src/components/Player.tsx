@@ -24,6 +24,7 @@ import {
   type AspectRatio,
   type AudioBoost,
 } from '@/lib/playerPreferences';
+import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
 import type { FxStreamSource, FxSubtitle } from '@/lib/api';
 
@@ -93,6 +94,7 @@ export default function Player({
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffering, setBuffering] = useState(false);
+  const [buffered, setBuffered] = useState<Array<[number, number]>>([]);
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [menu, setMenu] = useState<'none' | 'settings' | 'subs' | 'speed'>('none');
@@ -126,7 +128,25 @@ export default function Player({
           video.src = src;
           return;
         }
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: false });
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          // Default forward buffer is ~30 s, which is what made seeking feel
+          // network-bound: anything further ahead than that had to be fetched
+          // on demand. These push the target out to a few minutes so scrubbing
+          // within the buffered region is served from memory.
+          maxBufferLength: 300,
+          maxMaxBufferLength: 600,
+          backBufferLength: 90,
+          maxBufferSize: 240 * 1000 * 1000,
+          // Start playback with some slack rather than at the very first
+          // fragment, so a brief stall does not interrupt startup.
+          startFragPrefetch: true,
+          // Tolerate small gaps between fragments instead of stalling to fill
+          // them, and detect a genuinely wedged buffer sooner.
+          maxBufferHole: 0.5,
+          highBufferWatchdogPeriod: 3,
+        });
         hls.loadSource(src);
         hls.attachMedia(video);
         hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -150,6 +170,31 @@ export default function Player({
     video.volume = Math.min(1, volume);
     video.muted = muted;
   }, [volume, muted]);
+
+  // Mirror the video element's buffered ranges into state so the seek bar can
+  // draw them. `progress` fires as the buffer fills; `timeupdate` is also
+  // listened to because a seek can change which range is buffered without a
+  // progress event.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const sync = () => {
+      const ranges: Array<[number, number]> = [];
+      for (let i = 0; i < video.buffered.length; i += 1) {
+        ranges.push([video.buffered.start(i), video.buffered.end(i)]);
+      }
+      setBuffered(ranges);
+    };
+    sync();
+    video.addEventListener('progress', sync);
+    video.addEventListener('timeupdate', sync);
+    video.addEventListener('loadedmetadata', sync);
+    return () => {
+      video.removeEventListener('progress', sync);
+      video.removeEventListener('timeupdate', sync);
+      video.removeEventListener('loadedmetadata', sync);
+    };
+  }, [src]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -243,7 +288,6 @@ export default function Player({
   );
 
   const totalHours = Math.floor(duration / 3600);
-  const progressPercent = duration > 0 ? (current / duration) * 100 : 0;
 
   if (!src) {
     return (
@@ -363,19 +407,14 @@ export default function Player({
         }`}
       >
         <div className="px-2 sm:px-3 pt-6">
-          <input
-            type="range"
-            min={0}
-            max={duration || 0}
-            step={1}
-            value={current}
-            onChange={(event) => {
+          <SeekBar
+            current={current}
+            duration={duration}
+            buffered={buffered}
+            onSeek={(seconds) => {
               const video = videoRef.current;
-              if (video) video.currentTime = Number(event.target.value);
+              if (video) video.currentTime = seconds;
             }}
-            aria-label="Seek"
-            className="w-full h-1 accent-rose-500 cursor-pointer"
-            style={{ backgroundSize: `${progressPercent}% 100%` }}
           />
         </div>
 
