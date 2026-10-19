@@ -97,7 +97,8 @@
     },
     "seasons": "Các phần",
     "trailer": "Trailer",
-    "closeTrailer": "Đóng trailer"
+    "closeTrailer": "Đóng trailer",
+    "tryAnotherSource": "Thử nguồn khác"
   },
   "watch": {
     "episodeList": "Danh sách tập phim",

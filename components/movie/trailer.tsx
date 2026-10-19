@@ -14,20 +14,46 @@ import { useTranslations } from 'next-intl';
  * tracking, no branded chrome on a page that is meant to be our own — and it
  * is why the id is stored rather than a full URL.
  *
- * The instance is configurable because public Invidious hosts come and go and
- * several sit behind an anti-bot challenge that only a real browser clears.
- * The frame is loaded by the VISITOR's browser, so a challenge that blocks our
- * build or our datacenter does not block them. When a host is down the frame
- * simply fails to paint; the trailer is decorative, so that degrades to
- * nothing rather than to an error the viewer has to deal with.
+ * The frame is loaded by the VISITOR's browser, so the video request carries
+ * the visitor's own IP, not ours. That matters: every public instance answers
+ * a datacenter egress (a CI runner, a Vercel Function, this dev box) with an
+ * anti-bot challenge, so the embed looks broken from anywhere but a real
+ * browser. A visitor on a home connection is not challenged. Do not "fix" a
+ * trailer by testing it from a server; test it in a browser.
+ *
+ * Because the frame is cross-origin, the parent CANNOT see whether it loaded:
+ * `onError` never fires for a cross-origin iframe, and a challenge page is a
+ * successful load as far as the DOM is concerned. So failure cannot be
+ * detected and rotated automatically — instead the viewer is given a control
+ * to try the next instance themselves. That is the honest design: we cannot
+ * know it failed, so we do not pretend to.
  */
 
 /**
- * Invidious hosts, tried in order. The first is the one the front-end has been
- * most reliable on; `NEXT_PUBLIC_INVIDIOUS_HOST` overrides the list entirely
+ * Invidious hosts, tried in order.
+ *
+ * Taken from the project's own instance list (`api.invidious.io/instances.json`)
+ * rather than a hand-picked pair, so a host that is retired or has lost its
+ * certificate does not linger here. Ordered by how reliably each one has
+ * answered: the leader has the weakest bot protection and served a real player
+ * even from a challenged IP, and the rest follow by reported uptime.
+ *
+ * The project's own `invidious.io`, `api.invidious.io` and
+ * `redirect.invidious.io` are deliberately NOT in this list — they are the
+ * website, the API endpoint and an instance-chooser, not video hosts, and
+ * pointing an embed at them yields a picker page rather than a player.
+ *
+ * `NEXT_PUBLIC_INVIDIOUS_HOST` overrides the list entirely (comma-separated)
  * so a self-hosted instance can be dropped in without a code change.
  */
-const DEFAULT_HOSTS = ['https://yewtu.be', 'https://invidious.f5.si'];
+const DEFAULT_HOSTS = [
+  'https://invidious.tiekoetter.com',
+  'https://inv.nadeko.net',
+  'https://yt.chocolatemoo53.com',
+  'https://invidious.f5.si',
+  'https://invidious.nerdvpn.de',
+  'https://yewtu.be',
+];
 
 function invidiousHosts(): string[] {
   const configured = process.env.NEXT_PUBLIC_INVIDIOUS_HOST;
@@ -73,6 +99,7 @@ export default function Trailer({ trailerKey }: { trailerKey: string }) {
 
   const host = hosts[Math.min(hostIndex, hosts.length - 1)];
   const embedUrl = `${host}/embed/${encodeURIComponent(trailerKey)}?autoplay=1&local=1`;
+  const hostLabel = host.replace(/^https?:\/\//, '');
 
   return (
     <>
@@ -116,9 +143,27 @@ export default function Trailer({ trailerKey }: { trailerKey: string }) {
                   title={t('trailer')}
                   allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                   allowFullScreen
-                  onError={() => setHostIndex((i) => (i + 1 < hosts.length ? i + 1 : i))}
                   className="absolute inset-0 h-full w-full"
                 />
+              </div>
+              {/* No `onError` here on purpose: it never fires for a cross-origin
+                  iframe, so it would be dead code pretending to be a fallback.
+                  A challenge page also loads "successfully", so there is nothing
+                  to observe. The viewer rotates instead — they are the only one
+                  who can see that the frame is blank. */}
+              <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white/70">
+                <span>{hostLabel}</span>
+                {hosts.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setHostIndex((i) => (i + 1) % hosts.length)
+                    }
+                    className="glass-btn glass-btn-sm"
+                  >
+                    {t('tryAnotherSource')}
+                  </button>
+                )}
               </div>
             </div>
           </div>,

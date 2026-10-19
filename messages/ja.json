@@ -83,7 +83,8 @@
     "moreLikeThis": "似ている作品",
     "share": "共有",
     "trailer": "予告編",
-    "closeTrailer": "予告編を閉じる"
+    "closeTrailer": "予告編を閉じる",
+    "tryAnotherSource": "別のソースを試す"
   },
   "footer": {
     "copyright": "© 2024 Netflix-pro. All rights reserved.",

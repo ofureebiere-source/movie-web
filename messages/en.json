@@ -97,7 +97,8 @@
     },
     "seasons": "Seasons",
     "trailer": "Trailer",
-    "closeTrailer": "Close trailer"
+    "closeTrailer": "Close trailer",
+    "tryAnotherSource": "Try another source"
   },
   "watch": {
     "episodeList": "Episodes",
