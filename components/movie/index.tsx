@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type NewlyMovie from 'types/newly-movie';
 import DetailMovie from 'types/detail-movie';
 import type Movie from 'types/movie';
 import { FaPlay } from 'react-icons/fa';
 import MovieContent from './movie-content';
-import MovieWatchPage from '../watch';
+import PlayerOverlay from '../watch/player-overlay';
 import ShareButton from './share-button';
 import Credit from 'types/credit';
 import BtnAddToCollection from '../buttons/btn-add-to-collection';
@@ -76,20 +76,15 @@ export default function MoviePage({
   const t = useTranslations('movie');
   const locale = useLocale() as Locale;
 
-  // In-page playback. "Watch" opens the player at the top of this page rather
-  // than navigating to /movies/watch/<slug>; the route still exists for direct
-  // links, but the detail page no longer sends anyone there.
+  // In-page playback. "Watch" opens the player OVER this page rather than
+  // navigating to /movies/watch/<slug>, and rather than inserting it inline.
+  // The overlay is what the home carousel uses too, so a title plays the same
+  // way wherever it is started from: the hero stays put underneath and the
+  // player covers the viewport, instead of a second card appearing above the
+  // hero and shoving the title card down the page.
   const [playerOpen, setPlayerOpen] = useState(false);
-  const playerAnchorRef = useRef<HTMLDivElement | null>(null);
   const canPlay = movie.movie.episode_current !== 'Trailer';
-
-  const openPlayer = useCallback(() => {
-    setPlayerOpen(true);
-    // Wait for the player to mount before scrolling it into view.
-    requestAnimationFrame(() => {
-      playerAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }, []);
+  const openPlayer = () => setPlayerOpen(true);
 
   useEffect(() => {
     analytics.movieViewed({
@@ -125,13 +120,10 @@ export default function MoviePage({
 
   return (
     <div>
-      {/* Inline player. Rendered above the hero once "Watch" is pressed, so the
-          viewer never leaves the page they were reading. The watch route is
-          still reachable directly; this is the detail page's own entry point. */}
+      {/* Full-screen player, the same surface the home carousel uses. Rendered
+          over the page so the detail layout never reflows when it opens. */}
       {playerOpen && (
-        <div ref={playerAnchorRef} className="scroll-mt-20 pt-20 lg:pt-[3.75rem]">
-          <MovieWatchPage movie={movie} playerOnly onClose={() => setPlayerOpen(false)} />
-        </div>
+        <PlayerOverlay movie={movie} onClose={() => setPlayerOpen(false)} />
       )}
 
       {/* Cinematic full-bleed hero — DESKTOP only (poster + info cluster).
