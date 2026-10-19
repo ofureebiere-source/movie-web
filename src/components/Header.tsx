@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bookmark, Clock, Film, Home, Search, Sparkles, Tv, Code2 } from 'lucide-react';
-import { BADGE_INITIALS, WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
+import { WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
 import MobileNav from './MobileNav';
 
 /**
@@ -60,15 +60,12 @@ export default function Header() {
           <div className="flex items-center space-x-2 shrink-0">
             <Link
               to="/"
-              className="flex items-center space-x-2 text-left focus-visible:ring-2 focus-visible:ring-zinc-400/50 rounded-md cursor-pointer group"
+              className="flex items-center text-left focus-visible:ring-2 focus-visible:ring-zinc-400/50 rounded-md cursor-pointer group"
             >
-              <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-bold font-mono text-xs tracking-tighter shadow-sm border border-zinc-200 transition-transform group-hover:scale-105 shrink-0">
-                {BADGE_INITIALS}
-              </div>
-              <div className="flex items-baseline space-x-1.5 whitespace-nowrap">
-                <span className="font-extrabold tracking-tight text-white text-base sm:text-lg">
+              <div className="flex items-baseline whitespace-nowrap">
+                <span className="font-extrabold tracking-tight text-white text-base sm:text-lg transition-opacity group-hover:opacity-80">
                   {WORDMARK_LEAD}
-                  <span className="text-zinc-400">{WORDMARK_ACCENT}</span>
+                  <span className="text-brand-red">{WORDMARK_ACCENT}</span>
                 </span>
               </div>
             </Link>

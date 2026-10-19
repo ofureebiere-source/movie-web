@@ -3,15 +3,15 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import InstallBanner from './InstallBanner';
-import WelcomeModal from './WelcomeModal';
 
 /**
  * The app shell.
  *
  * Ported 1:1 from frameXTV.xyz's layout: a full-height column, the sticky
  * header, a `flex-1` main that clears the fixed mobile nav with bottom padding,
- * the footer, then the install banner and welcome modal as overlays. Every
- * route change scrolls back to the top.
+ * the footer, then the install banner as an overlay. Every route change scrolls
+ * back to the top. Visitors land straight on the home page — there is no
+ * first-visit modal.
  */
 export default function Layout() {
   const { pathname } = useLocation();
@@ -28,7 +28,6 @@ export default function Layout() {
       </main>
       <Footer />
       <InstallBanner />
-      <WelcomeModal />
     </div>
   );
 }

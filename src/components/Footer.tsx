@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Github, MessageCircle } from 'lucide-react';
-import { BADGE_INITIALS, SITE_NAME, TAGLINE, WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
+import { SITE_NAME, TAGLINE, WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
 
 /**
  * The site footer.
@@ -27,12 +27,9 @@ export default function Footer() {
     <footer className="border-t border-zinc-900 bg-black mt-auto py-6 px-4 sm:px-6 w-full overflow-hidden">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-zinc-400">
         <div className="flex items-center space-x-2.5 shrink-0">
-          <div className="w-5 h-5 rounded bg-white text-black font-bold font-mono text-[10px] flex items-center justify-center border border-zinc-300 shrink-0">
-            {BADGE_INITIALS}
-          </div>
           <span className="font-bold text-white tracking-wide">
             {WORDMARK_LEAD}
-            <span className="text-zinc-400">{WORDMARK_ACCENT}</span>
+            <span className="text-brand-red">{WORDMARK_ACCENT}</span>
           </span>
           <span className="text-zinc-800 hidden sm:inline">|</span>
           <span className="text-zinc-500 text-[11px] hidden sm:inline">{TAGLINE}</span>
