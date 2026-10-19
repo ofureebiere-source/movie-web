@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import HeaderDefault from './header-default';
-import HeaderFixed from './header-fixed';
 import HeaderMobile from './header-mobile';
 import { INotificationDropdownState } from 'types/notification';
 import { useDropdown } from '../context/dropdown-context';
@@ -54,14 +53,12 @@ export default function Header() {
         />
       </div>
 
-      {/* Desktop header — visible at lg+ */}
+      {/* Desktop header — visible at lg+. A single sticky bar, the upstream
+          arrangement: the nav stays pinned to the top instead of swapping
+          between a static bar and a separate slide-in one, which double-stacked
+          the two on scroll. */}
       <div className="hidden lg:block">
         <HeaderDefault
-          isShowFixedHeader={isShowFixedHeader}
-          notificationDropdownState={notificationDropdownState}
-          setNotificationDropdownState={setNotificationDropdownState}
-        />
-        <HeaderFixed
           isShowFixedHeader={isShowFixedHeader}
           notificationDropdownState={notificationDropdownState}
           setNotificationDropdownState={setNotificationDropdownState}

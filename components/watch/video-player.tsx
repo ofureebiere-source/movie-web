@@ -199,7 +199,14 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // z-30, settings z-30, help z-40, lock z-40) stay scoped to the player.
       // The resume prompt sits at z-30 so it stays visible above the pre-play
       // poster (z-20) during the poster phase.
-      <div ref={containerRef} className="relative isolate w-full aspect-video bg-black">
+      //
+      // The frame itself is upstream's player shell verbatim: full-bleed on a
+      // phone, a rounded 2xl card from `sm` up, with the same 1px edge and
+      // shadow. `overflow-hidden` is what lets the corners clip the video.
+      <div
+        ref={containerRef}
+        className="relative isolate aspect-video w-full overflow-hidden border-y border-line bg-black shadow-2xl sm:rounded-2xl sm:border"
+      >
         <video
           ref={videoRef}
           playsInline

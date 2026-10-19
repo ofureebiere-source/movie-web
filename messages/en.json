@@ -20,6 +20,7 @@
   },
   "header": {
     "menu": {
+      "home": "Home",
       "singleMovies": "Movies",
       "tvSeries": "TV Series",
       "cartoons": "Animation",
@@ -27,7 +28,8 @@
       "categories": "Genres",
       "countries": "Countries",
       "anime": "Anime",
-      "myList": "My List"
+      "myList": "My List",
+      "api": "API"
     },
     "search": "Search movies"
   },
@@ -44,7 +46,8 @@
       "cartoonNewlyUpdated": "Latest Animation",
       "tvShowsNewlyUpdated": "Latest TV Shows",
       "theatricalNewlyUpdated": "Theatrical Releases",
-      "voicedNewlyUpdated": "With Vietnamese Voiceover"
+      "voicedNewlyUpdated": "With Vietnamese Voiceover",
+      "viewAll": "View all"
     },
     "banner": {
       "todayCount": "Today,",
@@ -227,7 +230,8 @@
     "search": "Search",
     "myList": "My List",
     "profile": "Profile",
-    "anime": "Anime"
+    "anime": "Anime",
+    "api": "API"
   },
   "disclaimer": {
     "eyebrow": "Notice",
@@ -535,5 +539,36 @@
     "titles": "titles",
     "noMatches": "No titles match these filters.",
     "clear": "Clear"
+  },
+  "api": {
+    "metaTitle": "API",
+    "metaDescription": "Open, keyless catalogue and stream endpoints.",
+    "badge": "Service API",
+    "title": "API",
+    "subtitle": "Open, keyless endpoints for the catalogue, playback and image proxy. Every call is a plain GET — no key, no sign-up.",
+    "stats": {
+      "endpoints": "Endpoints",
+      "methods": "Methods",
+      "keys": "API keys"
+    },
+    "explorerTitle": "Try an endpoint",
+    "upstreamPath": "Upstream path",
+    "send": "Send request",
+    "sending": "Sending…",
+    "responsePlaceholder": "The response appears here.",
+    "requestFailed": "The request failed. Check the parameters and try again.",
+    "endpoints": {
+      "catalog": "Search and browse the catalogue. The upstream path is appended to the route — e.g. api/search or api/movies.",
+      "stream": "Resolve a fresh, token-bound playlist URL for a title at play time.",
+      "image": "Resize and re-encode a poster through the deployment's own loader."
+    },
+    "referenceTitle": "Full reference",
+    "referenceBody": "The interactive reference lists every parameter, response shape and status code.",
+    "referenceCta": "Open the reference"
+  },
+  "reviews": {
+    "heading": "Reviews",
+    "via": "via {source}",
+    "attribution": "Reviews are quoted from public sources and belong to their authors."
   }
 }

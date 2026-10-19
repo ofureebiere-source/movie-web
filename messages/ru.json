@@ -11,6 +11,7 @@
   },
   "header": {
     "menu": {
+      "home": "Главная",
       "singleMovies": "Фильмы",
       "tvSeries": "Сериалы",
       "cartoons": "Анимация",
@@ -18,7 +19,8 @@
       "categories": "Жанры",
       "countries": "Страны",
       "anime": "Аниме",
-      "myList": "Мой список"
+      "myList": "Мой список",
+      "api": "API"
     },
     "search": "Поиск фильмов"
   },
@@ -35,7 +37,8 @@
       "cartoonNewlyUpdated": "Новая анимация",
       "tvShowsNewlyUpdated": "Новые ТВ-шоу",
       "theatricalNewlyUpdated": "Кинопремьеры",
-      "voicedNewlyUpdated": "Вьетнамская озвучка"
+      "voicedNewlyUpdated": "Вьетнамская озвучка",
+      "viewAll": "View all"
     }
   },
   "bottomNav": {
@@ -43,7 +46,8 @@
     "search": "Поиск",
     "myList": "Мой список",
     "profile": "Профиль",
-    "anime": "Аниме"
+    "anime": "Аниме",
+    "api": "API"
   },
   "lists": {
     "endOfList": "🎬 Вы дошли до конца",
@@ -147,5 +151,31 @@
     "titles": "работ",
     "noMatches": "Нет работ, соответствующих этим фильтрам.",
     "clear": "Сбросить"
+  },
+  "api": {
+    "metaTitle": "API",
+    "metaDescription": "Open, keyless catalogue and stream endpoints.",
+    "badge": "Service API",
+    "title": "API",
+    "subtitle": "Open, keyless endpoints for the catalogue, playback and image proxy. Every call is a plain GET — no key, no sign-up.",
+    "stats": {
+      "endpoints": "Endpoints",
+      "methods": "Methods",
+      "keys": "API keys"
+    },
+    "explorerTitle": "Try an endpoint",
+    "upstreamPath": "Upstream path",
+    "send": "Send request",
+    "sending": "Sending…",
+    "responsePlaceholder": "The response appears here.",
+    "requestFailed": "The request failed. Check the parameters and try again.",
+    "endpoints": {
+      "catalog": "Search and browse the catalogue. The upstream path is appended to the route — e.g. api/search or api/movies.",
+      "stream": "Resolve a fresh, token-bound playlist URL for a title at play time.",
+      "image": "Resize and re-encode a poster through the deployment's own loader."
+    },
+    "referenceTitle": "Full reference",
+    "referenceBody": "The interactive reference lists every parameter, response shape and status code.",
+    "referenceCta": "Open the reference"
   }
 }

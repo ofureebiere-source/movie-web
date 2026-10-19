@@ -45,6 +45,7 @@ export default function AnimeFilterBar({
   onClear,
   resultCount,
   searching,
+  showGenreChips = true,
 }: {
   filters: AnimeFilterState;
   onChange: <K extends keyof AnimeFilterState>(key: K, value: AnimeFilterState[K]) => void;
@@ -52,6 +53,12 @@ export default function AnimeFilterBar({
   /** Shown next to the controls when a search is active. */
   resultCount?: number | null;
   searching: boolean;
+  /**
+   * Whether to render the genre chip row. The landing page shows it; a genre
+   * sub-page does not, because the route has already fixed the genre and a row
+   * of chips there would restate the heading.
+   */
+  showGenreChips?: boolean;
 }) {
   const t = useTranslations('anime');
 
@@ -128,30 +135,32 @@ export default function AnimeFilterBar({
 
       {/* Genre — single-select, in-page, mirroring the active-chip idiom the
           film browse pages use. */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => onChange('genre', '')}
-          aria-pressed={filters.genre === ''}
-          className={`glass-btn glass-btn-sm ${filters.genre === '' ? 'glass-btn-active' : ''}`}
-        >
-          {t('allGenres')}
-        </button>
-        {ANIME_GENRES.map((genre) => (
+      {showGenreChips && (
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            key={genre.slug}
             type="button"
-            // The slug is what travels: `browseAnime` maps it back to the name
-            // the provider expects. Storing the name here would look identical
-            // on screen and filter nothing.
-            onClick={() => onChange('genre', filters.genre === genre.slug ? '' : genre.slug)}
-            aria-pressed={filters.genre === genre.slug}
-            className={`glass-btn glass-btn-sm ${filters.genre === genre.slug ? 'glass-btn-active' : ''}`}
+            onClick={() => onChange('genre', '')}
+            aria-pressed={filters.genre === ''}
+            className={`glass-btn glass-btn-sm ${filters.genre === '' ? 'glass-btn-active' : ''}`}
           >
-            {t(`genres.${genre.key}`)}
+            {t('allGenres')}
           </button>
-        ))}
-      </div>
+          {ANIME_GENRES.map((genre) => (
+            <button
+              key={genre.slug}
+              type="button"
+              // The slug is what travels: `browseAnime` maps it back to the name
+              // the provider expects. Storing the name here would look identical
+              // on screen and filter nothing.
+              onClick={() => onChange('genre', filters.genre === genre.slug ? '' : genre.slug)}
+              aria-pressed={filters.genre === genre.slug}
+              className={`glass-btn glass-btn-sm ${filters.genre === genre.slug ? 'glass-btn-active' : ''}`}
+            >
+              {t(`genres.${genre.key}`)}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

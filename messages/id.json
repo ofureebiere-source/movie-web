@@ -11,6 +11,7 @@
   },
   "header": {
     "menu": {
+      "home": "Beranda",
       "singleMovies": "Film",
       "tvSeries": "Serial TV",
       "cartoons": "Animasi",
@@ -18,7 +19,8 @@
       "categories": "Genre",
       "countries": "Negara",
       "anime": "Anime",
-      "myList": "Daftar Saya"
+      "myList": "Daftar Saya",
+      "api": "API"
     },
     "search": "Cari film"
   },
@@ -35,7 +37,8 @@
       "cartoonNewlyUpdated": "Animasi Terbaru",
       "tvShowsNewlyUpdated": "Acara TV Terbaru",
       "theatricalNewlyUpdated": "Rilis Bioskop",
-      "voicedNewlyUpdated": "Sulih Suara Vietnam"
+      "voicedNewlyUpdated": "Sulih Suara Vietnam",
+      "viewAll": "View all"
     }
   },
   "bottomNav": {
@@ -43,7 +46,8 @@
     "search": "Cari",
     "myList": "Daftar Saya",
     "profile": "Profil",
-    "anime": "Anime"
+    "anime": "Anime",
+    "api": "API"
   },
   "lists": {
     "endOfList": "🎬 Anda telah mencapai akhir",
@@ -147,5 +151,31 @@
     "titles": "judul",
     "noMatches": "Tidak ada judul yang cocok dengan filter ini.",
     "clear": "Hapus"
+  },
+  "api": {
+    "metaTitle": "API",
+    "metaDescription": "Open, keyless catalogue and stream endpoints.",
+    "badge": "Service API",
+    "title": "API",
+    "subtitle": "Open, keyless endpoints for the catalogue, playback and image proxy. Every call is a plain GET — no key, no sign-up.",
+    "stats": {
+      "endpoints": "Endpoints",
+      "methods": "Methods",
+      "keys": "API keys"
+    },
+    "explorerTitle": "Try an endpoint",
+    "upstreamPath": "Upstream path",
+    "send": "Send request",
+    "sending": "Sending…",
+    "responsePlaceholder": "The response appears here.",
+    "requestFailed": "The request failed. Check the parameters and try again.",
+    "endpoints": {
+      "catalog": "Search and browse the catalogue. The upstream path is appended to the route — e.g. api/search or api/movies.",
+      "stream": "Resolve a fresh, token-bound playlist URL for a title at play time.",
+      "image": "Resize and re-encode a poster through the deployment's own loader."
+    },
+    "referenceTitle": "Full reference",
+    "referenceBody": "The interactive reference lists every parameter, response shape and status code.",
+    "referenceCta": "Open the reference"
   }
 }

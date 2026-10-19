@@ -59,16 +59,17 @@ const VidsrcPlayer = forwardRef<HTMLIFrameElement, VidsrcPlayerProps>(
   ({ embedUrl, title, resume, unavailableLabel }, ref) => {
     return (
       // `isolate` scopes the resume prompt's z-index to the player surface so
-      // it can't bleed over the site header.
-      <div className="relative isolate w-full aspect-video bg-black">
+      // it can't bleed over the site header. The shell is upstream's frame:
+      // full-bleed on a phone, rounded 2xl from `sm` up.
+      <div className="relative isolate aspect-video w-full overflow-hidden border-y border-line bg-black shadow-2xl sm:rounded-2xl sm:border">
         {embedUrl ? (
           <iframe
             ref={ref}
             key={embedUrl}
             src={embedUrl}
             title={title}
-            className="absolute inset-0 h-full w-full border-0"
-            allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+            className="absolute inset-0 h-full w-full border-0 bg-black"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; display-capture; presentation"
             allowFullScreen
             referrerPolicy="origin"
             {...(SANDBOX_ENABLED ? { sandbox: SANDBOX_TOKENS } : {})}

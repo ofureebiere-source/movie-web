@@ -15,9 +15,17 @@ interface MovieListProps {
   /** When set, the heading becomes a link to the full list — e.g. the anime
    *  rail heading opens that genre's paged page. */
   href?: string;
+  /** One-line description under the title, as the upstream rows carry. */
+  subtitle?: string;
 }
 
-export default function MovieList({ listName, movies, isNewlyMovieItem, href }: MovieListProps) {
+export default function MovieList({
+  listName,
+  movies,
+  isNewlyMovieItem,
+  href,
+  subtitle,
+}: MovieListProps) {
   const swiperRef = useRef<any>(null);
 
   const handlePrevSlide = () => {
@@ -28,25 +36,35 @@ export default function MovieList({ listName, movies, isNewlyMovieItem, href }: 
     swiperRef.current?.slideNext();
   };
 
+  // The upstream section header: title with a count badge, an optional subtitle
+  // underneath and a "View all" affordance on the right, all in the zinc ramp.
   const heading = (
-    <h2 className="relative inline-block pl-4 text-xl md:text-2xl font-bold tracking-tight">
-      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 md:h-7 bg-gradient-to-b from-red-500 to-red-700 rounded-full"></span>
-      {listName}
-    </h2>
+    <div className="flex items-end justify-between gap-4">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{listName}</h2>
+          <span className="inline-flex items-center rounded-md bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+            {movies.length}
+          </span>
+        </div>
+        {subtitle && <p className="mt-1 truncate text-xs text-zinc-500">{subtitle}</p>}
+      </div>
+      {href && (
+        <Link
+          href={href}
+          prefetch={false}
+          className="shrink-0 text-xs font-medium text-zinc-400 transition-colors hover:text-white"
+        >
+          {listName}
+        </Link>
+      )}
+    </div>
   );
 
   return (
-    <div className="container-wrapper space-y-4">
-      {/* Section header — Netflix-style with red accent bar */}
-      <div className="px-4 md:px-0">
-        {href ? (
-          <Link href={href} prefetch={false} className="transition-opacity hover:opacity-80">
-            {heading}
-          </Link>
-        ) : (
-          heading
-        )}
-      </div>
+    <div className="mx-auto max-w-7xl space-y-4 px-3 sm:px-6">
+      {/* Section header */}
+      <div>{heading}</div>
 
       {/*
         IMPORTANT: use a NAMED group (`group/list`) here, NOT the default `group`.

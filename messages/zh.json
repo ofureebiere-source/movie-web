@@ -11,6 +11,7 @@
   },
   "header": {
     "menu": {
+      "home": "首页",
       "singleMovies": "电影",
       "tvSeries": "电视剧",
       "cartoons": "动画",
@@ -18,7 +19,8 @@
       "categories": "类型",
       "countries": "国家",
       "anime": "动漫",
-      "myList": "我的列表"
+      "myList": "我的列表",
+      "api": "API"
     },
     "search": "搜索影片"
   },
@@ -35,7 +37,8 @@
       "cartoonNewlyUpdated": "最新动画",
       "tvShowsNewlyUpdated": "最新电视节目",
       "theatricalNewlyUpdated": "院线新片",
-      "voicedNewlyUpdated": "越南语配音"
+      "voicedNewlyUpdated": "越南语配音",
+      "viewAll": "View all"
     }
   },
   "bottomNav": {
@@ -43,7 +46,8 @@
     "search": "搜索",
     "myList": "我的列表",
     "profile": "我的",
-    "anime": "动漫"
+    "anime": "动漫",
+    "api": "API"
   },
   "lists": {
     "endOfList": "🎬 已经到底了",
@@ -147,5 +151,31 @@
     "titles": "部作品",
     "noMatches": "没有符合这些筛选条件的作品。",
     "clear": "清除"
+  },
+  "api": {
+    "metaTitle": "API",
+    "metaDescription": "Open, keyless catalogue and stream endpoints.",
+    "badge": "Service API",
+    "title": "API",
+    "subtitle": "Open, keyless endpoints for the catalogue, playback and image proxy. Every call is a plain GET — no key, no sign-up.",
+    "stats": {
+      "endpoints": "Endpoints",
+      "methods": "Methods",
+      "keys": "API keys"
+    },
+    "explorerTitle": "Try an endpoint",
+    "upstreamPath": "Upstream path",
+    "send": "Send request",
+    "sending": "Sending…",
+    "responsePlaceholder": "The response appears here.",
+    "requestFailed": "The request failed. Check the parameters and try again.",
+    "endpoints": {
+      "catalog": "Search and browse the catalogue. The upstream path is appended to the route — e.g. api/search or api/movies.",
+      "stream": "Resolve a fresh, token-bound playlist URL for a title at play time.",
+      "image": "Resize and re-encode a poster through the deployment's own loader."
+    },
+    "referenceTitle": "Full reference",
+    "referenceBody": "The interactive reference lists every parameter, response shape and status code.",
+    "referenceCta": "Open the reference"
   }
 }

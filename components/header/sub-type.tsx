@@ -8,9 +8,9 @@ import type { Locale } from 'i18n/routing';
 export default function SubType() {
   const locale = useLocale() as Locale;
   return (
-    <ul className="text-base group-hover:flex hidden absolute px-6 py-6 min-w-[35rem] right-0 bg-black h-60 flex-col flex-wrap z-10 gap-x-7 gap-y-4 before:absolute before:contents-[''] before:w-10 before:h-10 before:bg-black before:rotate-45 before:top-0 before:right-10 before:z-[-1]">
+    <ul className="text-sm group-hover:flex hidden absolute left-0 top-full mt-1 px-6 py-6 min-w-[35rem] bg-surface-card border border-line rounded-xl shadow-2xl flex-col flex-wrap z-50 gap-x-7 gap-y-4">
       {movieType.map((item) => (
-        <li key={item.slug} className="hover:text-custome-red">
+        <li key={item.slug} className="text-zinc-300 hover:text-white">
           <PrefetchLink kind="type" slug={item.slug} href={`/movies/type/${item.slug}`}>
             {localizedCategory(item.slug, locale)}
           </PrefetchLink>

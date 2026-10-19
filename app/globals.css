@@ -2,10 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Design tokens
+
+   Lifted from the upstream streaming site this app mirrors, so the two read as
+   one product: a near-black three-step surface ramp, a hairline border pair and
+   a two-step text ramp. Kept as raw custom properties (not only Tailwind
+   colours) because the plain-CSS rules further down — scrollbars, the glass
+   buttons, the player chrome — need the same values without a utility class.
+
+   The zinc steps are the upstream palette's Tailwind v4 oklch values, kept in
+   oklch so a browser that supports it renders the exact same greys.
+   ========================================================================== */
+
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --bg-primary: #000;
+  --bg-secondary: #09090b;
+  --bg-card: #121215;
+  --border-color: #27272a;
+  --border-hover: #3f3f46;
+  --text-main: #fff;
+  --text-muted: #a1a1aa;
+  --accent-white: #fff;
+
+  /* The font ramp is the upstream one: a system stack, no webfont download.
+     `--font-sans` mirrors Tailwind's default so components that reach for it
+     resolve even where the Tailwind layer has not been emitted. */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'Noto Sans', Arial,
+    sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+
   /* Exposed so `accent-color` on the player's range inputs (equaliser bands,
      subtitle sliders) picks up the brand red without a Tailwind class. */
   --brand: #e10711;
@@ -14,6 +42,24 @@
 html, body {
   height: 100%;
   margin: 0;
+}
+
+body {
+  overflow-x: clip;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
+    Cantarell, sans-serif;
+}
+
+/* Upstream hides scrollbars on horizontal rails while keeping the element
+   scrollable. Applied by name so a rail can opt in. */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 .container-wrapper {

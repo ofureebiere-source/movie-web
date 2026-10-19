@@ -9,12 +9,14 @@ import {
   IoSearchOutline,
   IoPerson,
   IoPersonOutline,
+  IoCodeSlash,
+  IoCodeSlashOutline,
 } from 'react-icons/io5';
 import { SiCrunchyroll } from 'react-icons/si';
 import type { IconType } from 'react-icons';
 
 interface Tab {
-  key: 'home' | 'search' | 'anime' | 'profile';
+  key: 'home' | 'search' | 'anime' | 'api' | 'profile';
   href: string;
   Icon: IconType;
   IconActive: IconType;
@@ -28,6 +30,9 @@ const TABS: Tab[] = [
   // My List moved into the hamburger drawer, which is where the saved view
   // belongs now.
   { key: 'anime', href: '/anime', Icon: SiCrunchyroll, IconActive: SiCrunchyroll },
+  // API mirrors the desktop nav entry, so the service landing page is reachable
+  // from the phone bar too.
+  { key: 'api', href: '/api', Icon: IoCodeSlashOutline, IconActive: IoCodeSlash },
   { key: 'profile', href: '/profile', Icon: IoPersonOutline, IconActive: IoPerson },
 ];
 

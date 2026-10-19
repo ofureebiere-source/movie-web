@@ -20,6 +20,7 @@
   },
   "header": {
     "menu": {
+      "home": "Trang chủ",
       "singleMovies": "Phim lẻ",
       "tvSeries": "Phim bộ",
       "cartoons": "Hoạt hình",
@@ -27,7 +28,8 @@
       "categories": "Thể loại",
       "countries": "Quốc gia",
       "anime": "Anime",
-      "myList": "Bộ sưu tập"
+      "myList": "Bộ sưu tập",
+      "api": "API"
     },
     "search": "Tìm kiếm phim"
   },
@@ -44,7 +46,8 @@
       "cartoonNewlyUpdated": "Phim Hoạt Hình Mới Cập Nhật",
       "tvShowsNewlyUpdated": "TV Show Mới Cập Nhật",
       "theatricalNewlyUpdated": "Phim Chiếu Rạp",
-      "voicedNewlyUpdated": "Có Thuyết Minh"
+      "voicedNewlyUpdated": "Có Thuyết Minh",
+      "viewAll": "Xem tất cả"
     },
     "banner": {
       "todayCount": "Hôm nay có",
@@ -227,7 +230,8 @@
     "search": "Tìm kiếm",
     "myList": "Bộ sưu tập",
     "profile": "Tài khoản",
-    "anime": "Anime"
+    "anime": "Anime",
+    "api": "API"
   },
   "disclaimer": {
     "eyebrow": "Lưu ý",
@@ -535,5 +539,36 @@
     "titles": "tác phẩm",
     "noMatches": "Không có tác phẩm nào khớp với bộ lọc này.",
     "clear": "Xóa bộ lọc"
+  },
+  "api": {
+    "metaTitle": "API",
+    "metaDescription": "Các endpoint danh mục và luồng phát mở, không cần khoá.",
+    "badge": "API dịch vụ",
+    "title": "API",
+    "subtitle": "Các endpoint mở, không cần khoá cho danh mục, phát lại và proxy hình ảnh. Mọi lệnh gọi đều là GET — không khoá, không đăng ký.",
+    "stats": {
+      "endpoints": "Endpoint",
+      "methods": "Phương thức",
+      "keys": "Khoá API"
+    },
+    "explorerTitle": "Thử một endpoint",
+    "upstreamPath": "Đường dẫn nguồn",
+    "send": "Gửi yêu cầu",
+    "sending": "Đang gửi…",
+    "responsePlaceholder": "Phản hồi sẽ hiện ở đây.",
+    "requestFailed": "Yêu cầu thất bại. Kiểm tra tham số và thử lại.",
+    "endpoints": {
+      "catalog": "Tìm kiếm và duyệt danh mục. Đường dẫn nguồn được nối vào route — ví dụ api/search hoặc api/movies.",
+      "stream": "Lấy URL playlist mới, gắn token, cho một tựa phim tại thời điểm phát.",
+      "image": "Đổi kích thước và mã hoá lại poster qua trình tải của deployment."
+    },
+    "referenceTitle": "Tài liệu đầy đủ",
+    "referenceBody": "Tài liệu tương tác liệt kê mọi tham số, dạng phản hồi và mã trạng thái.",
+    "referenceCta": "Mở tài liệu"
+  },
+  "reviews": {
+    "heading": "Đánh giá",
+    "via": "từ {source}",
+    "attribution": "Đánh giá được trích từ các nguồn công khai và thuộc về tác giả của chúng."
   }
 }

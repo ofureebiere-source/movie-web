@@ -111,8 +111,29 @@ function pickSource(body: StreamBody): string | null {
   return absolutize(ranked[0].url as string);
 }
 
-async function fetchJson(url: string): Promise<{ ok: boolean; body: StreamBody }> {
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
+/**
+ * How long the whole resolution may take before the player gives up on the
+ * main stream and falls back to the provider embed.
+ *
+ * The film aggregation path answers in 16-22s when it has nothing to offer,
+ * and the viewer is staring at a black frame the whole time. The embed is the
+ * same provider carrying the same content, so waiting out a slow resolver buys
+ * nothing. One deadline covers every route rather than one per route, so a
+ * blocked direct call plus a slow proxy cannot add up to a minute of nothing.
+ * The anime path answers in under a second, so it never reaches this.
+ */
+const RESOLVE_DEADLINE_MS = 12000;
+
+/** True when a fetch was cut short by our own deadline rather than refused. */
+function isTimeout(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
+}
+
+async function fetchJson(
+  url: string,
+  signal: AbortSignal
+): Promise<{ ok: boolean; body: StreamBody }> {
+  const res = await fetch(url, { headers: { accept: 'application/json' }, signal });
   let body: StreamBody = {};
   try {
     body = (await res.json()) as StreamBody;
@@ -164,30 +185,53 @@ export function useResolvedStream(link: string): ResolvedStream {
     setError(null);
     setUrl('');
 
+    // One deadline for the whole resolution, shared by every route.
+    const controller = new AbortController();
+    const deadline = setTimeout(() => controller.abort(), RESOLVE_DEADLINE_MS);
+
     (async () => {
       try {
         let resolved: string | null = null;
         let failure = 'stream lookup failed';
 
         const candidates = catalogUrlFor(link);
+        // A well-formed answer that simply lists no sources stops the walk: it
+        // is the catalogue telling us this title has nothing, and re-asking the
+        // same question down another network path cannot change the answer.
+        // A timeout stops it too — the route is merely slow, so the next route
+        // would burn the same wait to reach the same verdict. Only a refusal
+        // (a non-2xx, or a throw from CORS or a block) is worth retrying
+        // elsewhere. Without this the film route was asked three times, spending
+        // ~35s to reach the same empty result before the player gave up.
+        let answered = false;
         if (candidates) {
           // Direct first (fastest), then the Edge proxy — the anime endpoint
           // has no direct path at all.
           for (const candidate of [candidates.direct, candidates.proxy]) {
             try {
-              const { ok, body } = await fetchJson(candidate);
-              if (ok) resolved = pickSource(body);
-              if (!resolved) failure = body.message ?? body.error ?? 'no playable source';
-            } catch {
+              const { ok, body } = await fetchJson(candidate, controller.signal);
+              if (ok) {
+                resolved = pickSource(body);
+                failure = body.message ?? body.error ?? 'no playable source';
+                answered = true;
+                break;
+              }
+              failure = body.message ?? body.error ?? failure;
+            } catch (error) {
+              if (isTimeout(error)) {
+                failure = 'stream lookup timed out';
+                answered = true;
+                break;
+              }
               // Blocked on the visitor's side — try the next route.
             }
             if (resolved) break;
           }
         }
 
-        if (!resolved && !cancelled && currentLink.current === link) {
+        if (!resolved && !answered && !cancelled && currentLink.current === link) {
           try {
-            const { ok, body } = await fetchJson(link);
+            const { ok, body } = await fetchJson(link, controller.signal);
             if (ok) resolved = pickSource(body);
             if (!resolved) failure = body.message ?? body.error ?? failure;
           } catch {
@@ -211,12 +255,15 @@ export function useResolvedStream(link: string): ResolvedStream {
           // Cache is an optimisation only.
         }
       } finally {
+        clearTimeout(deadline);
         if (!cancelled && currentLink.current === link) setIsLoading(false);
       }
     })();
 
     return () => {
       cancelled = true;
+      clearTimeout(deadline);
+      controller.abort();
     };
   }, [link, nonce]);
 

@@ -11,6 +11,7 @@
   },
   "header": {
     "menu": {
+      "home": "หน้าแรก",
       "singleMovies": "ภาพยนตร์",
       "tvSeries": "ซีรีส์",
       "cartoons": "อนิเมชัน",
@@ -18,7 +19,8 @@
       "categories": "หมวดหมู่",
       "countries": "ประเทศ",
       "anime": "อนิเมะ",
-      "myList": "รายการของฉัน"
+      "myList": "รายการของฉัน",
+      "api": "API"
     },
     "search": "ค้นหาภาพยนตร์"
   },
@@ -35,7 +37,8 @@
       "cartoonNewlyUpdated": "อนิเมชันล่าสุด",
       "tvShowsNewlyUpdated": "รายการทีวีล่าสุด",
       "theatricalNewlyUpdated": "หนังโรง",
-      "voicedNewlyUpdated": "พากย์เวียดนาม"
+      "voicedNewlyUpdated": "พากย์เวียดนาม",
+      "viewAll": "View all"
     }
   },
   "bottomNav": {
@@ -43,7 +46,8 @@
     "search": "ค้นหา",
     "myList": "รายการของฉัน",
     "profile": "โปรไฟล์",
-    "anime": "อนิเมะ"
+    "anime": "อนิเมะ",
+    "api": "API"
   },
   "lists": {
     "endOfList": "🎬 ถึงจุดสิ้นสุดแล้ว",
@@ -147,5 +151,31 @@
     "titles": "เรื่อง",
     "noMatches": "ไม่มีผลงานที่ตรงกับตัวกรองนี้",
     "clear": "ล้าง"
+  },
+  "api": {
+    "metaTitle": "API",
+    "metaDescription": "Open, keyless catalogue and stream endpoints.",
+    "badge": "Service API",
+    "title": "API",
+    "subtitle": "Open, keyless endpoints for the catalogue, playback and image proxy. Every call is a plain GET — no key, no sign-up.",
+    "stats": {
+      "endpoints": "Endpoints",
+      "methods": "Methods",
+      "keys": "API keys"
+    },
+    "explorerTitle": "Try an endpoint",
+    "upstreamPath": "Upstream path",
+    "send": "Send request",
+    "sending": "Sending…",
+    "responsePlaceholder": "The response appears here.",
+    "requestFailed": "The request failed. Check the parameters and try again.",
+    "endpoints": {
+      "catalog": "Search and browse the catalogue. The upstream path is appended to the route — e.g. api/search or api/movies.",
+      "stream": "Resolve a fresh, token-bound playlist URL for a title at play time.",
+      "image": "Resize and re-encode a poster through the deployment's own loader."
+    },
+    "referenceTitle": "Full reference",
+    "referenceBody": "The interactive reference lists every parameter, response shape and status code.",
+    "referenceCta": "Open the reference"
   }
 }

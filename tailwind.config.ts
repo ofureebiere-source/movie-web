@@ -20,12 +20,33 @@ const config: Config = {
           overlay: 'rgba(0, 0, 0, 0.6)',
           chip: 'rgba(255, 255, 255, 0.12)',
           chipHover: 'rgba(255, 255, 255, 0.2)',
+          /* The upstream three-step surface ramp, by role. */
+          primary: 'var(--bg-primary)',
+          secondary: 'var(--bg-secondary)',
+          card: 'var(--bg-card)',
+        },
+        line: {
+          DEFAULT: 'var(--border-color)',
+          hover: 'var(--border-hover)',
+        },
+        content: {
+          main: 'var(--text-main)',
+          muted: 'var(--text-muted)',
         },
         ink: {
           primary: '#ffffff',
           secondary: 'rgba(255, 255, 255, 0.7)',
           disabled: 'rgba(255, 255, 255, 0.35)',
         },
+      },
+      fontFamily: {
+        /* Upstream's stacks, so any `font-sans` / `font-mono` class resolves to
+           the same face the upstream site renders. */
+        sans: ['var(--font-sans)'],
+        mono: ['var(--font-mono)'],
+      },
+      maxWidth: {
+        shell: '80rem',
       },
       boxShadow: {
         custom: 'rgba(0, 0, 0, 0.35) 0px 5px 15px',

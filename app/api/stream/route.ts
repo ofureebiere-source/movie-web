@@ -13,11 +13,19 @@ import { NextRequest, NextResponse } from 'next/server';
  * the fresh playlist URL. The request is a plain GET with no credentials —
  * there is nothing secret in the hop.
  *
- * This runs on the server (a route handler), which is the one place the
- * Cloudflare challenge does not bite here: the catalogue's own backend
- * (`api.framextv.tech`) answers datacenter IPs, unlike the site origin. The
- * response is `no-store` because the playlist it points at expires.
+ * Edge runtime, for the same reason `app/api/catalog` is: the catalogue is
+ * behind Cloudflare, which answers the Node serverless pool with a 403
+ * challenge but does not challenge the Edge IP pool. On the Node runtime this
+ * route answered 502 in production within a quarter-second while working
+ * perfectly in local development — the trap AGENTS.md warns about. It is the
+ * visitor's browser that reads the catalogue first (see `useResolvedStream`);
+ * this route is the fallback for when something on their side blocks it.
+ *
+ * The response is `no-store` because the playlist it points at expires.
  */
+
+export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 const API_BASE = (
   process.env.NEXT_PUBLIC_CATALOG_API_BASE ??
@@ -25,7 +33,12 @@ const API_BASE = (
   'https://api.framextv.tech'
 ).replace(/\/+$/, '');
 
-const TIMEOUT_MS = 15000;
+/**
+ * The film aggregation path answers in 16-22s when it has nothing to offer, so
+ * this has to outlast it or every film would abort before the catalogue had
+ * said either way. The anime path answers in under a second.
+ */
+const TIMEOUT_MS = 25000;
 
 interface StreamSource {
   url: string;

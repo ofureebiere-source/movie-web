@@ -233,7 +233,12 @@ LIMIT 20`;
     deathday: dateOnly(first.death?.value),
     // Special:FilePath redirects to the actual file and takes a width, so the
     // image proxy gets a modest original instead of a full-size portrait.
-    portraitUrl: portrait ? `${portrait}?width=400` : undefined,
+    //
+    // Wikidata hands back P18 as `http://commons.wikimedia.org/...`, and the
+    // image proxy only accepts `https:` sources — so an un-upgraded URL is
+    // rejected with a 400 before it is ever fetched, and every portrait renders
+    // as the fallback. Upgrade the scheme here rather than loosening the proxy.
+    portraitUrl: portrait ? `${portrait.replace(/^http:/, 'https:')}?width=400` : undefined,
     imdbId: first.imdb?.value,
     occupations,
     wikipediaTitle: first.articleTitle?.value,
@@ -274,6 +279,15 @@ async function fetchBiography(wikipediaTitle: string | undefined): Promise<strin
  *
  * The two id properties are read with UNION rather than two OPTIONALs so a
  * work matches once and the row count stays small.
+ *
+ * The ORDER BY is load-bearing, not cosmetic. Wikidata returns rows in an
+ * arbitrary order, and for a television actor every episode is its own item —
+ * so the row count runs into the thousands and a bare LIMIT silently keeps an
+ * arbitrary slice, which in practice was the older end of the career and left
+ * recent (2026) titles off the page. Ordering newest-first before the LIMIT
+ * means the limit drops the oldest credits, not the ones the visitor came for.
+ * `?date` is the film's publication date (P577) and `?start` the series' start
+ * time (P580); COALESCE lets one ORDER BY cover both kinds of work.
  */
 async function fetchFilmography(qid: string): Promise<PersonCredit[]> {
   const query = `
@@ -288,7 +302,8 @@ SELECT ?work ?workLabel ?date ?start ?tmdbMovie ?tmdbTv ?characterLabel WHERE {
   }
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }
-LIMIT 300`;
+ORDER BY DESC(COALESCE(?date, ?start))
+LIMIT 2000`;
 
   const rows = await sparql(query);
   const byWork = new Map<string, PersonCredit>();

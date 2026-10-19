@@ -9,6 +9,7 @@ import Credit from 'types/credit';
 import isNonEmpty from 'utils/is-none-empty';
 import MovieSummary from './movie-summary';
 import CommentSection from '../comment';
+import ExternalReviews from '../comment/external-reviews';
 import MovieImage from 'types/movie-image';
 import MovieImageList from '../movie-images/movie-image-list';
 import RelatedMovies from './related-movies';
@@ -148,8 +149,11 @@ export default function MovieContent({
           <RelatedMovies title={tMovie('moreLikeThis')} movies={relatedMovies} />
         )}
 
-        {/* Comments — narrow, centered column for readability */}
-        <div className="mx-auto w-full max-w-3xl">
+        {/* Comments — narrow, centered column for readability. The external
+            reviews sit above the local comment box: they are the only reviews
+            a first-time visitor can read, since the box below is per-browser. */}
+        <div className="mx-auto w-full max-w-3xl space-y-8">
+          <ExternalReviews movie={movie.movie} />
           <CommentSection movie={movie} />
         </div>
       </div>

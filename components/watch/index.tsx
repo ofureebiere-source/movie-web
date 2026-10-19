@@ -21,6 +21,7 @@ import type { Locale } from 'i18n/routing';
 import type { PlaybackSnapshot, VidsrcEvent, VidsrcStatus } from 'hooks/useVidsrcBridge';
 import type { NextEpisodePreview, PlayerServer } from './video-controls/player-context';
 import CommentSection from '../comment';
+import ExternalReviews from '../comment/external-reviews';
 
 /**
  * The watch page.
@@ -80,14 +81,25 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   const mainBlocked =
     Boolean(m3u8) && (reach.status === 'blocked' || mainFailed || resolveFailed);
   // The provider embed is used when the catalogue hands back a resolver link
-  // that cannot be probed, and when the probe reports the CDN is unreachable
-  // from this network. It is the SAME provider, reached the other way — not a
-  // lesser source — so the viewer is never told they have been downgraded.
+  // that cannot be probed, when the probe reports the CDN is unreachable from
+  // this network, and when resolving or playing that link fails outright. It is
+  // the SAME provider, reached the other way — not a lesser source — so the
+  // viewer is never told they have been downgraded.
+  //
+  // The WARP/VPN cases stay on `main` on purpose: for those the probe is
+  // reporting the viewer's own network, and the notice tells them the one thing
+  // that fixes it. A failure of the link itself is different — nothing on the
+  // viewer's side is wrong, so there is nothing to tell them and the embed
+  // simply takes over. Gating on `reason === 'abroad'` alone left the
+  // link-failure case dead-ending on the notice: the catalogue has no source,
+  // so there is no playlist to probe and the probe stays `idle`, never
+  // `blocked`, and the working embed went unused.
+  const probeBlockedAbroad = reach.status === 'blocked' && reach.reason === 'abroad';
   const surface: 'main' | 'backup' | 'none' = !m3u8
     ? embed
       ? 'backup'
       : 'none'
-    : embed && reach.status === 'blocked' && reach.reason === 'abroad'
+    : embed && (resolveFailed || mainFailed || probeBlockedAbroad)
       ? 'backup'
       : 'main';
   // A fatal player error with the probe still green means the CDN or this
@@ -322,53 +334,59 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   };
 
   return (
-    <div className="pt-20 lg:pt-[3.75rem] space-y-6 lg:space-y-10">
-      {surface === 'main' && mainBlocked ? (
-        <StreamNotice
-          reason={blockReason}
-          isRetrying={reach.status === 'checking' || resolved.isLoading}
-          onRetry={retryMain}
-        />
-      ) : surface === 'main' ? (
-        <VideoPlayer
-          ref={videoRef}
-          videoUrl={streamUrl}
-          thumbnail={posterSrc}
-          thumbnailSrcSet={posterSrcSet}
-          videoProgress={videoProgress}
-          meta={{
-            title: movie.movie.name,
-            episodeLabel: isMultiEpisode ? t('episodeLabel', { index: episodeIndex + 1 }) : undefined,
-          }}
-          resume={resume}
-          servers={playerServers}
-          currentServerIndex={serverIndex}
-          onSwitchLanguage={switchServer}
-          nextEpisode={nextEpisode}
-          onNextEpisode={handleNextEpisode}
-          onFatalError={() => {
-            setMainFailed(true);
-            reach.retry();
-          }}
-        />
-      ) : (
-        <VidsrcPlayer
-          ref={iframeRef}
-          embedUrl={surface === 'backup' ? embedUrl : ''}
-          title={movie.movie.name}
-          unavailableLabel={t('unavailable')}
-          resume={resume}
-        />
-      )}
+    <div className="space-y-6 pt-20 lg:space-y-10 lg:pt-[3.75rem]">
+      {/* The player column, matching upstream: the frame is the only element
+          allowed to reach the viewport edge on a phone, and everything wider
+          than `sm` sits in a centered `max-w-6xl` column with the same gutters
+          the rest of the page uses. */}
+      <div className="mx-auto w-full max-w-6xl px-0 sm:px-4 lg:px-6">
+        {surface === 'main' && mainBlocked ? (
+          <StreamNotice
+            reason={blockReason}
+            isRetrying={reach.status === 'checking' || resolved.isLoading}
+            onRetry={retryMain}
+          />
+        ) : surface === 'main' ? (
+          <VideoPlayer
+            ref={videoRef}
+            videoUrl={streamUrl}
+            thumbnail={posterSrc}
+            thumbnailSrcSet={posterSrcSet}
+            videoProgress={videoProgress}
+            meta={{
+              title: movie.movie.name,
+              episodeLabel: isMultiEpisode ? t('episodeLabel', { index: episodeIndex + 1 }) : undefined,
+            }}
+            resume={resume}
+            servers={playerServers}
+            currentServerIndex={serverIndex}
+            onSwitchLanguage={switchServer}
+            nextEpisode={nextEpisode}
+            onNextEpisode={handleNextEpisode}
+            onFatalError={() => {
+              setMainFailed(true);
+              reach.retry();
+            }}
+          />
+        ) : (
+          <VidsrcPlayer
+            ref={iframeRef}
+            embedUrl={surface === 'backup' ? embedUrl : ''}
+            title={movie.movie.name}
+            unavailableLabel={t('unavailable')}
+            resume={resume}
+          />
+        )}
+      </div>
 
-      <div className="container-wrapper-movie px-4 lg:px-0">
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
         <h1 className="text-xl lg:text-3xl">{movie.movie.name}</h1>
         <h3 className="text-base lg:text-lg text-[#bbb6ae] mt-2">{movie.movie.origin_name}</h3>
       </div>
 
       {/* Audio servers (Vietsub / Thuyết Minh / Lồng Tiếng) — only when there is a choice. */}
       {servers.length > 1 && (
-        <div className="container-wrapper-movie px-4 lg:px-0">
+        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
           <h2 className="text-lg lg:text-xl">{t('serverList')}</h2>
           <ul className="mt-4 flex flex-wrap gap-2 lg:gap-3">
             {servers.map((server, index) => (
@@ -391,7 +409,7 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
       )}
 
       {isMultiEpisode && (
-        <div className="container-wrapper-movie px-4 lg:px-0">
+        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
           <h2 className="text-lg lg:text-xl">{t('episodeList')}</h2>
           <ul className="mt-4 flex flex-wrap gap-2 lg:gap-3">
             {episodes.map((_ep, index) => (
@@ -413,7 +431,11 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
         </div>
       )}
 
-      <div className="container-wrapper-movie px-4 lg:px-0">
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
+        <ExternalReviews movie={movie.movie} />
+      </div>
+
+      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
         <CommentSection movie={movie} />
       </div>
     </div>
