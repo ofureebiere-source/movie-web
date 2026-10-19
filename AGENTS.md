@@ -266,3 +266,69 @@ Verified specifics:
 `browseAnime` takes `{ genreSlug, year }` and does the slug→name mapping. The
 filter bar stores the **slug**; storing the name renders identically and filters
 nothing.
+
+## Player: equaliser, gestures, subtitles
+
+### Subtitle proxy (`app/api/subtitle`)
+
+Catalogue subtitle files are third-party and usually SubRip. Both facts are
+individually fatal to a `<track>`, and both fail **silently** — the element is
+present, the settings menu lists the track, and no cue ever appears:
+
+- The hosts send no `access-control-allow-origin`, so a cross-origin `<track>`
+  is refused.
+- `<track>` renders WebVTT only. An SRT file is parsed to zero cues.
+
+So every track is routed through `/api/subtitle?url=…`, which fetches the file,
+converts it (`toVtt` in `lib/subtitles.ts`) and serves it same-origin. Private,
+loopback and non-http(s) targets are refused.
+
+**When verifying subtitles, assert on cue text, not on the track list.** A
+passing track count proves nothing here. Enable the track, seek into the film,
+and read `textTracks[i].cues[n].text`. `hooks/useResolvedStream.ts` resolves
+subtitles in the browser, so they never appear in the server-rendered HTML —
+grepping a page for `/api/subtitle` will find nothing and is not a failure.
+
+### Equaliser (`components/watch/video-controls/equalizer-panel.tsx`)
+
+Graphic EQ over the Web Audio graph (`hooks/useAudioProcessing.ts`): 10 bands,
+a live response curve on a canvas, 20 built-in presets plus viewer-saved ones,
+preamp with auto-trim, bandwidth, balance, and a maximiser gain-reduction
+meter. Preset ids map to i18n keys as `eq` + capitalised id (`bass` → `eqBass`),
+so a new preset needs a key in every locale's
+`watch.player.settings`.
+
+The graph is built behind a user gesture — the browser refuses to start an
+`AudioContext` otherwise. A headless run therefore logs an autoplay warning and
+reports the EQ unavailable until the video is clicked. That is expected.
+
+### Mobile gestures (`hooks/useMobileGestures.ts`)
+
+Vertical drag on the left half is brightness, on the right half volume, each
+with a side-anchored meter; horizontal is scrub with a `+Ns` HUD. Touch only —
+mouse and pen are left to the tap and double-click handlers on the same
+surface.
+
+Two traps when testing this in a browser:
+
+- **Dispatch at `document.elementFromPoint(x, y)`, not on an ancestor.** The
+  listener is on the overlay; an event dispatched higher up never reaches it.
+- **Brightness goes through React state and an effect; volume is written
+  straight to the `<video>`.** Reading `video.style.filter` in the same tick as
+  the `pointermove` reports `(none)` for a gesture that works. Await a tick
+  between moves before asserting.
+
+## Theme tokens
+
+`app/globals.css` defines a three-step surface ramp, a border pair and a
+two-step text ramp as raw custom properties, with a light ramp selected by
+`prefers-color-scheme`. There is no toggle and no stored preference: the app
+follows the device. `tailwind.config.ts` wraps each token in
+`rgb(var(--x) / <alpha-value>)`, which is what makes `bg-surface-card/60`
+resolve — a hex value would silently drop the opacity modifier.
+
+Anything sitting on **artwork or video** must not read these tokens; those
+surfaces are a photograph in both schemes and keep the fixed
+`--surface-overlay` / `--ink-*` values. `scripts/migrate-theme-tokens.py` is the
+one-shot migration that moved page chrome onto the tokens; it skips
+`components/watch/**` and `components/movie-images/**` for exactly that reason.
