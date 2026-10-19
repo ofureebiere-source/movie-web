@@ -77,21 +77,21 @@ export default function AnimeFilterBar({
         {/* Search — provider-backed, so it covers the whole catalogue, not
             just the titles already scrolled into view. */}
         <label className="glass-btn glass-btn-sm flex min-w-[12rem] flex-1 items-center gap-2 sm:flex-none">
-          <IoSearchOutline size={15} className="shrink-0 text-gray-400" />
+          <IoSearchOutline size={15} className="shrink-0 text-content-muted" />
           <input
             type="search"
             value={filters.query}
             onChange={(e) => onChange('query', e.target.value)}
             placeholder={t('searchPlaceholder')}
             aria-label={t('searchPlaceholder')}
-            className="w-full min-w-0 bg-transparent text-gray-100 placeholder:text-gray-500 outline-none"
+            className="w-full min-w-0 bg-transparent text-content-main placeholder:text-content-muted outline-none"
           />
           {filters.query && (
             <button
               type="button"
               onClick={() => onChange('query', '')}
               aria-label={t('clear')}
-              className="shrink-0 text-gray-400 transition-colors hover:text-gray-200"
+              className="shrink-0 text-content-muted transition-colors hover:text-content-soft"
             >
               <IoClose size={15} />
             </button>
@@ -127,7 +127,7 @@ export default function AnimeFilterBar({
         )}
 
         {searching && resultCount != null && (
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-content-muted">
             {resultCount} {t('searchResults')}
           </span>
         )}
@@ -181,11 +181,11 @@ function Select({
 }) {
   return (
     <label title={title} className="glass-btn glass-btn-sm relative inline-flex cursor-pointer items-center gap-2">
-      <span className="text-gray-400">{label}</span>
+      <span className="text-content-muted">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer appearance-none bg-transparent pr-4 text-gray-100 outline-none [&>option]:bg-neutral-900 [&>option]:text-gray-100"
+        className="cursor-pointer appearance-none bg-transparent pr-4 text-content-main outline-none [&>option]:bg-surface-secondary [&>option]:text-content-main"
       >
         {children}
       </select>
@@ -196,7 +196,7 @@ function Select({
         fill="none"
         stroke="currentColor"
         strokeWidth="2.5"
-        className="pointer-events-none absolute right-2 text-gray-400"
+        className="pointer-events-none absolute right-2 text-content-muted"
         aria-hidden
       >
         <polyline points="6 9 12 15 18 9" />

@@ -63,7 +63,7 @@ export default function NotificationPrompt() {
 
   return (
     <div className="fixed inset-x-0 bottom-16 z-30 px-4 lg:bottom-4">
-      <div className="mx-auto flex max-w-xl items-center gap-3 rounded-xl border border-white/10 bg-black/90 px-4 py-3 text-sm text-gray-200 shadow-2xl backdrop-blur">
+      <div className="mx-auto flex max-w-xl items-center gap-3 rounded-xl border border-line bg-surface-primary/90 px-4 py-3 text-sm text-content-soft shadow-2xl backdrop-blur">
         <span className="min-w-0 flex-1">
           Get notified about new releases and picks based on what you watch.
         </span>
@@ -78,7 +78,7 @@ export default function NotificationPrompt() {
         <button
           type="button"
           onClick={dismiss}
-          className="shrink-0 rounded-lg px-2 py-1.5 text-gray-400 transition-colors hover:text-white"
+          className="shrink-0 rounded-lg px-2 py-1.5 text-content-muted transition-colors hover:text-content-main"
           aria-label="Not now"
         >
           Not now

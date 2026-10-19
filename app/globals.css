@@ -6,24 +6,91 @@
    Design tokens
 
    Lifted from the upstream streaming site this app mirrors, so the two read as
-   one product: a near-black three-step surface ramp, a hairline border pair and
-   a two-step text ramp. Kept as raw custom properties (not only Tailwind
+   one product: a three-step surface ramp, a hairline border pair and a
+   two-step text ramp. Kept as raw custom properties (not only Tailwind
    colours) because the plain-CSS rules further down — scrollbars, the glass
    buttons, the player chrome — need the same values without a utility class.
 
-   The zinc steps are the upstream palette's Tailwind v4 oklch values, kept in
-   oklch so a browser that supports it renders the exact same greys.
+   Both schemes are defined here and selected by the device, not by a control:
+   the dark values are the default, and `prefers-color-scheme: light` swaps
+   them for the light ramp. `color-scheme` is declared so the browser also
+   themes its own surfaces (form controls, scrollbars, the canvas behind the
+   page) to match, and so the `light-dark()`-aware UA styles line up.
+
+   There is deliberately no toggle and no stored preference. A visitor who
+   changes their OS setting sees the app follow, live, because the media query
+   is re-evaluated without a reload.
+
+   Anything that is artwork — the scrims over a backdrop, the player chrome,
+   the image lightbox — must NOT read from these tokens. Those sit on a photo
+   or on video and stay dark in both schemes; they use the fixed
+   `--surface-overlay` / `--ink-*` values below instead.
    ========================================================================== */
 
 :root {
-  --bg-primary: #000;
-  --bg-secondary: #09090b;
-  --bg-card: #121215;
-  --border-color: #27272a;
-  --border-hover: #3f3f46;
-  --text-main: #fff;
-  --text-muted: #a1a1aa;
+  color-scheme: light dark;
+
+  /* Dark scheme — the default.
+     Stored as bare RGB channel triplets, not hex, so Tailwind's opacity
+     modifiers work on them: the config wraps each in
+     `rgb(var(--x) / <alpha-value>)`, which is what makes `bg-surface-card/60`
+     and `border-line/50` resolve in both schemes. A hex value would silently
+     drop the modifier. Use `rgb(var(--x))` when consuming these in plain CSS. */
+  --bg-primary: 0 0 0;
+  --bg-secondary: 9 9 11;
+  --bg-card: 18 18 21;
+  --border-color: 39 39 42;
+  --border-hover: 63 63 70;
+  --text-main: 255 255 255;
+  --text-soft: 212 212 216;
+  --text-muted: 161 161 170;
   --accent-white: #fff;
+
+  /* Fixed, scheme-independent values. These sit on top of artwork or video,
+     where the background is a photograph in both schemes, so they must not
+     flip with the tokens above. */
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+  --ink-primary: #fff;
+  --ink-secondary: rgba(255, 255, 255, 0.7);
+  --ink-disabled: rgba(255, 255, 255, 0.35);
+
+  /* Glass-button ink. Separate from `--text-main` because the button may sit
+     on an image rather than on a page surface, and the light scheme needs a
+     dark hairline where the dark scheme needs a white one. The `*-dark` pair
+     are the fixed artwork values: `.on-artwork` re-pins the live names to
+     these, so a button on a backdrop keeps a white hairline in light mode. */
+  --glass-border-dark: rgba(255, 255, 255, 0.28);
+  --glass-border-hover-dark: rgba(255, 255, 255, 0.55);
+  --glass-highlight-dark: rgba(255, 255, 255, 0.28);
+  --glass-highlight-hover-dark: rgba(255, 255, 255, 0.45);
+  --glass-focus-dark: rgba(255, 255, 255, 0.7);
+  --glass-inset-dark-dark: rgba(0, 0, 0, 0.18);
+
+  --glass-border: var(--glass-border-dark);
+  --glass-border-hover: var(--glass-border-hover-dark);
+  --glass-highlight: var(--glass-highlight-dark);
+  --glass-highlight-hover: var(--glass-highlight-hover-dark);
+  --glass-focus: var(--glass-focus-dark);
+  --glass-inset-dark: var(--glass-inset-dark-dark);
+
+  /* "Strong" glass ink: the selected-tab / active-chip border and glow. White
+     on a dark page, near-black on a light one, so a selected chip reads in
+     both. */
+  --glass-strong-dark: rgba(255, 255, 255, 0.75);
+  --glass-strong-hover-dark: rgba(255, 255, 255, 0.6);
+  --glass-strong-glow-dark: rgba(255, 255, 255, 0.45);
+  --glass-strong: var(--glass-strong-dark);
+  --glass-strong-hover: var(--glass-strong-hover-dark);
+  --glass-strong-glow: var(--glass-strong-glow-dark);
+
+  /* Chip / translucent pane fill (badges, pills, hovered rows). */
+  --surface-chip-dark: rgba(255, 255, 255, 0.12);
+  --surface-chip-hover-dark: rgba(255, 255, 255, 0.2);
+  --surface-chip: var(--surface-chip-dark);
+  --surface-chip-hover: var(--surface-chip-hover-dark);
+
+  --scrollbar-thumb: #6e6e6e;
+  --scrollbar-track: #000;
 
   /* The font ramp is the upstream one: a system stack, no webfont download.
      `--font-sans` mirrors Tailwind's default so components that reach for it
@@ -39,6 +106,41 @@
   --brand: #e10711;
 }
 
+/* Light scheme. Selected purely by the device setting — no class, no cookie,
+   no toggle. Chosen so the same ramp reads as one product: the page is white,
+   cards are white with a hairline border rather than a lifted grey, and the
+   text ramp inverts. */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-primary: 255 255 255;
+    --bg-secondary: 246 246 247;
+    --bg-card: 255 255 255;
+    --border-color: 228 228 231;
+    --border-hover: 201 201 206;
+    --text-main: 9 9 11;
+    --text-soft: 63 63 70;
+    --text-muted: 82 82 91;
+    --accent-white: #09090b;
+
+    --glass-border: rgba(9, 9, 11, 0.18);
+    --glass-border-hover: rgba(9, 9, 11, 0.42);
+    --glass-highlight: rgba(255, 255, 255, 0.9);
+    --glass-highlight-hover: #fff;
+    --glass-focus: rgba(9, 9, 11, 0.65);
+    --glass-inset-dark: rgba(9, 9, 11, 0.06);
+
+    --surface-chip: rgba(9, 9, 11, 0.06);
+    --surface-chip-hover: rgba(9, 9, 11, 0.11);
+
+    --glass-strong: rgba(9, 9, 11, 0.8);
+    --glass-strong-hover: rgba(9, 9, 11, 0.62);
+    --glass-strong-glow: rgba(9, 9, 11, 0.28);
+
+    --scrollbar-thumb: #c4c4c8;
+    --scrollbar-track: #f4f4f5;
+  }
+}
+
 html, body {
   height: 100%;
   margin: 0;
@@ -46,8 +148,8 @@ html, body {
 
 body {
   overflow-x: clip;
-  background-color: var(--bg-primary);
-  color: var(--text-main);
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-main));
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu,
     Cantarell, sans-serif;
 }
@@ -90,12 +192,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #6e6e6e;
+  background-color: var(--scrollbar-thumb);
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: black;
+  background: var(--scrollbar-track);
 }
 
 
@@ -117,6 +219,42 @@ body {
   textarea {
     -webkit-tap-highlight-color: transparent;
   }
+}
+
+/* ==========================================================================
+   Artwork scope
+
+   Wrap anything that sits ON a photograph or on video — the hero, the player,
+   the trailer lightbox, the image viewer — in `.on-artwork`. It re-pins the
+   theme tokens to the fixed dark values, so the chrome inside keeps white text
+   and white hairlines in BOTH schemes. That is the whole reason it exists: a
+   light-mode visitor must still get white hero copy, because the thing behind
+   it is a dark scrimmed backdrop, not a page surface.
+
+   Applying it once at the artwork root is what keeps the fixed values out of
+   every individual component.
+   ========================================================================== */
+
+.on-artwork {
+  --bg-primary: 0 0 0;
+  --bg-secondary: 9 9 11;
+  --bg-card: 18 18 21;
+  --border-color: 255 255 255;
+  --border-hover: 255 255 255;
+  --text-main: 255 255 255;
+  --text-soft: 212 212 216;
+  --text-muted: 161 161 170;
+  --surface-chip: var(--surface-chip-dark);
+  --surface-chip-hover: var(--surface-chip-hover-dark);
+  --glass-border: var(--glass-border-dark);
+  --glass-border-hover: var(--glass-border-hover-dark);
+  --glass-highlight: var(--glass-highlight-dark);
+  --glass-highlight-hover: var(--glass-highlight-hover-dark);
+  --glass-focus: var(--glass-focus-dark);
+  --glass-inset-dark: var(--glass-inset-dark-dark);
+  --glass-strong: var(--glass-strong-dark);
+  --glass-strong-hover: var(--glass-strong-hover-dark);
+  --glass-strong-glow: var(--glass-strong-glow-dark);
 }
 
 /* ==========================================================================
@@ -152,18 +290,18 @@ body {
     font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.25;
-    color: #fff;
+    color: var(--text-main);
     text-align: center;
     white-space: nowrap;
     cursor: pointer;
     user-select: none;
-    border: 1px solid rgba(255, 255, 255, 0.28);
+    border: 1px solid var(--glass-border);
     background: transparent;
     -webkit-backdrop-filter: blur(14px) saturate(160%);
     backdrop-filter: blur(14px) saturate(160%);
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.28),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.18);
+      inset 0 1px 0 0 var(--glass-highlight),
+      inset 0 -1px 0 0 var(--glass-inset-dark);
     transition:
       border-color 200ms ease,
       box-shadow 200ms ease,
@@ -179,10 +317,10 @@ body {
   }
 
   .glass-btn:hover {
-    border-color: rgba(255, 255, 255, 0.55);
+    border-color: var(--glass-border-hover);
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.45),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.18);
+      inset 0 1px 0 0 var(--glass-highlight-hover),
+      inset 0 -1px 0 0 var(--glass-inset-dark);
   }
 
   .glass-btn:active {
@@ -190,7 +328,7 @@ body {
   }
 
   .glass-btn:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.7);
+    outline: 2px solid var(--glass-focus);
     outline-offset: 2px;
   }
 
@@ -208,8 +346,8 @@ body {
     border-color: rgba(255, 90, 90, 0.7);
     background: transparent;
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 0 var(--glass-highlight),
+      inset 0 -1px 0 0 var(--glass-inset-dark),
       0 0 18px -4px rgba(225, 7, 17, 0.55);
   }
 
@@ -221,12 +359,12 @@ body {
   /* Selected chip / current tab. Border weight and glow mark it, since there
      is no fill to brighten. */
   .glass-btn-active {
-    border-color: rgba(255, 255, 255, 0.75);
+    border-color: var(--glass-strong);
     background: transparent;
     box-shadow:
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
-      inset 0 -1px 0 0 rgba(0, 0, 0, 0.2),
-      0 0 14px -4px rgba(255, 255, 255, 0.45);
+      inset 0 1px 0 0 var(--glass-highlight),
+      inset 0 -1px 0 0 var(--glass-inset-dark),
+      0 0 14px -4px var(--glass-strong-glow);
   }
 
   /* Compact variant for chip rows and the bottom bar. */
@@ -262,7 +400,7 @@ body {
   .glass-btn-active {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    border-color: rgba(255, 255, 255, 0.6);
+    border-color: var(--glass-strong-hover);
   }
   .glass-btn-primary {
     border-color: rgba(255, 110, 110, 0.85);

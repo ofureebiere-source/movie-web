@@ -77,13 +77,13 @@ export default function HeaderMobile({
       <header
         className={`${
           isShowFixedHeader ? 'fixed' : 'absolute'
-        } top-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-sm`}
+        } top-0 left-0 right-0 z-30 bg-surface-primary/90 backdrop-blur-sm`}
       >
         <div className="flex items-center justify-between px-4 py-3">
           {/* Hamburger Menu Icon */}
           <button
             onClick={toggleMobileMenu}
-            className="text-white hover:text-custome-red transition-colors"
+            className="text-content-main hover:text-custome-red transition-colors"
             aria-label="Toggle mobile menu"
           >
             {isMobileMenuOpen ? <IoClose size={24} /> : <IoMenu size={24} />}
@@ -96,7 +96,7 @@ export default function HeaderMobile({
           <div className="flex items-center gap-2">
             {/* Language is chosen automatically from the visitor's location — see middleware.ts. */}
             <Link
-              className="text-white hover:text-custome-red transition-colors"
+              className="text-content-main hover:text-custome-red transition-colors"
               href="/search"
               aria-label="Search movies"
             >
@@ -108,17 +108,17 @@ export default function HeaderMobile({
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeMobileMenu}>
+        <div className="fixed inset-0 z-40 bg-surface-primary/50 backdrop-blur-sm" onClick={closeMobileMenu}>
           <div
-            className="fixed top-0 left-0 h-full w-80 bg-black/95 backdrop-blur-md transform transition-transform duration-300 ease-in-out"
+            className="fixed top-0 left-0 h-full w-80 bg-surface-primary/95 backdrop-blur-md transform transition-transform duration-300 ease-in-out"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Menu Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-800">
+            <div className="flex items-center justify-between p-4 border-b border-line">
               <Wordmark compact onClick={closeMobileMenu} />
               <button
                 onClick={closeMobileMenu}
-                className="text-white hover:text-custome-red transition-colors"
+                className="text-content-main hover:text-custome-red transition-colors"
               >
                 <IoClose size={24} />
               </button>
@@ -135,7 +135,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/anime' || pathname.startsWith('/anime/')
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/anime"
                         onClick={closeMobileMenu}
@@ -148,7 +148,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/collection'
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/movies/collection"
                         onClick={closeMobileMenu}
@@ -161,7 +161,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/profile' || pathname.startsWith('/profile/')
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/profile"
                         onClick={closeMobileMenu}
@@ -174,7 +174,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/format/phim-le'
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/movies/format/phim-le"
                         onClick={closeMobileMenu}
@@ -187,7 +187,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/format/phim-bo'
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/movies/format/phim-bo"
                         onClick={closeMobileMenu}
@@ -200,7 +200,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/format/hoat-hinh'
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/movies/format/hoat-hinh"
                         onClick={closeMobileMenu}
@@ -213,7 +213,7 @@ export default function HeaderMobile({
                         className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/format/tv-shows'
                             ? 'text-custome-red'
-                            : 'text-white hover:text-custome-red'
+                            : 'text-content-main hover:text-custome-red'
                         }`}
                         href="/movies/format/tv-shows"
                         onClick={closeMobileMenu}
@@ -223,7 +223,7 @@ export default function HeaderMobile({
                     </li>
                     <li>
                       <button
-                        className="flex items-center justify-between w-full py-2 text-lg font-medium text-white hover:text-custome-red transition-colors"
+                        className="flex items-center justify-between w-full py-2 text-lg font-medium text-content-main hover:text-custome-red transition-colors"
                         onClick={toggleTypeSubmenu}
                       >
                         {t('categories')}
@@ -234,14 +234,14 @@ export default function HeaderMobile({
                         )}
                       </button>
                       {isTypeSubmenuOpen && (
-                        <ul className="ml-4 mt-2 space-y-2 border-l border-gray-700 pl-4">
+                        <ul className="ml-4 mt-2 space-y-2 border-l border-line pl-4">
                           {movieType.map((item) => (
                             <li key={item.slug}>
                               <Link
                                 className={`block py-1 text-base transition-colors ${
                                   pathname === `/movies/type/${item.slug}`
                                     ? 'text-custome-red'
-                                    : 'text-gray-300 hover:text-custome-red'
+                                    : 'text-content-soft hover:text-custome-red'
                                 }`}
                                 href={`/movies/type/${item.slug}`}
                                 onClick={closeMobileMenu}
@@ -255,7 +255,7 @@ export default function HeaderMobile({
                     </li>
                     <li>
                       <button
-                        className="flex items-center justify-between w-full py-2 text-lg font-medium text-white hover:text-custome-red transition-colors"
+                        className="flex items-center justify-between w-full py-2 text-lg font-medium text-content-main hover:text-custome-red transition-colors"
                         onClick={toggleCountrySubmenu}
                       >
                         {t('countries')}
@@ -266,14 +266,14 @@ export default function HeaderMobile({
                         )}
                       </button>
                       {isCountrySubmenuOpen && (
-                        <ul className="ml-4 mt-2 space-y-2 border-l border-gray-700 pl-4">
+                        <ul className="ml-4 mt-2 space-y-2 border-l border-line pl-4">
                           {countries.map((item) => (
                             <li key={item.slug}>
                               <Link
                                 className={`block py-1 text-base transition-colors ${
                                   pathname === `/movies/country/${item.slug}`
                                     ? 'text-custome-red'
-                                    : 'text-gray-300 hover:text-custome-red'
+                                    : 'text-content-soft hover:text-custome-red'
                                 }`}
                                 href={`/movies/country/${item.slug}`}
                                 onClick={closeMobileMenu}
@@ -289,7 +289,7 @@ export default function HeaderMobile({
                 </nav>
 
                 {/* User Section */}
-                <div className="border-t border-gray-800 pt-4">
+                <div className="border-t border-line pt-4">
                   {authenticatedUser && (
                     <div className="space-y-4">
                       {/* Mobile Account Profile */}

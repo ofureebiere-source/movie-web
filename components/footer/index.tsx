@@ -37,7 +37,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer className="w-full bg-black text-gray-300 relative">
+    <footer className="w-full bg-surface-primary text-content-soft relative">
       {/* Gradient top border */}
       <div className="h-1 w-full bg-gradient-to-r from-red-700 via-red-600 to-red-700"></div>
 
@@ -48,7 +48,7 @@ export default function Footer() {
             <Link href="/" className="inline-block">
               <h2 className="text-4xl font-bold text-red-600 tracking-tight">{SITE_NAME}</h2>
             </Link>
-            <p className="text-sm text-gray-400 leading-relaxed">{t('description')}</p>
+            <p className="text-sm text-content-muted leading-relaxed">{t('description')}</p>
 
             <div className="flex items-center space-x-4 pt-2">
               <Link
@@ -63,7 +63,7 @@ export default function Footer() {
 
           {/* Middle Column - Information */}
           <div className="space-y-5">
-            <h3 className="text-xl font-bold text-white mb-4 relative pl-3 border-l-4 border-red-600">
+            <h3 className="text-xl font-bold text-content-main mb-4 relative pl-3 border-l-4 border-red-600">
               {t('info.heading')}
             </h3>
             <ul className="space-y-3 grid grid-cols-1 gap-2">
@@ -71,7 +71,7 @@ export default function Footer() {
                 <li key={index}>
                   <Link
                     href="/"
-                    className="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group"
+                    className="text-sm text-content-muted hover:text-red-500 transition-colors duration-300 flex items-center group"
                   >
                     <span className="w-1 h-1 bg-red-600 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity"></span>
                     {item}
@@ -83,7 +83,7 @@ export default function Footer() {
 
           {/* Right Column - Movie Categories */}
           <div className="space-y-5">
-            <h3 className="text-xl font-bold text-white mb-4 relative pl-3 border-l-4 border-red-600">
+            <h3 className="text-xl font-bold text-content-main mb-4 relative pl-3 border-l-4 border-red-600">
               {t('categories.heading')}
             </h3>
             <div className="grid grid-cols-2 gap-3">
@@ -93,7 +93,7 @@ export default function Footer() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group"
+                        className="text-sm text-content-muted hover:text-red-500 transition-colors duration-300 flex items-center group"
                       >
                         <span className="w-1 h-1 bg-red-600 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity"></span>
                         {item.label}
@@ -108,7 +108,7 @@ export default function Footer() {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className="text-sm text-gray-400 hover:text-red-500 transition-colors duration-300 flex items-center group"
+                        className="text-sm text-content-muted hover:text-red-500 transition-colors duration-300 flex items-center group"
                       >
                         <span className="w-1 h-1 bg-red-600 rounded-full mr-2 opacity-0 group-hover:opacity-100 transition-opacity"></span>
                         {item.label}
@@ -122,16 +122,16 @@ export default function Footer() {
         </div>
 
         {/* Bottom Copyright Section with gradient border */}
-        <div className="mt-12 pt-8 border-t border-gray-800 text-center">
-          <p className="text-sm text-gray-500">{t('copyright')}</p>
-          <p className="mt-2 text-xs text-gray-600">{t('disclaimer')}</p>
-          <p className="mt-2 text-xs text-gray-600">{t('seo')}</p>
+        <div className="mt-12 pt-8 border-t border-line text-center">
+          <p className="text-sm text-content-muted">{t('copyright')}</p>
+          <p className="mt-2 text-xs text-content-muted/70">{t('disclaimer')}</p>
+          <p className="mt-2 text-xs text-content-muted/70">{t('seo')}</p>
 
           {/* Attribution notice. The wording is unchanged, but it is no longer
               an anchor: the rule for this app is that nothing on a page
               navigates off-site. The logo and notice stay because the
               attribution itself is what matters, not the hyperlink. */}
-          <div className="mt-4 inline-flex items-center gap-3 text-xs text-gray-600">
+          <div className="mt-4 inline-flex items-center gap-3 text-xs text-content-muted/70">
             <span className="w-20 shrink-0">
               <TMDBLogo />
             </span>

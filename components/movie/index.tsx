@@ -6,7 +6,11 @@ import DetailMovie from 'types/detail-movie';
 import type Movie from 'types/movie';
 import { FaPlay } from 'react-icons/fa';
 import MovieContent from './movie-content';
+import MovieWatchPage from '../watch/index';
 import PlayerOverlay from '../watch/player-overlay';
+import { useResolvedStream } from 'hooks/useResolvedStream';
+import { useMediaQuery } from 'hooks/useMediaQuery';
+import { usePlaybackProviders, withProvider } from 'hooks/usePlaybackProviders';
 import ShareButton from './share-button';
 import Credit from 'types/credit';
 import BtnAddToCollection from '../buttons/btn-add-to-collection';
@@ -83,8 +87,31 @@ export default function MoviePage({
   // player covers the viewport, instead of a second card appearing above the
   // hero and shoving the title card down the page.
   const [playerOpen, setPlayerOpen] = useState(false);
+  const [inlineOpen, setInlineOpen] = useState(false);
   const canPlay = movie.movie.episode_current !== 'Trailer';
-  const openPlayer = () => setPlayerOpen(true);
+
+  // Desktop morphs the poster box in the hero into the frame; the phone has no
+  // such box (its hero is a full-width still with the actions below), so it
+  // keeps the overlay, which is the same surface the home carousel opens.
+  // `useMediaQuery` answers `false` on the server, so the overlay stays the
+  // first-paint default and the morph only ever engages after mount.
+  const isDesktop = useMediaQuery('(min-width: 1024px)');
+
+  // Resolve the stream as soon as the page is up rather than when Play is
+  // pressed. This is the whole point: the resolver takes seconds, and doing
+  // that work while the viewer is still reading the synopsis is what lets the
+  // Play press start the film immediately. The viewer sees one press, not two.
+  const firstEpisode = movie.episodes?.[0]?.server_data?.[0];
+  const resolveLink = firstEpisode?.link_m3u8 ?? '';
+  const playback = usePlaybackProviders(movie.movie.type === 'anime');
+  const prefetch = useResolvedStream(
+    canPlay ? withProvider(resolveLink, playback.currentProviderId) : ''
+  );
+
+  const openPlayer = () => {
+    if (isDesktop) setInlineOpen(true);
+    else setPlayerOpen(true);
+  };
 
   useEffect(() => {
     analytics.movieViewed({
@@ -123,12 +150,12 @@ export default function MoviePage({
       {/* Full-screen player, the same surface the home carousel uses. Rendered
           over the page so the detail layout never reflows when it opens. */}
       {playerOpen && (
-        <PlayerOverlay movie={movie} onClose={() => setPlayerOpen(false)} />
+        <PlayerOverlay movie={movie} autoPlay onClose={() => setPlayerOpen(false)} />
       )}
 
       {/* Cinematic full-bleed hero — DESKTOP only (poster + info cluster).
           Mobile uses the single-column streaming layout below. */}
-      <div className="hidden lg:block relative w-full min-h-[42rem]">
+      <div className="on-artwork hidden lg:block relative w-full min-h-[42rem]">
         {/* Backdrop: TMDB's (sharp, straight from its CDN) when there is
             one, else the catalog's landscape still. Used to be a CSS
             background, which downloaded the catalog original — up to 4 MB —
@@ -146,8 +173,26 @@ export default function MoviePage({
 
         <div className="container-wrapper-movie relative flex min-h-[30rem] items-end px-4 pb-6 lg:min-h-[42rem] lg:px-0 lg:pb-10">
           <div className="flex w-full items-end gap-4 lg:gap-8">
-            {/* Poster — kept for the IMDb/Netflix vibe */}
-            <div className="w-24 shrink-0 sm:w-32 lg:w-52">
+            {/* Poster — kept for the IMDb/Netflix vibe — and the slot the
+                player opens into. Playing swaps this column's contents in
+                place rather than opening a second screen, so the page the
+                viewer is reading stays exactly where it was; the width
+                transition is what makes the swap read as the poster growing
+                rather than as one element being replaced by another. */}
+            <div
+              className={`w-24 shrink-0 sm:w-32 lg:transition-[width] lg:duration-500 lg:ease-out ${
+                inlineOpen ? 'lg:w-[26rem]' : 'lg:w-52'
+              }`}
+            >
+              {inlineOpen ? (
+                <MovieWatchPage
+                  movie={movie}
+                  embedded
+                  autoPlay
+                  onClose={() => setInlineOpen(false)}
+                />
+              ) : (
+              <>
               {/* Parent is `hidden lg:block` — this image only ever renders
                   at >=1024px, where the box is a fixed 208px (`lg:w-52`),
                   not viewport-relative. `loading="eager"` (not `priority`):
@@ -167,6 +212,8 @@ export default function MoviePage({
                   sizes="208px"
                 />
               </div>
+              </>
+              )}
             </div>
 
             {/* Info cluster */}
@@ -182,19 +229,19 @@ export default function MoviePage({
                   <h1 className="text-2xl font-semibold lg:text-5xl">{primaryTitle}</h1>
                 )}
                 {showSubtitle && (
-                  <h2 className="mt-2 text-base font-normal text-[#bbb6ae] lg:mt-3 lg:text-2xl">
+                  <h2 className="mt-2 text-base font-normal text-content-muted lg:mt-3 lg:text-2xl">
                     {`${subTitle} (${movie.movie.year})`}
                   </h2>
                 )}
               </div>
 
               {/* Meta line: status · duration · quality + ratings */}
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-200 lg:text-base">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-content-soft lg:text-base">
                 {episodeCurrent && <span>{episodeCurrent}</span>}
-                {time && <span className="text-gray-500">•</span>}
+                {time && <span className="text-content-muted">•</span>}
                 {time && <span>{time}</span>}
                 {movie.movie.quality && (
-                  <span className="rounded bg-[#169f3a] px-2 py-0.5 text-xs font-semibold text-white">
+                  <span className="rounded bg-[#169f3a] px-2 py-0.5 text-xs font-semibold text-content-main">
                     {movie.movie.quality}
                   </span>
                 )}
@@ -207,7 +254,7 @@ export default function MoviePage({
                   <button
                     type="button"
                     onClick={openPlayer}
-                    className="flex items-center gap-x-2 rounded-md bg-[#e20913] px-5 py-2.5 font-semibold uppercase text-white transition duration-200 hover:bg-[#c20810]"
+                    className="flex items-center gap-x-2 rounded-md bg-[#e20913] px-5 py-2.5 font-semibold uppercase text-content-main transition duration-200 hover:bg-[#c20810]"
                   >
                     <FaPlay size={18} />
                     {t('watch')}
@@ -240,7 +287,7 @@ export default function MoviePage({
           Streaming-app pattern (Netflix/Apple): no side poster, full-width
           actions for thumb reach. */}
       <div className="lg:hidden">
-        <div className="relative w-full aspect-[16/10]">
+        <div className="on-artwork relative w-full aspect-[16/10]">
           <Image
             {...heroImage}
             alt={primaryTitle}
@@ -265,15 +312,15 @@ export default function MoviePage({
 
         <div className="space-y-4 px-4 pb-2 pt-3">
           {showSubtitle && (
-            <h2 className="text-base font-normal text-[#bbb6ae]">{`${subTitle} (${movie.movie.year})`}</h2>
+            <h2 className="text-base font-normal text-content-muted">{`${subTitle} (${movie.movie.year})`}</h2>
           )}
 
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-200">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-content-soft">
             {episodeCurrent && <span>{episodeCurrent}</span>}
-            {time && <span className="text-gray-500">•</span>}
+            {time && <span className="text-content-muted">•</span>}
             {time && <span>{time}</span>}
             {movie.movie.quality && (
-              <span className="rounded bg-[#169f3a] px-2 py-0.5 text-xs font-semibold text-white">
+              <span className="rounded bg-[#169f3a] px-2 py-0.5 text-xs font-semibold text-content-main">
                 {movie.movie.quality}
               </span>
             )}
@@ -285,7 +332,7 @@ export default function MoviePage({
               <button
                 type="button"
                 onClick={openPlayer}
-                className="flex min-h-[48px] w-full items-center justify-center gap-x-2 rounded-lg bg-[#e20913] font-semibold uppercase text-white transition duration-200 hover:bg-[#c20810]"
+                className="flex min-h-[48px] w-full items-center justify-center gap-x-2 rounded-lg bg-[#e20913] font-semibold uppercase text-content-main transition duration-200 hover:bg-[#c20810]"
               >
                 <FaPlay size={18} />
                 {t('watch')}

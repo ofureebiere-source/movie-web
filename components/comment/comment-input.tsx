@@ -109,7 +109,7 @@ export default function CommentInput({
           ref={textareaRef}
           rows={1}
           placeholder={t('placeholder')}
-          className="w-full resize-none rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-base text-white outline-none transition-colors placeholder:text-gray-500 focus:border-[#e20913]"
+          className="w-full resize-none rounded-lg border border-line bg-surface-chip px-4 py-3 text-base text-content-main outline-none transition-colors placeholder:text-content-muted focus:border-[#e20913]"
           value={commentText}
           onChange={(e) => {
             setCommentText(e.target.value);
@@ -125,7 +125,7 @@ export default function CommentInput({
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-md px-4 py-2 text-sm text-gray-300 transition-colors hover:text-white"
+              className="rounded-md px-4 py-2 text-sm text-content-soft transition-colors hover:text-content-main"
             >
               {t('cancel')}
             </button>
@@ -133,7 +133,7 @@ export default function CommentInput({
               type="button"
               onClick={handleSubmitComment}
               disabled={isSubmitingComment || commentText.trim() === ''}
-              className="rounded-md bg-[#e20913] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#c20810] disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-md bg-[#e20913] px-5 py-2 text-sm font-semibold text-content-main transition-colors hover:bg-[#c20810] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitingComment ? <LoadingSpinerBtn /> : t('submit')}
             </button>

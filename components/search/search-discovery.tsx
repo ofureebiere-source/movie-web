@@ -52,23 +52,23 @@ export default function SearchDiscovery({
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-muted text-brand">
           {isNoResults ? <MdSearchOff size={28} /> : <FaFilm size={26} />}
         </div>
-        <h2 className="text-lg font-semibold text-white lg:text-xl">
+        <h2 className="text-lg font-semibold text-content-main lg:text-xl">
           {isNoResults ? t('noResultsTitle', { query: query!.trim() }) : t('promptTitle')}
         </h2>
-        <p className="max-w-md text-sm text-gray-400">
+        <p className="max-w-md text-sm text-content-muted">
           {isNoResults ? t('noResultsSubtitle') : t('promptSubtitle')}
         </p>
       </div>
 
       {/* Browse by genre */}
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-gray-300">{t('browseByGenre')}</h3>
+        <h3 className="text-sm font-semibold text-content-soft">{t('browseByGenre')}</h3>
         <div className="flex flex-wrap gap-2">
           {GENRE_SLUGS.map((slug) => (
             <Link
               key={slug}
               href={`/movies/type/${slug}`}
-              className="rounded-full border border-gray-600 px-4 py-1.5 text-sm text-gray-200 transition-all duration-300 hover:border-brand hover:text-white"
+              className="rounded-full border border-line px-4 py-1.5 text-sm text-content-soft transition-all duration-300 hover:border-brand hover:text-content-main"
             >
               {localizedCategory(slug, locale)}
             </Link>
@@ -79,13 +79,13 @@ export default function SearchDiscovery({
       {/* Trending / you-might-like */}
       {suggestions.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-gray-300">
+          <h3 className="text-sm font-semibold text-content-soft">
             {isNoResults ? t('suggestions') : t('trending')}
           </h3>
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6 lg:gap-4">
             {suggestions.map((m) => (
               <Link key={m.slug} href={`/movies/${m.slug}`} className="group block space-y-1.5">
-                <div className="relative aspect-[2/3] w-full overflow-hidden rounded-md bg-white/5">
+                <div className="relative aspect-[2/3] w-full overflow-hidden rounded-md bg-surface-chip">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={m.poster_url}
@@ -93,7 +93,7 @@ export default function SearchDiscovery({
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
                 </div>
-                <p className="truncate text-xs text-gray-300 transition-colors group-hover:text-white lg:text-sm">
+                <p className="truncate text-xs text-content-soft transition-colors group-hover:text-content-main lg:text-sm">
                   {m.title}
                 </p>
               </Link>

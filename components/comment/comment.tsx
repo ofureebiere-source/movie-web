@@ -73,30 +73,30 @@ export default function Comment({
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="font-semibold text-white">{comment.userName}</span>
+            <span className="font-semibold text-content-main">{comment.userName}</span>
             {isOwner && (
-              <span className="rounded-full border border-white/15 px-2 py-0.5 text-[11px] text-gray-300">
+              <span className="rounded-full border border-line px-2 py-0.5 text-[11px] text-content-soft">
                 {t('you')}
               </span>
             )}
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-content-muted">
               {formatRelativeTime(comment.timeStamp, locale)}
             </span>
           </div>
 
           {isOwner && !isCommentEditing && (
-            <div className="flex shrink-0 items-center gap-4 text-gray-400">
+            <div className="flex shrink-0 items-center gap-4 text-content-muted">
               <button
                 type="button"
                 onClick={() => setIsCommentEditing(true)}
-                className="flex items-center gap-1 py-2 text-sm transition-colors hover:text-white"
+                className="flex items-center gap-1 py-2 text-sm transition-colors hover:text-content-main"
               >
                 <CiEdit size={16} /> {t('edit')}
               </button>
               <button
                 type="button"
                 onClick={handleDelete}
-                className="flex items-center gap-1 py-2 text-sm transition-colors hover:text-white"
+                className="flex items-center gap-1 py-2 text-sm transition-colors hover:text-content-main"
               >
                 <MdDelete size={16} /> {t('delete')}
               </button>
@@ -111,27 +111,27 @@ export default function Comment({
               rows={2}
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              className="w-full resize-none rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-base text-white outline-none transition-colors focus:border-white/30"
+              className="w-full resize-none rounded-lg border border-line bg-surface-chip px-3 py-2 text-base text-content-main outline-none transition-colors focus:border-line"
               data-private
             />
             <div className="mt-2 flex gap-2">
               <button
                 type="submit"
-                className="rounded-md bg-[#e20913] px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#c20810]"
+                className="rounded-md bg-[#e20913] px-4 py-1.5 text-sm font-semibold text-content-main transition-colors hover:bg-[#c20810]"
               >
                 {t('save')}
               </button>
               <button
                 type="button"
                 onClick={handleCancelEdit}
-                className="rounded-md px-3 py-1.5 text-sm text-gray-300 transition-colors hover:text-white"
+                className="rounded-md px-3 py-1.5 text-sm text-content-soft transition-colors hover:text-content-main"
               >
                 {t('cancel')}
               </button>
             </div>
           </form>
         ) : (
-          <p className="mt-1 whitespace-pre-line break-words text-white" data-private>
+          <p className="mt-1 whitespace-pre-line break-words text-content-main" data-private>
             {commentText}
           </p>
         )}

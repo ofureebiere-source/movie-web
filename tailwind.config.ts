@@ -17,26 +17,33 @@ const config: Config = {
           muted: 'rgba(225, 7, 17, 0.15)',
         },
         surface: {
-          overlay: 'rgba(0, 0, 0, 0.6)',
-          chip: 'rgba(255, 255, 255, 0.12)',
-          chipHover: 'rgba(255, 255, 255, 0.2)',
-          /* The upstream three-step surface ramp, by role. */
-          primary: 'var(--bg-primary)',
-          secondary: 'var(--bg-secondary)',
-          card: 'var(--bg-card)',
+          /* Fixed dark scrim for artwork — never flips with the scheme. */
+          overlay: 'var(--surface-overlay)',
+          /* Translucent pane fill; flips (light ink on dark, dark ink on light). */
+          chip: 'var(--surface-chip)',
+          chipHover: 'var(--surface-chip-hover)',
+          /* The three-step surface ramp, by role. Both schemes are defined in
+             globals.css and chosen by `prefers-color-scheme`. */
+          primary: 'rgb(var(--bg-primary) / <alpha-value>)',
+          secondary: 'rgb(var(--bg-secondary) / <alpha-value>)',
+          card: 'rgb(var(--bg-card) / <alpha-value>)',
         },
         line: {
-          DEFAULT: 'var(--border-color)',
-          hover: 'var(--border-hover)',
+          DEFAULT: 'rgb(var(--border-color) / <alpha-value>)',
+          hover: 'rgb(var(--border-hover) / <alpha-value>)',
         },
         content: {
-          main: 'var(--text-main)',
-          muted: 'var(--text-muted)',
+          main: 'rgb(var(--text-main) / <alpha-value>)',
+          soft: 'rgb(var(--text-soft) / <alpha-value>)',
+          muted: 'rgb(var(--text-muted) / <alpha-value>)',
         },
+        /* Fixed white ramp for text that sits on artwork or video, where the
+           background is a photograph in both schemes. Do NOT use on a page
+           surface — use `content-main` / `content-muted` there instead. */
         ink: {
-          primary: '#ffffff',
-          secondary: 'rgba(255, 255, 255, 0.7)',
-          disabled: 'rgba(255, 255, 255, 0.35)',
+          primary: 'var(--ink-primary)',
+          secondary: 'var(--ink-secondary)',
+          disabled: 'var(--ink-disabled)',
         },
       },
       fontFamily: {

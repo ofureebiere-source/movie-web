@@ -99,7 +99,7 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
       <div className="container-wrapper px-4 pb-16 pt-28 md:pt-32">
         <div className="flex flex-col gap-8 md:flex-row md:items-start">
           <div className="mx-auto w-48 shrink-0 md:mx-0 md:w-64">
-            <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl ring-1 ring-white/15">
+            <div className="relative aspect-[2/3] w-full overflow-hidden rounded-2xl ring-1 ring-line">
               <Image
                 src={person.portraitUrl ?? ActorImgDefault}
                 alt={person.name}
@@ -115,7 +115,7 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
             <div className="space-y-2">
               <h1 className="text-3xl font-bold md:text-4xl">{person.name}</h1>
               {person.description && (
-                <p className="text-base text-gray-300">{person.description}</p>
+                <p className="text-base text-content-soft">{person.description}</p>
               )}
             </div>
 
@@ -130,7 +130,7 @@ export default function PersonPage({ id, name }: { id: string; name?: string }) 
             {person.biography && (
               <section className="space-y-2">
                 <h2 className="text-lg font-semibold">{t('biography')}</h2>
-                <p className="whitespace-pre-line text-sm leading-relaxed text-gray-300">
+                <p className="whitespace-pre-line text-sm leading-relaxed text-content-soft">
                   {person.biography}
                 </p>
               </section>
@@ -219,9 +219,9 @@ function Filmography({
     <section className="mt-10 space-y-4">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="text-lg font-semibold">{t('filmography')}</h2>
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-content-muted">
           {visible.length} {t('titles')}
-          {hydrating && <span className="ml-2 text-gray-600">·</span>}
+          {hydrating && <span className="ml-2 text-content-muted/70">·</span>}
         </span>
       </div>
 
@@ -294,7 +294,7 @@ function Filmography({
       </div>
 
       {visible.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">{t('noMatches')}</p>
+        <p className="py-8 text-center text-sm text-content-muted">{t('noMatches')}</p>
       ) : view === 'grid' ? (
         <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {visible.map((credit) => (
@@ -304,7 +304,7 @@ function Filmography({
           ))}
         </ul>
       ) : (
-        <ul className="divide-y divide-white/5">
+        <ul className="divide-y divide-line">
           {visible.map((credit) => (
             <li key={`${credit.type}-${credit.tmdbId}`}>
               <CreditListRow credit={credit} locale={locale} />
@@ -330,11 +330,11 @@ function Select({
 }) {
   return (
     <label className="glass-btn glass-btn-sm relative inline-flex cursor-pointer items-center gap-2">
-      <span className="text-gray-400">{label}</span>
+      <span className="text-content-muted">{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="cursor-pointer appearance-none bg-transparent pr-4 text-gray-100 outline-none [&>option]:bg-neutral-900 [&>option]:text-gray-100"
+        className="cursor-pointer appearance-none bg-transparent pr-4 text-content-main outline-none [&>option]:bg-surface-secondary [&>option]:text-content-main"
       >
         {children}
       </select>
@@ -345,7 +345,7 @@ function Select({
         fill="none"
         stroke="currentColor"
         strokeWidth="2.5"
-        className="pointer-events-none absolute right-2 text-gray-400"
+        className="pointer-events-none absolute right-2 text-content-muted"
         aria-hidden
       >
         <polyline points="6 9 12 15 18 9" />
@@ -387,7 +387,7 @@ function CreditCard({ credit, locale }: { credit: PersonCredit; locale: string }
 
   return (
     <Link href={href} locale={locale} title={credit.title} className="group block">
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-neutral-800/60 ring-1 ring-white/10">
+      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-surface-secondary/60 ring-1 ring-line">
         {poster ? (
           <Image
             src={poster}
@@ -397,23 +397,23 @@ function CreditCard({ credit, locale }: { credit: PersonCredit; locale: string }
             sizes="(max-width: 640px) 45vw, (max-width: 768px) 30vw, (max-width: 1024px) 22vw, 16vw"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-gray-500">
+          <div className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-content-muted">
             {credit.title}
           </div>
         )}
         {Number.isFinite(score) && (
-          <span className="absolute right-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-400">
+          <span className="absolute right-1.5 top-1.5 rounded bg-surface-primary/70 px-1.5 py-0.5 text-[10px] font-semibold text-yellow-400">
             {score.toFixed(1)}
           </span>
         )}
       </div>
       <div className="mt-2 space-y-0.5">
-        <p className="line-clamp-2 text-sm font-medium text-gray-100 group-hover:text-brand">
+        <p className="line-clamp-2 text-sm font-medium text-content-main group-hover:text-brand">
           {credit.title}
         </p>
-        {credit.year && <p className="text-xs text-gray-500">{credit.year}</p>}
+        {credit.year && <p className="text-xs text-content-muted">{credit.year}</p>}
         {credit.character && (
-          <p className="line-clamp-1 text-xs text-gray-400">{credit.character}</p>
+          <p className="line-clamp-1 text-xs text-content-muted">{credit.character}</p>
         )}
       </div>
     </Link>
@@ -429,16 +429,16 @@ function CreditListRow({ credit, locale }: { credit: PersonCredit; locale: strin
     <Link
       href={`/movies/${creditSlug(credit)}`}
       locale={locale}
-      className="flex items-center gap-4 rounded-lg px-2 py-3 transition-colors hover:bg-white/5 focus-visible:bg-white/5"
+      className="flex items-center gap-4 rounded-lg px-2 py-3 transition-colors hover:bg-surface-chip focus-visible:bg-surface-chip"
     >
-      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded bg-neutral-800/60">
+      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded bg-surface-secondary/60">
         {poster && (
           <Image src={poster} alt={credit.title} fill className="object-cover" sizes="3rem" />
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-100">{credit.title}</p>
-        <p className="text-xs text-gray-500">
+        <p className="truncate text-sm font-medium text-content-main">{credit.title}</p>
+        <p className="text-xs text-content-muted">
           {[credit.year, credit.character].filter(Boolean).join(' · ')}
         </p>
       </div>
@@ -462,8 +462,8 @@ function creditSlug(credit: PersonCredit): string {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-gray-500">{label}</dt>
-      <dd className="text-gray-200">{value}</dd>
+      <dt className="text-xs uppercase tracking-wide text-content-muted">{label}</dt>
+      <dd className="text-content-soft">{value}</dd>
     </div>
   );
 }
@@ -472,11 +472,11 @@ function PersonSkeleton() {
   return (
     <div className="container-wrapper px-4 pb-16 pt-28 md:pt-32">
       <div className="flex flex-col gap-8 md:flex-row md:items-start">
-        <div className="mx-auto aspect-[2/3] w-48 shrink-0 animate-pulse rounded-2xl bg-neutral-800/60 md:mx-0 md:w-64" />
+        <div className="mx-auto aspect-[2/3] w-48 shrink-0 animate-pulse rounded-2xl bg-surface-secondary/60 md:mx-0 md:w-64" />
         <div className="flex-1 space-y-4">
-          <div className="h-9 w-1/2 animate-pulse rounded bg-neutral-800/60" />
-          <div className="h-4 w-2/3 animate-pulse rounded bg-neutral-800/60" />
-          <div className="h-4 w-1/3 animate-pulse rounded bg-neutral-800/60" />
+          <div className="h-9 w-1/2 animate-pulse rounded bg-surface-secondary/60" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-surface-secondary/60" />
+          <div className="h-4 w-1/3 animate-pulse rounded bg-surface-secondary/60" />
         </div>
       </div>
     </div>

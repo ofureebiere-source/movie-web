@@ -81,7 +81,7 @@ export default function ContinueWatchingItem({
             title={tCard('removeFromRecent')}
             className="glass-btn glass-btn-icon absolute top-1.5 right-1.5 z-20 w-9 h-9 md:w-8 md:h-8 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto touch:opacity-100 touch:pointer-events-auto transition-opacity duration-200"
           >
-            <IoClose className="text-white text-base md:text-lg" />
+            <IoClose className="text-content-main text-base md:text-lg" />
           </button>
         )}
 
@@ -100,7 +100,7 @@ export default function ContinueWatchingItem({
         </div>
 
         {hasProgress && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 z-10">
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-surface-chip-hover z-10">
             <div className="h-full bg-[#e20913]" style={{ width: `${progressPct}%` }} />
           </div>
         )}

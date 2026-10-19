@@ -57,7 +57,7 @@ export default function MovieSummary({
       <div>
         <div className="limit-movie-summary" ref={contentRef}></div>
         {showAiBadge && (
-          <div className="mt-1 text-[10px] md:text-xs text-white/40 italic">
+          <div className="mt-1 text-[10px] md:text-xs text-content-muted/70 italic">
             {t('aiTranslated')}
           </div>
         )}
@@ -78,7 +78,7 @@ export default function MovieSummary({
         </button>
       )}
       {showAiBadge && (
-        <div className="mt-2 text-xs text-white/40 italic">{t('aiTranslated')}</div>
+        <div className="mt-2 text-xs text-content-muted/70 italic">{t('aiTranslated')}</div>
       )}
     </div>
   );

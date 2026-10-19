@@ -28,7 +28,7 @@ export default function NewUpdateBadge({
   if (diffHours < 0 || diffHours > thresholdHours) return null;
 
   return (
-    <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-red-600 text-white shadow animate-pulse">
+    <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase rounded bg-red-600 text-content-main shadow animate-pulse">
       {t('newBadge')}
     </span>
   );

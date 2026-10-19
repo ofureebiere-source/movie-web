@@ -31,12 +31,12 @@ export default function StreamNotice({
   const key = reason ?? 'unknown';
 
   return (
-    <div className="relative w-full aspect-video bg-black">
+    <div className="on-artwork relative w-full aspect-video bg-black">
       <div className="absolute inset-0 flex items-center justify-center px-6">
         <div className="max-w-md text-center">
           <IoWarningOutline size={36} className="mx-auto text-brand" />
-          <h2 className="mt-3 text-lg font-semibold text-white lg:text-xl">{t(`${key}.title`)}</h2>
-          <p className="mt-2 text-sm text-gray-300 lg:text-base">{t(`${key}.body`)}</p>
+          <h2 className="mt-3 text-lg font-semibold text-content-main lg:text-xl">{t(`${key}.title`)}</h2>
+          <p className="mt-2 text-sm text-content-soft lg:text-base">{t(`${key}.body`)}</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <button type="button" onClick={onRetry} disabled={isRetrying} className="glass-btn">
               <IoRefresh size={18} className={isRetrying ? 'animate-spin' : ''} />

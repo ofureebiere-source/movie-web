@@ -51,17 +51,17 @@ export default function CommentSection({ movie }: { movie: DetailMovie }) {
         <h3 className="flex items-center gap-2 text-lg font-bold lg:text-xl">
           {t('heading')}
           {!isFetchingComments && comments.length > 0 && (
-            <span className="text-sm font-normal text-gray-400">· {comments.length}</span>
+            <span className="text-sm font-normal text-content-muted">· {comments.length}</span>
           )}
         </h3>
 
         {!isFetchingComments && comments.length > 1 && (
-          <div className="flex items-center gap-1 rounded-lg border border-white/10 p-0.5 text-sm">
+          <div className="flex items-center gap-1 rounded-lg border border-line p-0.5 text-sm">
             <button
               type="button"
               onClick={() => setSort('newest')}
               className={`rounded-md px-3 py-2 transition-colors ${
-                sort === 'newest' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'
+                sort === 'newest' ? 'bg-surface-chip text-content-main' : 'text-content-muted hover:text-content-main'
               }`}
             >
               {t('sortNewest')}
@@ -70,7 +70,7 @@ export default function CommentSection({ movie }: { movie: DetailMovie }) {
               type="button"
               onClick={() => setSort('top')}
               className={`rounded-md px-3 py-2 transition-colors ${
-                sort === 'top' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'
+                sort === 'top' ? 'bg-surface-chip text-content-main' : 'text-content-muted hover:text-content-main'
               }`}
             >
               {t('sortTop')}
@@ -87,7 +87,7 @@ export default function CommentSection({ movie }: { movie: DetailMovie }) {
 
       {!isFetchingComments &&
         (comments.length === 0 ? (
-          <p className="py-4 text-sm text-gray-400">{t('empty')}</p>
+          <p className="py-4 text-sm text-content-muted">{t('empty')}</p>
         ) : (
           <Comments movie={movie} comments={sortedComments} setComments={setComments} />
         ))}

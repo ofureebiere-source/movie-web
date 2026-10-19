@@ -51,8 +51,8 @@ export default function HeaderNav({ onNavigate }: { onNavigate?: () => void }) {
   const pill = (active: boolean) =>
     `flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
       active
-        ? 'bg-white font-bold text-black shadow-sm'
-        : 'text-zinc-400 hover:bg-zinc-900/80 hover:text-white'
+        ? 'bg-content-main font-bold text-surface-primary shadow-sm'
+        : 'text-content-muted hover:bg-surface-secondary/80 hover:text-content-main'
     }`;
 
   return (
@@ -68,7 +68,7 @@ export default function HeaderNav({ onNavigate }: { onNavigate?: () => void }) {
             aria-current={active ? 'page' : undefined}
             className={pill(active)}
           >
-            <Icon className={`h-3.5 w-3.5 ${active ? 'text-black' : 'text-zinc-400'}`} />
+            <Icon className={`h-3.5 w-3.5 ${active ? 'text-surface-primary' : 'text-content-muted'}`} />
             <span>{t(item.key)}</span>
           </Link>
         );

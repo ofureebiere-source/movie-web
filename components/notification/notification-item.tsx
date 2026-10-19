@@ -28,7 +28,7 @@ export default function NotificationItem({ notification }: { notification: INoti
       }}
       href={`${window.location.origin}/movies/${notification.movieSlug}`}
       className={`${
-        !notification.read && 'bg-[#2a1313]'
+        !notification.read && 'bg-brand-muted'
       } flex pl-2 pr-4 py-2 items-center rounded-lg`}
     >
       <div className="h-12 w-12 mr-5 relative">
@@ -49,7 +49,7 @@ export default function NotificationItem({ notification }: { notification: INoti
           <b>{notification.userCreatedName}</b> {t('did')}
           {notification.type === 'react' ? t('liked') : t('replied')} {t('yourComment')}
         </p>
-        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+        <p className="text-xs font-semibold text-content-muted">
           {`${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
             .toString()
             .padStart(2, '0')}/${date.getFullYear()} lúc ${date

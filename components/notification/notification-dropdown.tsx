@@ -38,14 +38,14 @@ export default function NotificationDropDown({
   return (
     <div
       ref={notificationDropdownRef}
-      className="absolute bg-black/95 backdrop-blur-sm border border-gray-700 right-0 top-[3.625rem] min-w-[28rem] max-w-[32rem] rounded-xl shadow-2xl overflow-hidden z-50"
+      className="absolute bg-surface-primary/95 backdrop-blur-sm border border-line right-0 top-[3.625rem] min-w-[28rem] max-w-[32rem] rounded-xl shadow-2xl overflow-hidden z-50"
     >
       {/* Header */}
-      <div className="px-4 py-4 bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-b border-gray-600">
+      <div className="px-4 py-4 bg-gradient-to-r from-gray-800/50 to-gray-700/50 border-b border-line">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <IoNotifications className="text-white" size={20} />
-            <h3 className="text-white font-semibold text-lg">{t('title')}</h3>
+            <IoNotifications className="text-content-main" size={20} />
+            <h3 className="text-content-main font-semibold text-lg">{t('title')}</h3>
           </div>
           <div className="flex items-center space-x-2">
             {hasUnread && (
@@ -58,7 +58,7 @@ export default function NotificationDropDown({
               </button>
             )}
             <button
-              className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+              className="p-1.5 text-content-muted hover:text-content-main hover:bg-surface-chip rounded-lg transition-colors"
               onClick={() =>
                 setNotificationDropdownState({
                   isOpenInHeaderDefault: false,
@@ -78,9 +78,9 @@ export default function NotificationDropDown({
           <NotificationList notifications={notifications} />
         ) : (
           <div className="flex flex-col items-center justify-center py-12 px-6">
-            <IoNotifications className="text-gray-500 mb-3" size={48} />
-            <p className="text-gray-400 text-center">{t('empty')}</p>
-            <p className="text-gray-500 text-sm text-center mt-1">{t('emptySubtitle')}</p>
+            <IoNotifications className="text-content-muted mb-3" size={48} />
+            <p className="text-content-muted text-center">{t('empty')}</p>
+            <p className="text-content-muted text-sm text-center mt-1">{t('emptySubtitle')}</p>
           </div>
         )}
       </div>

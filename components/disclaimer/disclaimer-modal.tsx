@@ -37,7 +37,7 @@ export default function DisclaimerModal() {
 
   return (
     <div
-      className="fixed inset-0 flex justify-center items-center z-50 px-4"
+      className="on-artwork fixed inset-0 flex justify-center items-center z-50 px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="disclaimer-modal-title"
@@ -65,24 +65,24 @@ export default function DisclaimerModal() {
           showAnimation ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 translate-y-2'
         }`}
       >
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#141414] to-[#0a0a0a] border border-white/[0.06] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-[#141414] to-[#0a0a0a] border border-line shadow-[0_30px_80px_-20px_rgba(0,0,0,0.9)]">
           <div className="relative px-9 pt-10 pb-8">
             <div className="flex justify-center mb-7">
               <Image src={Logo} alt="Logo" className="w-11 h-11" />
             </div>
 
-            <p className="text-center text-[10px] font-medium tracking-[0.32em] uppercase text-white/40 mb-4">
+            <p className="text-center text-[10px] font-medium tracking-[0.32em] uppercase text-content-muted/70 mb-4">
               {t('eyebrow')}
             </p>
 
             <h2
               id="disclaimer-modal-title"
-              className="text-center text-white text-[26px] font-semibold tracking-tight mb-3"
+              className="text-center text-content-main text-[26px] font-semibold tracking-tight mb-3"
             >
               {t('title')}
             </h2>
 
-            <p className="text-center text-white/55 text-[13.5px] leading-relaxed mb-8 max-w-sm mx-auto">
+            <p className="text-center text-content-muted text-[13.5px] leading-relaxed mb-8 max-w-sm mx-auto">
               {t('intro')}
             </p>
 
@@ -90,10 +90,10 @@ export default function DisclaimerModal() {
               {features.map(({ Icon, label }, index) => (
                 <li
                   key={index}
-                  className="flex items-center gap-4 text-white/85 text-[13px] leading-relaxed"
+                  className="flex items-center gap-4 text-content-main/85 text-[13px] leading-relaxed"
                 >
-                  <span className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.05]">
-                    <Icon className="w-[15px] h-[15px] text-white/75" />
+                  <span className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full bg-surface-chip">
+                    <Icon className="w-[15px] h-[15px] text-content-main/75" />
                   </span>
                   <span>{label}</span>
                 </li>
@@ -110,7 +110,7 @@ export default function DisclaimerModal() {
 
             <a
               href={`mailto:${SUPPORT_EMAIL}?subject=Copyright%20concern`}
-              className="block w-full text-center text-white/40 hover:text-white/80 text-xs tracking-wide py-3 mt-1.5 transition-colors"
+              className="block w-full text-center text-content-muted/70 hover:text-content-main/80 text-xs tracking-wide py-3 mt-1.5 transition-colors"
             >
               {t('learnMore')}
             </a>

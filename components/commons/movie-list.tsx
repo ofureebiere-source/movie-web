@@ -42,18 +42,18 @@ export default function MovieList({
     <div className="flex items-end justify-between gap-4">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold tracking-tight text-white sm:text-xl">{listName}</h2>
-          <span className="inline-flex items-center rounded-md bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] text-zinc-400">
+          <h2 className="text-lg font-bold tracking-tight text-content-main sm:text-xl">{listName}</h2>
+          <span className="inline-flex items-center rounded-md bg-surface-secondary px-1.5 py-0.5 font-mono text-[10px] text-content-muted">
             {movies.length}
           </span>
         </div>
-        {subtitle && <p className="mt-1 truncate text-xs text-zinc-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 truncate text-xs text-content-muted/70">{subtitle}</p>}
       </div>
       {href && (
         <Link
           href={href}
           prefetch={false}
-          className="shrink-0 text-xs font-medium text-zinc-400 transition-colors hover:text-white"
+          className="shrink-0 text-xs font-medium text-content-muted transition-colors hover:text-content-main"
         >
           {listName}
         </Link>
@@ -106,7 +106,7 @@ export default function MovieList({
         >
           <GrPrevious
             size={42}
-            className="text-white drop-shadow-lg ml-2 hover:scale-125 transition-transform duration-200"
+            className="text-content-main drop-shadow-lg ml-2 hover:scale-125 transition-transform duration-200"
           />
         </button>
         <button
@@ -117,7 +117,7 @@ export default function MovieList({
         >
           <GrNext
             size={42}
-            className="text-white drop-shadow-lg mr-2 hover:scale-125 transition-transform duration-200"
+            className="text-content-main drop-shadow-lg mr-2 hover:scale-125 transition-transform duration-200"
           />
         </button>
 
@@ -126,17 +126,17 @@ export default function MovieList({
           type="button"
           aria-label="Previous"
           onClick={handlePrevSlide}
-          className="absolute flex lg:hidden items-center justify-center top-1/2 left-2 -translate-y-1/2 w-9 h-9 bg-black/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
+          className="absolute flex lg:hidden items-center justify-center top-1/2 left-2 -translate-y-1/2 w-9 h-9 bg-surface-primary/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
         >
-          <GrPrevious size={18} className="text-white" />
+          <GrPrevious size={18} className="text-content-main" />
         </button>
         <button
           type="button"
           aria-label="Next"
           onClick={handleNextSlide}
-          className="absolute flex lg:hidden items-center justify-center top-1/2 right-2 -translate-y-1/2 w-9 h-9 bg-black/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
+          className="absolute flex lg:hidden items-center justify-center top-1/2 right-2 -translate-y-1/2 w-9 h-9 bg-surface-primary/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
         >
-          <GrNext size={18} className="text-white" />
+          <GrNext size={18} className="text-content-main" />
         </button>
       </Swiper>
     </div>

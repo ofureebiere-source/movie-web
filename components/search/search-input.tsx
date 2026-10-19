@@ -33,10 +33,10 @@ export default function SearchInput() {
 
   return (
     <div className="relative h-full w-full">
-      <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+      <FaSearch className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-content-muted" />
       <input
         type="text"
-        className="h-full w-full rounded-lg border border-white/10 bg-white/5 pl-11 pr-4 text-base text-white outline-none transition-colors placeholder:text-gray-500 focus:border-brand lg:text-lg"
+        className="h-full w-full rounded-lg border border-line bg-surface-chip pl-11 pr-4 text-base text-content-main outline-none transition-colors placeholder:text-content-muted focus:border-brand lg:text-lg"
         placeholder={t('searchPlaceholder')}
         onChange={(e) => setInputValue(e.target.value)}
         defaultValue={searchParams.get('name')?.toString()}

@@ -234,6 +234,17 @@ export const QualityIcon = ({ size = 24, ...rest }: IconProps) => (
   </svg>
 );
 
+export const BrightnessIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth={2} />
+    <path
+      d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+    />
+  </svg>
+);
 export const EqualizerIcon = ({ size = 24, ...rest }: IconProps) => (
   <svg {...base(size)} {...rest}>
     <path
@@ -261,6 +272,18 @@ export const MaximizeAudioIcon = ({ size = 24, ...rest }: IconProps) => (
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
+    />
+  </svg>
+);
+
+export const TrashIcon = ({ size = 24, ...rest }: IconProps) => (
+  <svg {...base(size)} {...rest}>
+    <path
+      d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </svg>
 );

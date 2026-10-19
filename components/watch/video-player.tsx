@@ -13,6 +13,7 @@ import type {
   PlayerMeta,
   PlayerProviderOption,
   PlayerServer,
+  PlayerSubtitleOption,
 } from './video-controls/player-context';
 
 /** Resume-prompt data, surfaced as a top-center card inside the player. */
@@ -27,6 +28,19 @@ export type ResumePrompt = {
 
 type VideoPlayerProps = {
   videoUrl: string;
+  /**
+   * Start playback as soon as the stream is ready, without a second press.
+   *
+   * Set when the player is opened from a Play button elsewhere on the page
+   * (the detail page's "Watch", the carousel's "Watch now"). The viewer has
+   * already made the decision, so the pre-play poster must not ask again —
+   * it would otherwise demand a second press after the resolver finishes,
+   * which is the pause the viewer actually notices.
+   *
+   * Left off for a cold load of `/movies/watch/<slug>`, where the poster is
+   * the first thing the viewer sees and is the right thing to show.
+   */
+  autoPlay?: boolean;
   thumbnail: string;
   /** Responsive candidates for `thumbnail` (TMDB backdrops), when available. */
   thumbnailSrcSet?: string;
@@ -40,6 +54,13 @@ type VideoPlayerProps = {
   onSwitchLanguage: (newServerIndex: number) => void;
   nextEpisode: NextEpisodePreview | null;
   onNextEpisode: () => void;
+
+  /**
+   * Catalogue subtitle tracks. Rendered as `<track>` children of the <video>,
+   * which is the only place they can live — the controls overlay deliberately
+   * does not own the element's markup.
+   */
+  subtitles?: PlayerSubtitleOption[];
 
   // Server (aggregator provider) selection — passes through to the overlay.
   playbackProviders: PlayerProviderOption[];
@@ -64,6 +85,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
   (
     {
       videoUrl,
+      autoPlay = false,
       thumbnail,
       thumbnailSrcSet,
       videoProgress,
@@ -74,6 +96,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       onSwitchLanguage,
       nextEpisode,
       onNextEpisode,
+      subtitles = [],
       playbackProviders,
       currentPlaybackProviderId,
       onSelectPlaybackProvider,
@@ -92,6 +115,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     // then, the custom controls overlay stays disabled so the poster + FaPlay
     // CTA owns the surface (matches the previous UX).
     const [hasStarted, setHasStarted] = useState<boolean>(false);
+    // Guards the auto-start so it fires once per stream. Reset whenever the
+    // stream changes, so an episode or language switch auto-starts too.
+    const autoStarted = useRef(false);
     const onFatalErrorRef = useRef(onFatalError);
     onFatalErrorRef.current = onFatalError;
 
@@ -111,6 +137,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       if (!video) return;
 
       setIsCanPlay(false);
+      autoStarted.current = false;
       // Only reset hasStarted when there's no pending resume. A language
       // switch sets `videoProgress` to the previous currentTime to preserve
       // playback context — in that case we want to skip the poster.
@@ -179,6 +206,33 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       }
     }, [videoProgress, getVideo]);
 
+    // Auto-start for an externally-triggered open. Waits for the stream to be
+    // genuinely playable rather than firing at mount, so `play()` is not
+    // rejected for lack of data — that rejection is what would strand the
+    // viewer on the poster and force the second press this exists to remove.
+    useEffect(() => {
+      if (!autoPlay || autoStarted.current) return;
+      const video = getVideo();
+      if (!video || !videoUrl) return;
+      if (video.readyState < 3 && !isCanPlay) return;
+
+      autoStarted.current = true;
+      video
+        .play()
+        .then(() => {
+          overlay.current?.classList.add('hidden');
+          setHasStarted(true);
+          // Mirror the manual Play path: on touch, the press that opened the
+          // player also lands it in fullscreen-landscape.
+          if (isTouchDevice()) requestVideoFullscreen(containerRef.current, video);
+        })
+        .catch(() => {
+          // Refused (e.g. a cold load with no user activation yet). Hand the
+          // poster CTA back so the viewer is never stuck on a silent still.
+          autoStarted.current = false;
+        });
+    }, [autoPlay, isCanPlay, videoUrl, getVideo]);
+
     const handleCanPlayThrough = useCallback(() => {
       setIsCanPlay(true);
     }, []);
@@ -214,7 +268,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       // shadow. `overflow-hidden` is what lets the corners clip the video.
       <div
         ref={containerRef}
-        className="relative isolate aspect-video w-full overflow-hidden border-y border-line bg-black shadow-2xl sm:rounded-2xl sm:border"
+        className="on-artwork relative isolate aspect-video w-full overflow-hidden border-y border-line bg-black shadow-2xl sm:rounded-2xl sm:border"
       >
         <video
           ref={videoRef}
@@ -227,7 +281,20 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           // `access-control-allow-origin: *`, so the request succeeds.
           crossOrigin="anonymous"
           className="absolute inset-0 h-full w-full"
-        />
+        >
+          {/* Catalogue subtitles. `default` is left off every track: the
+              overlay decides which one shows (and remembers it), so the
+              element must not pick one itself. */}
+          {subtitles.map((track) => (
+            <track
+              key={track.id}
+              kind="subtitles"
+              src={track.src}
+              srcLang={track.lang}
+              label={track.label}
+            />
+          ))}
+        </video>
 
         <VideoControlsOverlay
           videoRef={videoRef as React.RefObject<HTMLVideoElement | null>}
@@ -243,6 +310,7 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           playbackProviders={playbackProviders}
           currentPlaybackProviderId={currentPlaybackProviderId}
           onSelectPlaybackProvider={onSelectPlaybackProvider}
+          subtitles={subtitles}
           disabled={!hasStarted}
         />
 

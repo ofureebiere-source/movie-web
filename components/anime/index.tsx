@@ -117,7 +117,7 @@ export default function AnimePage() {
       {/* Page heading */}
       <div className="container-wrapper px-4 pt-4 sm:px-6 md:px-8 lg:px-0 lg:pt-8">
         <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{t('title')}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-gray-400 lg:text-base">{t('subtitle')}</p>
+        <p className="mt-1 max-w-2xl text-sm text-content-muted lg:text-base">{t('subtitle')}</p>
       </div>
 
       {/* The shelf wall. Hidden once a filter is active: the visitor is no
@@ -127,10 +127,10 @@ export default function AnimePage() {
           {rails === null
             ? ANIME_RAIL_SLUGS.map((slug) => (
                 <div key={slug} className="container-wrapper space-y-4">
-                  <div className="mx-4 h-6 w-40 animate-pulse rounded bg-white/10 md:mx-0" />
+                  <div className="mx-4 h-6 w-40 animate-pulse rounded bg-surface-chip md:mx-0" />
                   <div className="grid grid-cols-2 gap-4 px-4 sm:grid-cols-3 md:px-0 lg:grid-cols-5">
                     {Array.from({ length: 5 }).map((_, i) => (
-                      <div key={i} className="aspect-[2/3] animate-pulse rounded-lg bg-white/5" />
+                      <div key={i} className="aspect-[2/3] animate-pulse rounded-lg bg-surface-chip" />
                     ))}
                   </div>
                 </div>
@@ -151,7 +151,7 @@ export default function AnimePage() {
 
       {/* Full catalogue, with its controls */}
       <div className="container-wrapper px-4 sm:px-6 md:px-8 lg:px-0">
-        <div className="border-t border-white/10 pt-6">
+        <div className="border-t border-line pt-6">
           <h2 className="mb-4 text-lg font-bold lg:text-xl">{t('browseAll')}</h2>
           <AnimeFilterBar
             filters={filters}
@@ -165,7 +165,7 @@ export default function AnimePage() {
       {isLoading ? (
         <MovieGridLoadMoreSkeleton count={20} />
       ) : sorted.length === 0 ? (
-        <p className="container-wrapper px-4 py-12 text-center text-sm text-gray-400">
+        <p className="container-wrapper px-4 py-12 text-center text-sm text-content-muted">
           {t('noResults')}
         </p>
       ) : (

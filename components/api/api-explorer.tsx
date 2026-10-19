@@ -109,48 +109,48 @@ export default function ApiExplorer() {
             }}
             className={`flex w-full items-center gap-2 rounded-lg border px-3 py-2.5 text-left transition-all ${
               i === active
-                ? 'border-white/20 bg-surface-card'
+                ? 'border-line bg-surface-card'
                 : 'border-line bg-surface-secondary hover:border-line-hover'
             }`}
           >
             <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-400">
               {e.method}
             </span>
-            <span className="truncate font-mono text-xs text-zinc-200">{e.path}</span>
+            <span className="truncate font-mono text-xs text-content-main">{e.path}</span>
           </button>
         ))}
       </div>
 
       {/* Request / response */}
       <div className="space-y-3 rounded-xl border border-line bg-surface-card p-4">
-        <p className="text-xs leading-relaxed text-zinc-400">
+        <p className="text-xs leading-relaxed text-content-muted">
           {t(`endpoints.${endpoint.summaryKey}`)}
         </p>
 
         <div className="grid gap-2 sm:grid-cols-2">
           {endpoint.summaryKey === 'catalog' && (
             <label className="space-y-1 sm:col-span-2">
-              <span className="font-mono text-[10px] uppercase tracking-wide text-zinc-500">
+              <span className="font-mono text-[10px] uppercase tracking-wide text-content-muted/70">
                 {t('upstreamPath')}
               </span>
               <input
                 value={values['path'] ?? ''}
                 onChange={(e) => setValue('path', e.target.value)}
                 placeholder="api/search"
-                className="w-full rounded-lg border border-line bg-black px-3 py-2 font-mono text-xs text-white outline-none focus:border-line-hover"
+                className="w-full rounded-lg border border-line bg-surface-primary px-3 py-2 font-mono text-xs text-content-main outline-none focus:border-line-hover"
               />
             </label>
           )}
           {endpoint.params.map((p) => (
             <label key={p.name} className="space-y-1">
-              <span className="font-mono text-[10px] uppercase tracking-wide text-zinc-500">
+              <span className="font-mono text-[10px] uppercase tracking-wide text-content-muted/70">
                 {p.name}
                 {p.required && <span className="text-rose-400"> *</span>}
               </span>
               <input
                 value={values[p.name] ?? ''}
                 onChange={(e) => setValue(p.name, e.target.value)}
-                className="w-full rounded-lg border border-line bg-black px-3 py-2 font-mono text-xs text-white outline-none focus:border-line-hover"
+                className="w-full rounded-lg border border-line bg-surface-primary px-3 py-2 font-mono text-xs text-content-main outline-none focus:border-line-hover"
               />
             </label>
           ))}
@@ -159,12 +159,12 @@ export default function ApiExplorer() {
         <button
           type="button"
           onClick={run}
-          className="rounded-lg border border-white/20 bg-white px-3 py-1.5 text-xs font-bold text-black transition-opacity hover:opacity-90"
+          className="rounded-lg border border-line bg-content-main px-3 py-1.5 text-xs font-bold text-surface-primary transition-opacity hover:opacity-90"
         >
           {t('send')}
         </button>
 
-        <pre className="max-h-72 overflow-auto rounded-lg border border-line bg-black p-3 font-mono text-[11px] leading-relaxed text-zinc-300">
+        <pre className="max-h-72 overflow-auto rounded-lg border border-line bg-surface-primary p-3 font-mono text-[11px] leading-relaxed text-content-soft">
           {status === 'loading' ? t('sending') : result || `// ${t('responsePlaceholder')}`}
         </pre>
       </div>

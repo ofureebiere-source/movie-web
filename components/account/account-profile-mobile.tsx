@@ -34,27 +34,27 @@ export default function AccountProfileMobile({
     <div className="pt-4">
       {/* User Profile Header */}
       <div
-        className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 cursor-pointer hover:bg-gray-800/50 transition-colors"
+        className="flex items-center justify-between p-3 rounded-lg bg-surface-secondary/50 cursor-pointer hover:bg-surface-chip transition-colors"
         onClick={toggleExpanded}
       >
         <div className="flex items-center space-x-3">
           <Image
             src={authenticatedUser.photo || AccountDefaultImg}
             alt="User Profile"
-            className="rounded-full border-2 border-gray-600"
+            className="rounded-full border-2 border-line"
             width={40}
             height={40}
           />
           <div className="flex-1 min-w-0">
-            <p className="text-white font-medium text-sm truncate">
+            <p className="text-content-main font-medium text-sm truncate">
               {authenticatedUser.name || SITE_NAME}
             </p>
           </div>
         </div>
         {isExpanded ? (
-          <IoChevronUp className="text-gray-400" size={20} />
+          <IoChevronUp className="text-content-muted" size={20} />
         ) : (
-          <IoChevronDown className="text-gray-400" size={20} />
+          <IoChevronDown className="text-content-muted" size={20} />
         )}
       </div>
 
@@ -65,7 +65,7 @@ export default function AccountProfileMobile({
           <Link
             href="/movies/collection"
             onClick={onCloseMenu}
-            className="flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+            className="flex items-center space-x-3 p-3 rounded-lg text-content-soft hover:text-content-main hover:bg-surface-chip transition-colors"
           >
             <IoBookmark size={18} />
             <span className="text-sm font-medium">{t('collection')}</span>
@@ -75,7 +75,7 @@ export default function AccountProfileMobile({
           <Link
             href="/movies/recent"
             onClick={onCloseMenu}
-            className="flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+            className="flex items-center space-x-3 p-3 rounded-lg text-content-soft hover:text-content-main hover:bg-surface-chip transition-colors"
           >
             <IoTime size={18} />
             <span className="text-sm font-medium">{t('recent')}</span>
@@ -85,7 +85,7 @@ export default function AccountProfileMobile({
           <Link
             href="/profile"
             onClick={onCloseMenu}
-            className="flex items-center space-x-3 p-3 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+            className="flex items-center space-x-3 p-3 rounded-lg text-content-soft hover:text-content-main hover:bg-surface-chip transition-colors"
           >
             <IoPerson size={18} />
             <span className="text-sm font-medium">{t('profile')}</span>

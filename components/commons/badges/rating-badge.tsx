@@ -32,7 +32,7 @@ export default function RatingBadge({ imdb, tmdb, hideIfEmpty = true }: RatingBa
         </span>
       )}
       {showTmdb && (
-        <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-600 text-white">
+        <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-600 text-content-main">
           <FaStar className="text-[10px]" />
           {tmdb!.vote_average.toFixed(1)}
         </span>

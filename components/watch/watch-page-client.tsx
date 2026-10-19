@@ -74,7 +74,7 @@ export default function WatchPageClient({ slug }: { slug: string }) {
   }
 
   if (!movie) {
-    return <div className="min-h-screen animate-pulse bg-neutral-900" />;
+    return <div className="min-h-screen animate-pulse bg-surface-secondary" />;
   }
 
   return <MovieWatchPage movie={movie} />;

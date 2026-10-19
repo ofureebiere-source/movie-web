@@ -48,6 +48,9 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
     setFitMode,
     subtitleStyle,
     setSubtitleStyle,
+    subtitles,
+    currentSubtitleId,
+    setSubtitleId,
     audio,
     playbackProviders,
     currentPlaybackProviderId,
@@ -181,13 +184,17 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
               trailing={<ChevronRightIcon size={18} />}
             />
           )}
-          {hls.subtitleTracks.length > 0 && (
+          {(hls.subtitleTracks.length > 0 || subtitles.length > 0) && (
             <Row
               label={t('settings.subtitle')}
               value={
-                hls.currentSubtitleTrack < 0
-                  ? t('settings.subtitleOff')
-                  : hls.subtitleTracks.find((s) => s.id === hls.currentSubtitleTrack)?.label ?? ''
+                subtitles.length > 0
+                  ? currentSubtitleId < 0
+                    ? t('settings.subtitleOff')
+                    : subtitles.find((s) => s.id === currentSubtitleId)?.label ?? ''
+                  : hls.currentSubtitleTrack < 0
+                    ? t('settings.subtitleOff')
+                    : hls.subtitleTracks.find((s) => s.id === hls.currentSubtitleTrack)?.label ?? ''
               }
               onClick={() => setPanel('subtitle')}
               trailing={<ChevronRightIcon size={18} />}
@@ -324,19 +331,42 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
         {/* Subtitle panel — track choice plus appearance sliders. */}
         <Panel active={panel === 'subtitle'} direction="right">
           <BackHeader title={t('settings.subtitle')} onBack={() => setPanel('root')} />
-          <RadioRow
-            label={t('settings.subtitleOff')}
-            selected={hls.currentSubtitleTrack < 0}
-            onClick={() => hls.setSubtitleTrack(-1)}
-          />
-          {hls.subtitleTracks.map((trk) => (
-            <RadioRow
-              key={trk.id}
-              label={trk.label}
-              selected={hls.currentSubtitleTrack === trk.id}
-              onClick={() => hls.setSubtitleTrack(trk.id)}
-            />
-          ))}
+          {/* Catalogue tracks first: they are the ones that actually exist for
+              most titles here. The manifest's own tracks follow, for the
+              streams that carry them. */}
+          {subtitles.length > 0 ? (
+            <>
+              <RadioRow
+                label={t('settings.subtitleOff')}
+                selected={currentSubtitleId < 0}
+                onClick={() => setSubtitleId(-1)}
+              />
+              {subtitles.map((trk) => (
+                <RadioRow
+                  key={trk.id}
+                  label={trk.label}
+                  selected={currentSubtitleId === trk.id}
+                  onClick={() => setSubtitleId(trk.id)}
+                />
+              ))}
+            </>
+          ) : (
+            <>
+              <RadioRow
+                label={t('settings.subtitleOff')}
+                selected={hls.currentSubtitleTrack < 0}
+                onClick={() => hls.setSubtitleTrack(-1)}
+              />
+              {hls.subtitleTracks.map((trk) => (
+                <RadioRow
+                  key={trk.id}
+                  label={trk.label}
+                  selected={hls.currentSubtitleTrack === trk.id}
+                  onClick={() => hls.setSubtitleTrack(trk.id)}
+                />
+              ))}
+            </>
+          )}
           <Divider />
           <SliderRow
             label={t('settings.subScale')}

@@ -101,7 +101,7 @@ export default function ContinueWatchingSection() {
         >
           <GrPrevious
             size={42}
-            className="text-white drop-shadow-lg ml-2 hover:scale-125 transition-transform duration-200"
+            className="text-content-main drop-shadow-lg ml-2 hover:scale-125 transition-transform duration-200"
           />
         </button>
         <button
@@ -112,7 +112,7 @@ export default function ContinueWatchingSection() {
         >
           <GrNext
             size={42}
-            className="text-white drop-shadow-lg mr-2 hover:scale-125 transition-transform duration-200"
+            className="text-content-main drop-shadow-lg mr-2 hover:scale-125 transition-transform duration-200"
           />
         </button>
 
@@ -120,17 +120,17 @@ export default function ContinueWatchingSection() {
           type="button"
           aria-label="Previous"
           onClick={handlePrevSlide}
-          className="absolute flex lg:hidden items-center justify-center top-1/2 left-2 -translate-y-1/2 w-9 h-9 bg-black/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
+          className="absolute flex lg:hidden items-center justify-center top-1/2 left-2 -translate-y-1/2 w-9 h-9 bg-surface-primary/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
         >
-          <GrPrevious size={18} className="text-white" />
+          <GrPrevious size={18} className="text-content-main" />
         </button>
         <button
           type="button"
           aria-label="Next"
           onClick={handleNextSlide}
-          className="absolute flex lg:hidden items-center justify-center top-1/2 right-2 -translate-y-1/2 w-9 h-9 bg-black/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
+          className="absolute flex lg:hidden items-center justify-center top-1/2 right-2 -translate-y-1/2 w-9 h-9 bg-surface-primary/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
         >
-          <GrNext size={18} className="text-white" />
+          <GrNext size={18} className="text-content-main" />
         </button>
       </Swiper>
     </div>

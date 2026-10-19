@@ -20,8 +20,8 @@ export default function Profile() {
       <div className="pt-20 lg:pt-32 container-wrapper-movie h-full px-4 lg:px-0">
         <div className="flex justify-center items-center py-20">
           <div className="text-center">
-            <h2 className="text-white text-xl font-semibold mb-4">{t('loginRequired.title')}</h2>
-            <p className="text-gray-400">{t('loginRequired.message')}</p>
+            <h2 className="text-content-main text-xl font-semibold mb-4">{t('loginRequired.title')}</h2>
+            <p className="text-content-muted">{t('loginRequired.message')}</p>
           </div>
         </div>
       </div>
@@ -46,15 +46,15 @@ export default function Profile() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-2">{t('page.title')}</h1>
-          <p className="text-gray-400">{t('page.subtitle')}</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-content-main mb-2">{t('page.title')}</h1>
+          <p className="text-content-muted">{t('page.subtitle')}</p>
         </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="bg-black/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4 lg:p-6">
+            <div className="bg-surface-primary/50 backdrop-blur-sm border border-line rounded-xl p-4 lg:p-6">
               {/* Menu Items — horizontal scroll strip on mobile, vertical sidebar on lg */}
               <nav className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0">
                 {[
@@ -69,7 +69,7 @@ export default function Profile() {
                       key={item.id}
                       onClick={() => setActiveSection(item.id as ProfileSection)}
                       className={`glass-btn glass-btn-sm min-h-[44px] flex-shrink-0 rounded-lg lg:w-full lg:justify-start ${
-                        isActive ? 'glass-btn-primary' : 'text-gray-300 hover:text-white'
+                        isActive ? 'glass-btn-primary' : 'text-content-soft hover:text-content-main'
                       }`}
                     >
                       {item.label}
@@ -82,7 +82,7 @@ export default function Profile() {
 
           {/* Content Area */}
           <div className="lg:col-span-3">
-            <div className="bg-black/50 backdrop-blur-sm border border-gray-700 rounded-xl p-6 lg:p-8">
+            <div className="bg-surface-primary/50 backdrop-blur-sm border border-line rounded-xl p-6 lg:p-8">
               {renderActiveSection()}
             </div>
           </div>

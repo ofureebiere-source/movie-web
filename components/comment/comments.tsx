@@ -14,7 +14,7 @@ export default function Comments({
   if (comments.length === 0) return null;
 
   return (
-    <div className="divide-y divide-white/5">
+    <div className="divide-y divide-line">
       {comments.map((comment: IComment, index: number) => (
         <Comment
           key={comment.id ?? index}

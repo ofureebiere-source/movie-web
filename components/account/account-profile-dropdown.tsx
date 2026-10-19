@@ -46,14 +46,14 @@ export default function AccountProfileDropdown({ authenticatedUser }: { authenti
   return (
     <div
       ref={accountDropdownRef}
-      className="absolute bg-black/95 backdrop-blur-sm border border-gray-700 right-0 top-[3.625rem] min-w-[16rem] max-w-[20rem] rounded-xl shadow-2xl overflow-hidden z-50"
+      className="absolute bg-surface-primary/95 backdrop-blur-sm border border-line right-0 top-[3.625rem] min-w-[16rem] max-w-[20rem] rounded-xl shadow-2xl overflow-hidden z-50"
     >
       {/* Menu Items */}
       <div className="py-2">
         {/* Collection Link */}
         <Link
           href="/movies/collection"
-          className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+          className="flex items-center space-x-3 px-4 py-3 text-content-soft hover:text-content-main hover:bg-surface-chip transition-colors"
           onClick={close}
         >
           <IoBookmark size={18} />
@@ -63,7 +63,7 @@ export default function AccountProfileDropdown({ authenticatedUser }: { authenti
         {/* Recent Movies Link */}
         <Link
           href="/movies/recent"
-          className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+          className="flex items-center space-x-3 px-4 py-3 text-content-soft hover:text-content-main hover:bg-surface-chip transition-colors"
           onClick={close}
         >
           <IoTime size={18} />
@@ -73,7 +73,7 @@ export default function AccountProfileDropdown({ authenticatedUser }: { authenti
         {/* Profile Link */}
         <Link
           href="/profile"
-          className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-800/50 transition-colors"
+          className="flex items-center space-x-3 px-4 py-3 text-content-soft hover:text-content-main hover:bg-surface-chip transition-colors"
           onClick={close}
         >
           <IoPerson size={18} />

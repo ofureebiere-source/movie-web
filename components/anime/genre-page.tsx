@@ -71,7 +71,7 @@ export default function AnimeGenrePage({ slug }: { slug: string }) {
       <div className="container-wrapper px-4 pt-4 sm:px-6 md:px-8 lg:px-0 lg:pt-8">
         <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">{t(`genres.${genre.key}`)}</h1>
         {totalItems !== null && (
-          <p className="mt-1 text-sm text-gray-400">{t('titleCount', { count: totalItems })}</p>
+          <p className="mt-1 text-sm text-content-muted">{t('titleCount', { count: totalItems })}</p>
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -91,7 +91,7 @@ export default function AnimeGenrePage({ slug }: { slug: string }) {
           ))}
         </div>
 
-        <div className="mt-6 border-t border-white/10 pt-4">
+        <div className="mt-6 border-t border-line pt-4">
           <AnimeFilterBar
             filters={filters}
             onChange={changeFilter}

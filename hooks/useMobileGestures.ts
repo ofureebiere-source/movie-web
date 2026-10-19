@@ -4,12 +4,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlayerActions, PlayerState } from './usePlayerState';
 
 /**
- * Mobile-only touch gestures over the player surface:
- *   - Horizontal swipe → scrub with HUD ("+15s")
- *   - Vertical swipe on right half → volume
- *   - Vertical swipe on left half → brightness (CSS filter overlay — real
- *     device brightness is not web-accessible)
+ * Gestures over the player surface:
+ *   - Horizontal drag → scrub, with a time HUD ("+15s")
+ *   - Vertical drag on the RIGHT half → volume, with a level meter
+ *   - Vertical drag on the LEFT half → brightness, with a level meter
+ *     (a CSS filter — real device brightness is not web-accessible)
  *   - Pinch-out → fullscreen
+ *
+ * The two vertical gestures follow the convention every phone video player
+ * uses: the side you touch decides what you are changing, and dragging up
+ * increases it. The HUD reports which side and by how much, so the gesture is
+ * legible the first time someone uses it rather than something to be learned.
+ *
+ * Touch is the trigger. A mouse drag would fight the click-to-toggle and
+ * double-click-to-fullscreen handlers on the same surface, so pointer input
+ * from a mouse or pen is left to those.
  *
  * Activation thresholds avoid hijacking the user's intent on small movements.
  * Gestures are suppressed while `isLocked` is true.
@@ -41,6 +50,8 @@ export interface UseMobileGesturesReturn {
     | { kind: 'scrub'; targetTime: number; delta: number }
     | { kind: 'volume'; value: number }
     | { kind: 'brightness'; value: number };
+  /** True while a vertical brightness/volume drag is in progress. */
+  adjusting: boolean;
 }
 
 interface Pointer {
@@ -60,6 +71,7 @@ export function useMobileGestures({
 }: UseMobileGesturesOptions): UseMobileGesturesReturn {
   const [brightness, setBrightness] = useState(1);
   const [hud, setHud] = useState<UseMobileGesturesReturn['hud']>(null);
+  const [adjusting, setAdjusting] = useState(false);
   const pointersRef = useRef<Map<number, Pointer>>(new Map());
   const modeRef = useRef<Mode>(null);
   const startStateRef = useRef<{
@@ -173,6 +185,7 @@ export function useMobileGestures({
           Math.min(1, start.volume - dy * VOLUME_PER_PX_AT_REF_H * heightScale)
         );
         actions.setVolume(next);
+        setAdjusting(true);
         setHud({ kind: 'volume', value: next });
       } else if (modeRef.current === 'brightness') {
         const next = Math.max(
@@ -180,6 +193,7 @@ export function useMobileGestures({
           Math.min(BRIGHTNESS_MAX, start.brightness - dy * BRIGHTNESS_PER_PX_AT_REF_H * heightScale)
         );
         setBrightness(next);
+        setAdjusting(true);
         setHud({ kind: 'brightness', value: next });
       }
     };
@@ -197,6 +211,7 @@ export function useMobileGestures({
       if (pointersRef.current.size === 0) {
         modeRef.current = null;
         startStateRef.current = null;
+        setAdjusting(false);
         scheduleHudHide();
       }
     };
@@ -214,5 +229,5 @@ export function useMobileGestures({
     };
   }, [containerRef, enabled, actions, hud, scheduleHudHide]);
 
-  return { brightness, hud };
+  return { brightness, hud, adjusting };
 }

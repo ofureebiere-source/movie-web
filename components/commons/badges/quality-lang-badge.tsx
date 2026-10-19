@@ -37,7 +37,7 @@ export default function QualityLangBadge({ quality, lang }: QualityLangBadgeProp
   const label = [shortLang, quality].filter(Boolean).join(' · ');
 
   return (
-    <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-custome-red text-white rounded">
+    <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-custome-red text-content-main rounded">
       {label}
     </span>
   );

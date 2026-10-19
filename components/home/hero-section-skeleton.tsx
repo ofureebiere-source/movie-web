@@ -12,9 +12,9 @@
  */
 export default function HeroSectionSkeleton() {
   return (
-    <div className="relative w-full">
+    <div className="relative w-full on-artwork">
       {/* ===== Desktop layout — mirrors HeroMovieItem desktop block ===== */}
-      <div className="hidden lg:block container-wrapper relative w-full lg:h-screen bg-neutral-900 overflow-hidden">
+      <div className="hidden lg:block container-wrapper relative w-full lg:h-screen bg-surface-secondary overflow-hidden">
         {/* Match real hero gradient overlays so background tone is consistent */}
         <div className="absolute inset-0 bg-black opacity-45"></div>
         <div className="absolute inset-0 bg-gradient-to-r from-black to-50%"></div>
@@ -23,7 +23,7 @@ export default function HeroSectionSkeleton() {
         <div className="absolute inset-0 bg-gradient-to-l from-black to-10%"></div>
 
         {/* Background shimmer on the poster area */}
-        <div className="absolute inset-0 bg-neutral-800/40 animate-pulse"></div>
+        <div className="absolute inset-0 bg-surface-secondary/40 animate-pulse"></div>
 
         <div className="absolute w-2/4 bottom-[5rem] left-6 space-y-5">
           {/* Badges row (Exclusive/NEW + Quality·Lang) */}
@@ -38,9 +38,9 @@ export default function HeroSectionSkeleton() {
           {/* Metadata row: year • categories • episode */}
           <div className="flex items-center gap-x-2">
             <SkeletonBar w="w-12" h="h-4" />
-            <span className="w-1 h-1 rounded-full bg-neutral-700"></span>
+            <span className="w-1 h-1 rounded-full bg-surface-chip"></span>
             <SkeletonBar w="w-32" h="h-4" />
-            <span className="w-1 h-1 rounded-full bg-neutral-700"></span>
+            <span className="w-1 h-1 rounded-full bg-surface-chip"></span>
             <SkeletonBar w="w-16" h="h-4" />
           </div>
 
@@ -69,9 +69,9 @@ export default function HeroSectionSkeleton() {
           `pt-14` mirrors the offset in HeroMovieItem so skeleton/real layouts match. */}
       <div className="lg:hidden flex flex-col w-full pt-14">
         {/* Poster placeholder — uses landscape aspect ratio to match scaled poster */}
-        <div className="relative w-full aspect-[16/9] bg-neutral-800/40 animate-pulse"></div>
+        <div className="relative w-full aspect-[16/9] bg-surface-secondary/40 animate-pulse"></div>
 
-        <div className="bg-black px-4 pt-3 pb-6 space-y-3">
+        <div className="bg-surface-primary px-4 pt-3 pb-6 space-y-3">
           {/* Badges */}
           <div className="flex items-center gap-2">
             <SkeletonBar w="w-20" h="h-5" />
@@ -108,5 +108,5 @@ interface SkeletonBarProps {
 }
 
 function SkeletonBar({ w, h, rounded = 'rounded' }: SkeletonBarProps) {
-  return <div className={`${w} ${h} ${rounded} bg-neutral-700/60 animate-pulse`}></div>;
+  return <div className={`${w} ${h} ${rounded} bg-surface-chip animate-pulse`}></div>;
 }

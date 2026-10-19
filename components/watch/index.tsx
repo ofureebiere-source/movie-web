@@ -16,6 +16,7 @@ import { useResolvedStream } from 'hooks/useResolvedStream';
 import { usePlaybackProviders, withProvider } from 'hooks/usePlaybackProviders';
 import { analytics } from 'lib/posthog/events';
 import { subtitleLanguagesFor } from 'services/vidsrc-service';
+import { subtitleLabel, subtitleLang } from 'lib/subtitles';
 import { localizedLang } from 'constants/i18n-mappings';
 import { tmdbBackdropLoader, tmdbBackdropSrcSet } from 'lib/tmdb-image';
 import type { Locale } from 'i18n/routing';
@@ -48,7 +49,9 @@ import ExternalReviews from '../comment/external-reviews';
 export default function MovieWatchPage({
   movie,
   playerOnly = false,
+  embedded = false,
   onClose,
+  autoPlay = false,
 }: {
   movie: DetailMovie;
   /**
@@ -58,8 +61,23 @@ export default function MovieWatchPage({
    * surrounding page already owns that content.
    */
   playerOnly?: boolean;
+  /**
+   * Render the player in place of a poster on the page that owns it, rather
+   * than as the content of a full-screen overlay. The detail page uses this so
+   * the poster box can grow into the frame where it already sits — no new
+   * screen appears, and the surrounding page never reflows.
+   *
+   * Implies the `playerOnly` trim (no page headings, no reviews, no comments);
+   * the host page already renders all of that.
+   */
+  embedded?: boolean;
   /** Shown as a "close player" affordance when embedded in the detail page. */
   onClose?: () => void;
+  /**
+   * The viewer already pressed Play to get here, so the main player starts on
+   * its own once the stream resolves. See `VideoPlayer`'s `autoPlay`.
+   */
+  autoPlay?: boolean;
 }) {
   const t = useTranslations('watch');
   const locale = useLocale() as Locale;
@@ -92,6 +110,21 @@ export default function MovieWatchPage({
   // test, and probing the resolver would just read JSON.
   const resolved = useResolvedStream(resolverLink);
   const streamUrl = resolved.url;
+
+  // The catalogue's own subtitle files, proxied through our origin and
+  // converted to WebVTT. Without this the player has no subtitle track at all
+  // for most titles: the manifest rarely carries one, and the files the
+  // catalogue ships are SRT on hosts that refuse cross-origin reads.
+  const subtitles = useMemo(
+    () =>
+      resolved.subtitles.map((track, index) => ({
+        id: index,
+        label: subtitleLabel(track),
+        lang: subtitleLang(track),
+        src: `/api/subtitle?url=${encodeURIComponent(track.url)}`,
+      })),
+    [resolved.subtitles]
+  );
 
   // ---- Which surface ------------------------------------------------------
 
@@ -373,19 +406,34 @@ export default function MovieWatchPage({
   };
 
   return (
-    <div className={`space-y-6 lg:space-y-10 ${playerOnly ? '' : 'pt-20 lg:pt-[3.75rem]'}`}>
+    <div
+      className={`${embedded ? 'space-y-3' : 'space-y-6 lg:space-y-10'} ${
+        playerOnly || embedded ? '' : 'pt-20 lg:pt-[3.75rem]'
+      }`}
+    >
       {/* The player column, matching upstream: the frame is the only element
           allowed to reach the viewport edge on a phone, and everything wider
           than `sm` sits in a centered `max-w-6xl` column with the same gutters
           the rest of the page uses. */}
       <div className="mx-auto w-full max-w-6xl px-0 sm:px-4 lg:px-6">
-        {playerOnly && onClose && (
-          <div className="mb-2 flex items-center justify-between px-3 sm:px-0">
-            <h2 className="text-lg font-semibold text-white lg:text-xl">{movie.movie.name}</h2>
+        {embedded && onClose && (
+          <div className="mb-1.5 flex justify-end">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-300 transition hover:bg-white/10 hover:text-white"
+              className="rounded-md px-2 py-1 text-xs font-medium text-content-soft transition hover:bg-surface-chip hover:text-content-main"
+            >
+              {t('closePlayer')}
+            </button>
+          </div>
+        )}
+        {playerOnly && onClose && (
+          <div className="mb-2 flex items-center justify-between px-3 sm:px-0">
+            <h2 className="text-lg font-semibold text-content-main lg:text-xl">{movie.movie.name}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-content-soft transition hover:bg-surface-chip hover:text-content-main"
             >
               {t('closePlayer')}
             </button>
@@ -401,9 +449,11 @@ export default function MovieWatchPage({
           <VideoPlayer
             ref={videoRef}
             videoUrl={streamUrl}
+            autoPlay={autoPlay}
             thumbnail={posterSrc}
             thumbnailSrcSet={posterSrcSet}
             videoProgress={videoProgress}
+            subtitles={subtitles}
             meta={{
               title: movie.movie.name,
               episodeLabel: isMultiEpisode ? t('episodeLabel', { index: episodeIndex + 1 }) : undefined,
@@ -433,7 +483,7 @@ export default function MovieWatchPage({
         )}
       </div>
 
-      {!playerOnly && (
+      {!playerOnly && !embedded && (
         <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
           <h1 className="text-xl lg:text-3xl">{movie.movie.name}</h1>
           <h3 className="text-base lg:text-lg text-[#bbb6ae] mt-2">{movie.movie.origin_name}</h3>
@@ -452,8 +502,8 @@ export default function MovieWatchPage({
                   onClick={() => switchServer(index)}
                   className={`flex min-h-[44px] items-center justify-center rounded-md px-3 text-sm font-semibold lg:min-h-0 lg:py-2 lg:text-base ${
                     serverIndex === index
-                      ? 'bg-[#5E5E5E] text-white'
-                      : 'bg-white text-black hover:bg-[#d3d3d3]'
+                      ? 'bg-content-main text-surface-primary'
+                      : 'bg-surface-chip text-content-main hover:bg-surface-chip-hover'
                   }`}
                 >
                   {localizedLang(server.server_name, locale)}
@@ -475,8 +525,8 @@ export default function MovieWatchPage({
                   onClick={() => switchEpisode(index)}
                   className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md px-3 text-sm font-semibold lg:min-h-0 lg:py-2 lg:text-base ${
                     episodeIndex === index
-                      ? 'bg-[#5E5E5E] text-white'
-                      : 'bg-white text-black hover:bg-[#d3d3d3]'
+                      ? 'bg-content-main text-surface-primary'
+                      : 'bg-surface-chip text-content-main hover:bg-surface-chip-hover'
                   }`}
                 >
                   {t('episodeLabel', { index: index + 1 })}
@@ -487,7 +537,7 @@ export default function MovieWatchPage({
         </div>
       )}
 
-      {!playerOnly && (
+      {!playerOnly && !embedded && (
         <>
           <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
             <ExternalReviews movie={movie.movie} />

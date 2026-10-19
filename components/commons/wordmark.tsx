@@ -18,7 +18,7 @@ export default function Wordmark({ compact = false, onClick }: { compact?: boole
   return (
     <Link href="/" className="block shrink-0" aria-label={`${SITE_NAME} — home`} onClick={onClick}>
       <span
-        className={`font-extrabold tracking-tight text-white leading-none select-none ${
+        className={`font-extrabold tracking-tight text-content-main leading-none select-none ${
           compact ? 'text-xl' : 'text-2xl'
         }`}
       >

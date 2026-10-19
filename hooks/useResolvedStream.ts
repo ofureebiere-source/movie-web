@@ -31,6 +31,8 @@ import { useEffect, useRef, useState } from 'react';
 interface ResolvedStream {
   /** The playlist (or direct media) URL, empty until resolved. */
   url: string;
+  /** Subtitle tracks the catalogue returned with this stream. */
+  subtitles: StreamSubtitle[];
   /** True while the resolver is in flight. */
   isLoading: boolean;
   /** Set when the title has no working source at all. */
@@ -55,8 +57,19 @@ interface StreamSource {
 interface StreamBody {
   url?: string;
   sources?: StreamSource[];
+  /** Subtitle tracks the catalogue ships with this stream. */
+  subtitles?: StreamSubtitle[];
   message?: string;
   error?: string;
+}
+
+/** One subtitle track, as the catalogue describes it. */
+export interface StreamSubtitle {
+  url: string;
+  label?: string;
+  lang?: string;
+  language?: string;
+  format?: string;
 }
 
 /** "1080p" → 1080, "720p" → 720, unknown → 0. */
@@ -149,6 +162,7 @@ async function fetchJson(
 
 export function useResolvedStream(link: string): ResolvedStream {
   const [url, setUrl] = useState('');
+  const [subtitles, setSubtitles] = useState<StreamSubtitle[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState(0);
@@ -158,6 +172,7 @@ export function useResolvedStream(link: string): ResolvedStream {
   useEffect(() => {
     if (!link) {
       setUrl('');
+      setSubtitles([]);
       setIsLoading(false);
       setError(null);
       return;
@@ -170,9 +185,14 @@ export function useResolvedStream(link: string): ResolvedStream {
       try {
         const raw = window.sessionStorage.getItem(CACHE_PREFIX + link);
         if (raw) {
-          const parsed = JSON.parse(raw) as { at: number; url: string };
+          const parsed = JSON.parse(raw) as {
+            at: number;
+            url: string;
+            subtitles?: StreamSubtitle[];
+          };
           if (Date.now() - parsed.at < CACHE_TTL_MS && parsed.url) {
             setUrl(parsed.url);
+            setSubtitles(parsed.subtitles ?? []);
             setError(null);
             setIsLoading(false);
             return;
@@ -188,6 +208,7 @@ export function useResolvedStream(link: string): ResolvedStream {
     setIsLoading(true);
     setError(null);
     setUrl('');
+    setSubtitles([]);
 
     // One deadline for the whole resolution, shared by every route.
     const controller = new AbortController();
@@ -196,6 +217,7 @@ export function useResolvedStream(link: string): ResolvedStream {
     (async () => {
       try {
         let resolved: string | null = null;
+        let foundSubtitles: StreamSubtitle[] = [];
         let failure = 'stream lookup failed';
 
         const candidates = catalogUrlFor(link);
@@ -216,6 +238,7 @@ export function useResolvedStream(link: string): ResolvedStream {
               const { ok, body } = await fetchJson(candidate, controller.signal);
               if (ok) {
                 resolved = pickSource(body);
+                foundSubtitles = body.subtitles ?? [];
                 failure = body.message ?? body.error ?? 'no playable source';
                 answered = true;
                 break;
@@ -236,7 +259,10 @@ export function useResolvedStream(link: string): ResolvedStream {
         if (!resolved && !answered && !cancelled && currentLink.current === link) {
           try {
             const { ok, body } = await fetchJson(link, controller.signal);
-            if (ok) resolved = pickSource(body);
+            if (ok) {
+              resolved = pickSource(body);
+              foundSubtitles = body.subtitles ?? [];
+            }
             if (!resolved) failure = body.message ?? body.error ?? failure;
           } catch {
             // Both routes are down; `failure` already says so.
@@ -250,10 +276,11 @@ export function useResolvedStream(link: string): ResolvedStream {
           return;
         }
         setUrl(resolved);
+        setSubtitles(foundSubtitles);
         try {
           window.sessionStorage.setItem(
             CACHE_PREFIX + link,
-            JSON.stringify({ at: Date.now(), url: resolved })
+            JSON.stringify({ at: Date.now(), url: resolved, subtitles: foundSubtitles })
           );
         } catch {
           // Cache is an optimisation only.
@@ -271,5 +298,5 @@ export function useResolvedStream(link: string): ResolvedStream {
     };
   }, [link, nonce]);
 
-  return { url, isLoading, error, retry: () => setNonce((n) => n + 1) };
+  return { url, subtitles, isLoading, error, retry: () => setNonce((n) => n + 1) };
 }

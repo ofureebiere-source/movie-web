@@ -49,22 +49,22 @@ export default function ExternalReviews({ movie }: { movie: Movie }) {
         {reviews.map((review, index) => (
           <article
             key={`${review.source}-${index}`}
-            className="rounded-xl border border-white/10 bg-white/[0.03] p-4"
+            className="rounded-xl border border-line bg-surface-chip p-4"
           >
             <header className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               {review.author && <span className="font-semibold">{review.author}</span>}
               {review.scoreLabel && (
-                <span className="rounded-md bg-white/10 px-2 py-0.5 font-semibold tabular-nums">
+                <span className="rounded-md bg-surface-chip px-2 py-0.5 font-semibold tabular-nums">
                   {review.scoreLabel}
                 </span>
               )}
-              <span className="text-gray-400">{t('via', { source: review.source })}</span>
+              <span className="text-content-muted">{t('via', { source: review.source })}</span>
             </header>
 
             {review.title && <h4 className="mb-1 font-semibold">{review.title}</h4>}
 
             {review.body && (
-              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-300">
+              <p className="whitespace-pre-line text-sm leading-relaxed text-content-soft">
                 {review.body}
               </p>
             )}
@@ -72,7 +72,7 @@ export default function ExternalReviews({ movie }: { movie: Movie }) {
         ))}
       </div>
 
-      <p className="text-xs text-gray-500">{t('attribution')}</p>
+      <p className="text-xs text-content-muted">{t('attribution')}</p>
     </section>
   );
 }

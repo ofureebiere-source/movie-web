@@ -95,7 +95,7 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
   const listItemBySlug = new Map(movies.map((m) => [m.slug, m]));
 
   return (
-    <div className="relative">
+    <div className="relative on-artwork">
       <Swiper
         modules={[EffectFade, Autoplay]}
         effect="fade"
@@ -120,14 +120,14 @@ export default function HeroSection({ movies }: { movies: NewlyMovie[] }) {
       </Swiper>
       {/* Playback stays on the home page: "Watch now" opens the player over the
           carousel rather than navigating to the watch route. */}
-      {playing && <PlayerOverlay movie={playing} onClose={() => setPlaying(null)} />}
+      {playing && <PlayerOverlay movie={playing} autoPlay onClose={() => setPlaying(null)} />}
       {/* Desktop Navigation Button — mobile button is rendered inside HeroMovieItem
           so it can vertically center on the variable-height poster image. */}
       <div
         className="glass-btn glass-btn-icon hidden lg:block absolute z-10 top-[18rem] right-6 group cursor-pointer"
         onClick={handleClickToNextSlide}
       >
-        <FaChevronRight className="text-white transition-colors duration-300" />
+        <FaChevronRight className="text-content-main transition-colors duration-300" />
       </div>
     </div>
   );

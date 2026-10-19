@@ -53,7 +53,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Primary"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-white/10 bg-black/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
+      className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-line bg-surface-primary/95 backdrop-blur-md pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="flex items-stretch">
         {TABS.map((tab) => {
@@ -65,7 +65,7 @@ export default function BottomNav() {
                 href={tab.href}
                 aria-current={active ? 'page' : undefined}
                 className={`flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 py-2 text-[10px] transition-colors ${
-                  active ? 'text-white' : 'text-gray-500'
+                  active ? 'text-content-main' : 'text-content-muted'
                 }`}
               >
                 <Icon size={22} />

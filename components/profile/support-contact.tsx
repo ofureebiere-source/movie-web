@@ -93,11 +93,11 @@ export default function SupportContact() {
     <div>
       <div className="flex items-center space-x-3 mb-6">
         <IoHelpCircle className="text-custome-red" size={24} />
-        <h2 className="text-xl font-semibold text-white">Hỗ trợ</h2>
+        <h2 className="text-xl font-semibold text-content-main">Hỗ trợ</h2>
       </div>
 
       <div className="mb-6">
-        <p className="text-gray-400">
+        <p className="text-content-muted">
           Chúng tôi luôn sẵn sàng hỗ trợ bạn. Chọn phương thức liên hệ phù hợp nhất với bạn.
         </p>
       </div>
@@ -109,14 +109,14 @@ export default function SupportContact() {
           return (
             <div
               key={index}
-              className="bg-gray-800/30 border border-gray-600 rounded-lg p-6 hover:border-gray-500 transition-colors"
+              className="bg-surface-chip border border-line rounded-lg p-6 hover:border-line transition-colors"
             >
               <div className="flex items-center space-x-3 mb-4">
                 <Icon className={method.color} size={24} />
-                <h3 className="text-white font-medium">{method.title}</h3>
+                <h3 className="text-content-main font-medium">{method.title}</h3>
               </div>
-              <p className="text-gray-400 text-sm mb-3">{method.description}</p>
-              <p className="text-gray-300 text-sm mb-4">{method.contact}</p>
+              <p className="text-content-muted text-sm mb-3">{method.description}</p>
+              <p className="text-content-soft text-sm mb-4">{method.contact}</p>
               <button
                 onClick={() => {
                   if (method.title === 'Email hỗ trợ') {
@@ -136,10 +136,10 @@ export default function SupportContact() {
 
       {/* Support Form */}
       {showForm && (
-        <div className="border-t border-gray-700 pt-6">
+        <div className="border-t border-line pt-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white font-medium">Gửi tin nhắn hỗ trợ</h3>
-            <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-white">
+            <h3 className="text-content-main font-medium">Gửi tin nhắn hỗ trợ</h3>
+            <button onClick={() => setShowForm(false)} className="text-content-muted hover:text-content-main">
               <IoClose size={20} />
             </button>
           </div>
@@ -147,15 +147,15 @@ export default function SupportContact() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="name" className="block text-gray-300 mb-2">
+                <label htmlFor="name" className="block text-content-soft mb-2">
                   Họ và tên
                 </label>
                 <input
                   type="text"
                   id="name"
                   className={`w-full p-3 border ${
-                    errors.name ? 'border-red-500' : 'border-gray-600'
-                  } bg-black text-white focus:outline-none focus:ring-2 ${
+                    errors.name ? 'border-red-500' : 'border-line'
+                  } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                     errors.name ? 'focus:ring-red-500' : 'focus:ring-custome-red'
                   } rounded-lg`}
                   {...register('name', {
@@ -166,15 +166,15 @@ export default function SupportContact() {
               </div>
 
               <div>
-                <label htmlFor="email" className="block text-gray-300 mb-2">
+                <label htmlFor="email" className="block text-content-soft mb-2">
                   Email
                 </label>
                 <input
                   type="email"
                   id="email"
                   className={`w-full p-3 border ${
-                    errors.email ? 'border-red-500' : 'border-gray-600'
-                  } bg-black text-white focus:outline-none focus:ring-2 ${
+                    errors.email ? 'border-red-500' : 'border-line'
+                  } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                     errors.email ? 'focus:ring-red-500' : 'focus:ring-custome-red'
                   } rounded-lg`}
                   {...register('email', {
@@ -192,14 +192,14 @@ export default function SupportContact() {
             </div>
 
             <div>
-              <label htmlFor="category" className="block text-gray-300 mb-2">
+              <label htmlFor="category" className="block text-content-soft mb-2">
                 Loại vấn đề
               </label>
               <select
                 id="category"
                 className={`w-full p-3 border ${
-                  errors.category ? 'border-red-500' : 'border-gray-600'
-                } bg-black text-white focus:outline-none focus:ring-2 ${
+                  errors.category ? 'border-red-500' : 'border-line'
+                } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                   errors.category ? 'focus:ring-red-500' : 'focus:ring-custome-red'
                 } rounded-lg`}
                 {...register('category', {
@@ -219,15 +219,15 @@ export default function SupportContact() {
             </div>
 
             <div>
-              <label htmlFor="subject" className="block text-gray-300 mb-2">
+              <label htmlFor="subject" className="block text-content-soft mb-2">
                 Tiêu đề
               </label>
               <input
                 type="text"
                 id="subject"
                 className={`w-full p-3 border ${
-                  errors.subject ? 'border-red-500' : 'border-gray-600'
-                } bg-black text-white focus:outline-none focus:ring-2 ${
+                  errors.subject ? 'border-red-500' : 'border-line'
+                } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                   errors.subject ? 'focus:ring-red-500' : 'focus:ring-custome-red'
                 } rounded-lg`}
                 {...register('subject', {
@@ -240,15 +240,15 @@ export default function SupportContact() {
             </div>
 
             <div>
-              <label htmlFor="message" className="block text-gray-300 mb-2">
+              <label htmlFor="message" className="block text-content-soft mb-2">
                 Nội dung
               </label>
               <textarea
                 id="message"
                 rows={5}
                 className={`w-full p-3 border ${
-                  errors.message ? 'border-red-500' : 'border-gray-600'
-                } bg-black text-white focus:outline-none focus:ring-2 ${
+                  errors.message ? 'border-red-500' : 'border-line'
+                } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                   errors.message ? 'focus:ring-red-500' : 'focus:ring-custome-red'
                 } rounded-lg resize-none`}
                 {...register('message', {
@@ -293,28 +293,28 @@ export default function SupportContact() {
       )}
 
       {/* FAQ Section */}
-      <div className="border-t border-gray-700 pt-6 mt-8">
-        <h3 className="text-white font-medium mb-4">Câu hỏi thường gặp</h3>
+      <div className="border-t border-line pt-6 mt-8">
+        <h3 className="text-content-main font-medium mb-4">Câu hỏi thường gặp</h3>
         <div className="space-y-4">
-          <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
-            <h4 className="text-white font-medium mb-2">Làm thế nào để đổi mật khẩu?</h4>
-            <p className="text-gray-400 text-sm">
+          <div className="bg-surface-chip border border-line rounded-lg p-4">
+            <h4 className="text-content-main font-medium mb-2">Làm thế nào để đổi mật khẩu?</h4>
+            <p className="text-content-muted text-sm">
               Vào phần &quot;Bảo mật&quot; trong menu bên trái và chọn &quot;Đổi mật khẩu&quot;. Bạn
               cần nhập mật khẩu hiện tại và mật khẩu mới.
             </p>
           </div>
 
-          <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
-            <h4 className="text-white font-medium mb-2">Tôi quên mật khẩu, phải làm sao?</h4>
-            <p className="text-gray-400 text-sm">
+          <div className="bg-surface-chip border border-line rounded-lg p-4">
+            <h4 className="text-content-main font-medium mb-2">Tôi quên mật khẩu, phải làm sao?</h4>
+            <p className="text-content-muted text-sm">
               Sử dụng tính năng `&quot;Quên mật khẩu&quot;` trên trang đăng nhập. Chúng tôi sẽ gửi
               link đặt lại mật khẩu qua email của bạn.
             </p>
           </div>
 
-          <div className="bg-gray-800/30 border border-gray-600 rounded-lg p-4">
-            <h4 className="text-white font-medium mb-2">Làm sao để xóa tài khoản?</h4>
-            <p className="text-gray-400 text-sm">
+          <div className="bg-surface-chip border border-line rounded-lg p-4">
+            <h4 className="text-content-main font-medium mb-2">Làm sao để xóa tài khoản?</h4>
+            <p className="text-content-muted text-sm">
               Liên hệ với chúng tôi qua email {SUPPORT_EMAIL} để được hỗ trợ xóa tài khoản.
             </p>
           </div>
@@ -322,12 +322,12 @@ export default function SupportContact() {
       </div>
 
       {/* Support Hours */}
-      <div className="mt-8 p-4 bg-gray-800/30 border border-gray-600 rounded-lg">
+      <div className="mt-8 p-4 bg-surface-chip border border-line rounded-lg">
         <div className="flex items-center space-x-3 mb-2">
           <IoTime className="text-custome-red" size={20} />
-          <h4 className="text-white font-medium">Giờ hỗ trợ</h4>
+          <h4 className="text-content-main font-medium">Giờ hỗ trợ</h4>
         </div>
-        <p className="text-gray-400 text-sm">
+        <p className="text-content-muted text-sm">
           Thứ 2 - Thứ 6: 8:00 - 18:00 (GMT+7)
           <br />
           Thứ 7 - Chủ nhật: 9:00 - 17:00 (GMT+7)

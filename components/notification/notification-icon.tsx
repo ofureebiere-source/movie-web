@@ -30,13 +30,13 @@ export default function NotificationIcon({
 
     if (notificationsUnreadCount > 9) {
       return (
-        <span className="absolute right-[-5px] top-[-6px] flex items-center justify-center min-w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full">
+        <span className="absolute right-[-5px] top-[-6px] flex items-center justify-center min-w-5 h-5 bg-red-600 text-content-main text-xs font-bold rounded-full">
           9+
         </span>
       );
     } else {
       return (
-        <span className="absolute right-[-5px] top-[-6px] flex items-center justify-center min-w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full">
+        <span className="absolute right-[-5px] top-[-6px] flex items-center justify-center min-w-5 h-5 bg-red-600 text-content-main text-xs font-bold rounded-full">
           {notificationsUnreadCount}
         </span>
       );
@@ -44,14 +44,14 @@ export default function NotificationIcon({
   };
   return (
     <div
-      className="relative cursor-pointer hover:bg-gray-800/50 rounded-full p-2 transition-all duration-200 group"
+      className="relative cursor-pointer hover:bg-surface-chip rounded-full p-2 transition-all duration-200 group"
       onClick={toogleSetNotificationDropdownState}
       aria-label="Notifications"
     >
       {renderUnreadNotificationCount(notificationsUnreadCount)}
       <IoIosNotifications
         size={24}
-        className="text-white group-hover:text-custome-red transition-colors"
+        className="text-content-main group-hover:text-custome-red transition-colors"
       />
     </div>
   );

@@ -86,6 +86,16 @@ export interface PlayerContextValue {
   /** Subtitle appearance, shared with the CSS applied to the cue box. */
   subtitleStyle: SubtitleStyle;
   setSubtitleStyle: (style: Partial<SubtitleStyle>) => void;
+  /**
+   * Catalogue subtitle tracks — real subtitle files that ship with the stream,
+   * proxied and converted to WebVTT by `/api/subtitle`. Separate from
+   * `hls.subtitleTracks`, which are the tracks baked into the manifest (often
+   * none at all for this catalogue, which is why these exist).
+   */
+  subtitles: PlayerSubtitleOption[];
+  /** Selected catalogue track index, or -1 for off. */
+  currentSubtitleId: number;
+  setSubtitleId: (id: number) => void;
   /** Skip the intro/recap, when the title declares one. Null hides the button. */
   skipSegment: { label: string; end: number } | null;
   /** Live one-line status for screen readers (announces state changes). */
@@ -106,6 +116,17 @@ export interface PlayerContextValue {
   currentPlaybackProviderId: string | null;
   /** Pin a server (or null to unpin). Re-resolves the current episode. */
   onSelectPlaybackProvider: (id: string | null) => void;
+}
+
+/** One catalogue subtitle track, ready to render as a `<track>`. */
+export interface PlayerSubtitleOption {
+  /** Index into the track list; also the `textTracks` index. */
+  id: number;
+  label: string;
+  /** BCP-47-ish tag for `track srcLang`. */
+  lang: string;
+  /** Same-origin WebVTT URL. */
+  src: string;
 }
 
 /** One selectable upstream server. */

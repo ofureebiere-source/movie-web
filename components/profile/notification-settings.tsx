@@ -56,7 +56,7 @@ export default function NotificationSettings() {
 
   const state = (() => {
     if (permission === 'unsupported') {
-      return { icon: IoHelpCircle, tone: 'text-gray-400', label: t('stateUnsupported') };
+      return { icon: IoHelpCircle, tone: 'text-content-muted', label: t('stateUnsupported') };
     }
     if (permission === 'denied') {
       return { icon: IoCloseCircle, tone: 'text-red-400', label: t('stateBlocked') };
@@ -64,7 +64,7 @@ export default function NotificationSettings() {
     if (permission === 'granted' && hasToken) {
       return { icon: IoCheckmarkCircle, tone: 'text-green-400', label: t('stateOn') };
     }
-    return { icon: IoHelpCircle, tone: 'text-gray-400', label: t('stateOff') };
+    return { icon: IoHelpCircle, tone: 'text-content-muted', label: t('stateOff') };
   })();
 
   const StateIcon = state.icon;
@@ -72,15 +72,15 @@ export default function NotificationSettings() {
   return (
     <div>
       <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white">{t('heading')}</h2>
-        <p className="mt-1 text-sm text-gray-400">{t('subtitle')}</p>
+        <h2 className="text-xl font-semibold text-content-main">{t('heading')}</h2>
+        <p className="mt-1 text-sm text-content-muted">{t('subtitle')}</p>
       </div>
 
-      <div className="mb-8 flex items-start gap-3 rounded-lg border border-gray-600 bg-gray-800/30 p-4">
+      <div className="mb-8 flex items-start gap-3 rounded-lg border border-line bg-surface-chip p-4">
         <StateIcon className={`${state.tone} mt-0.5 shrink-0`} size={20} />
         <div className="min-w-0">
-          <h3 className="text-white font-medium">{t('statusHeading')}</h3>
-          <p className="text-gray-400 text-sm">{state.label}</p>
+          <h3 className="text-content-main font-medium">{t('statusHeading')}</h3>
+          <p className="text-content-muted text-sm">{state.label}</p>
         </div>
       </div>
 
@@ -89,7 +89,7 @@ export default function NotificationSettings() {
           <button
             type="button"
             onClick={disable}
-            className="rounded-lg border border-gray-600 px-6 py-3 text-gray-200 transition-colors hover:bg-gray-800/60"
+            className="rounded-lg border border-line px-6 py-3 text-content-soft transition-colors hover:bg-surface-chip"
           >
             {t('turnOff')}
           </button>
@@ -106,13 +106,13 @@ export default function NotificationSettings() {
         )}
       </div>
 
-      <div className="mt-8 border-t border-gray-700 pt-6">
-        <h3 className="mb-4 font-medium text-white">{t('howHeading')}</h3>
+      <div className="mt-8 border-t border-line pt-6">
+        <h3 className="mb-4 font-medium text-content-main">{t('howHeading')}</h3>
         <ul className="space-y-3">
           {[t('how1'), t('how2'), t('how3')].map((line) => (
             <li key={line} className="flex items-start gap-3">
               <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-custome-red"></span>
-              <p className="text-sm text-gray-400">{line}</p>
+              <p className="text-sm text-content-muted">{line}</p>
             </li>
           ))}
         </ul>

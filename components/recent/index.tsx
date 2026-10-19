@@ -77,7 +77,7 @@ export default function RecentMoviePage() {
     <div className="pt-16 md:pt-20 space-y-6 md:space-y-8 h-full px-4 md:px-0">
       <div>
         <div className="text-xl md:text-2xl font-bold text-center">{t('title')}</div>
-        <div className="text-sm md:text-base text-center mt-1 text-gray-300 px-4 md:px-0">
+        <div className="text-sm md:text-base text-center mt-1 text-content-soft px-4 md:px-0">
           {t('subtitle')}
         </div>
       </div>

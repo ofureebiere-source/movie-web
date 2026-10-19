@@ -91,16 +91,16 @@ export default function MovieCardOverlay({
       >
       <div className="space-y-1.5">
         {/* Title */}
-        <div className="text-xs md:text-sm font-bold text-white line-clamp-2 leading-snug">
+        <div className="text-xs md:text-sm font-bold text-content-main line-clamp-2 leading-snug">
           {name}
         </div>
 
         {/* Metadata row: year • country • duration • episode */}
         {meta.length > 0 && (
-          <div className="flex items-center gap-x-1.5 text-[10px] md:text-xs text-white/80 flex-wrap">
+          <div className="flex items-center gap-x-1.5 text-[10px] md:text-xs text-content-main/80 flex-wrap">
             {meta.map((item, i) => (
               <span key={i} className="flex items-center gap-x-1.5">
-                {i > 0 && <span className="text-white/40">•</span>}
+                {i > 0 && <span className="text-content-muted/70">•</span>}
                 <span className="line-clamp-1">{item}</span>
               </span>
             ))}
@@ -116,7 +116,7 @@ export default function MovieCardOverlay({
             {categories.slice(0, 2).map((c) => (
               <span
                 key={c.slug}
-                className="text-[9px] md:text-[10px] px-1.5 py-0.5 bg-white/15 backdrop-blur-sm rounded text-white/90"
+                className="text-[9px] md:text-[10px] px-1.5 py-0.5 bg-surface-chip backdrop-blur-sm rounded text-content-main/90"
               >
                 {localizedCategory(c.slug, locale)}
               </span>

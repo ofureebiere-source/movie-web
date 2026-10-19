@@ -56,7 +56,7 @@ export default function TrendingSlider({ items }: TrendingSliderProps) {
               {movie.rank}
             </span>
 
-            <div className="relative z-10 flex-1 min-w-0 rounded-xl overflow-hidden bg-gray-800 shadow-lg">
+            <div className="relative z-10 flex-1 min-w-0 rounded-xl overflow-hidden bg-surface-secondary shadow-lg">
               <div className="relative aspect-[2/3]">
                 <Image
                   src={movie.poster_url}
@@ -71,7 +71,7 @@ export default function TrendingSlider({ items }: TrendingSliderProps) {
                 <p className="text-xs font-bold uppercase tracking-wide leading-tight line-clamp-2">
                   {movie.title}
                 </p>
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-300">
+                <div className="flex items-center gap-1.5 text-[11px] text-content-soft">
                   <FaStar className="text-yellow-400 shrink-0 text-[9px]" />
                   <span>{movie.rating.toFixed(1)}</span>
                   <span>·</span>
@@ -80,8 +80,8 @@ export default function TrendingSlider({ items }: TrendingSliderProps) {
               </div>
 
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border-2 border-white/60 flex items-center justify-center scale-75 group-hover:scale-100 transition-transform duration-300">
-                  <svg className="w-4 h-4 fill-white ml-0.5" viewBox="0 0 24 24">
+                <div className="w-10 h-10 rounded-full bg-surface-chip backdrop-blur-sm border-2 border-line flex items-center justify-center scale-75 group-hover:scale-100 transition-transform duration-300">
+                  <svg className="w-4 h-4 fill-content-main ml-0.5" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </div>
@@ -100,7 +100,7 @@ export default function TrendingSlider({ items }: TrendingSliderProps) {
       >
         <GrPrevious
           size={42}
-          className="text-white drop-shadow-lg ml-2 hover:scale-125 transition-transform duration-200"
+          className="text-content-main drop-shadow-lg ml-2 hover:scale-125 transition-transform duration-200"
         />
       </button>
       <button
@@ -111,7 +111,7 @@ export default function TrendingSlider({ items }: TrendingSliderProps) {
       >
         <GrNext
           size={42}
-          className="text-white drop-shadow-lg mr-2 hover:scale-125 transition-transform duration-200"
+          className="text-content-main drop-shadow-lg mr-2 hover:scale-125 transition-transform duration-200"
         />
       </button>
 
@@ -120,17 +120,17 @@ export default function TrendingSlider({ items }: TrendingSliderProps) {
         type="button"
         aria-label="Previous"
         onClick={handlePrevSlide}
-        className="absolute flex lg:hidden items-center justify-center top-1/2 left-2 -translate-y-1/2 w-9 h-9 bg-black/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
+        className="absolute flex lg:hidden items-center justify-center top-1/2 left-2 -translate-y-1/2 w-9 h-9 bg-surface-primary/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
       >
-        <GrPrevious size={18} className="text-white" />
+        <GrPrevious size={18} className="text-content-main" />
       </button>
       <button
         type="button"
         aria-label="Next"
         onClick={handleNextSlide}
-        className="absolute flex lg:hidden items-center justify-center top-1/2 right-2 -translate-y-1/2 w-9 h-9 bg-black/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
+        className="absolute flex lg:hidden items-center justify-center top-1/2 right-2 -translate-y-1/2 w-9 h-9 bg-surface-primary/60 backdrop-blur-sm rounded-full z-30 opacity-0 group-hover/list:opacity-100 transition-opacity duration-300"
       >
-        <GrNext size={18} className="text-white" />
+        <GrNext size={18} className="text-content-main" />
       </button>
     </Swiper>
   );

@@ -28,9 +28,9 @@ export default function DailyUpdateBanner({ count }: DailyUpdateBannerProps) {
       <div className="mt-8 mb-8 mx-4 md:mx-0 flex items-center gap-3 px-4 py-3 rounded-lg bg-gradient-to-r from-red-600/20 via-red-500/10 to-transparent border-l-4 border-red-500">
         <MdNewReleases className="text-red-500 text-2xl flex-shrink-0 animate-pulse" />
         <div className="text-sm md:text-base">
-          <span className="font-semibold text-white">{t('todayCount')} </span>
+          <span className="font-semibold text-content-main">{t('todayCount')} </span>
           <span className="font-bold text-red-400">{count}</span>
-          <span className="font-semibold text-white"> {t('todaySuffix')}</span>
+          <span className="font-semibold text-content-main"> {t('todaySuffix')}</span>
         </div>
       </div>
     </div>

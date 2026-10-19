@@ -13,6 +13,7 @@ import {
   type PlayerMeta,
   type PlayerProviderOption,
   type PlayerServer,
+  type PlayerSubtitleOption,
   type SubtitleStyle,
 } from './player-context';
 import type { HlsController } from 'hooks/useHlsController';
@@ -27,7 +28,7 @@ import LockScreen from './lock-screen';
 import KeyboardHint from './keyboard-hint';
 import EqualizerPanel from './equalizer-panel';
 import { formatTime } from './progress-bar';
-import { SkipSegmentIcon } from './icons';
+import { SkipSegmentIcon, VolumeHighIcon, BrightnessIcon } from './icons';
 
 const DOUBLE_TAP_MS = 280;
 const SEEK_FEEDBACK_MS = 600;
@@ -53,6 +54,9 @@ export interface VideoControlsOverlayProps {
   playbackProviders: PlayerProviderOption[];
   currentPlaybackProviderId: string | null;
   onSelectPlaybackProvider: (id: string | null) => void;
+
+  /** Catalogue subtitle tracks for the current stream. */
+  subtitles: PlayerSubtitleOption[];
 
   /** When true (initial state before stream is ready), overlay sits dormant. */
   disabled?: boolean;
@@ -81,6 +85,7 @@ export default function VideoControlsOverlay({
   playbackProviders,
   currentPlaybackProviderId,
   onSelectPlaybackProvider,
+  subtitles,
   disabled = false,
 }: VideoControlsOverlayProps) {
   const { state, actions } = usePlayerState(videoRef);
@@ -137,6 +142,53 @@ export default function VideoControlsOverlay({
     });
   }, []);
 
+  // ---- Catalogue subtitles ------------------------------------------------
+  // Which catalogue track is on. Persisted per browser, like the fit mode: it
+  // is a preference about the viewer, not about the title. Defaults to the
+  // first Vietnamese track when there is one — the app is Vietnamese-first —
+  // and otherwise stays off so a foreign track is never forced on.
+  const [currentSubtitleId, setCurrentSubtitleIdState] = useState(-1);
+  useEffect(() => {
+    let saved: string | null = null;
+    try {
+      saved = window.localStorage.getItem('mw_player_subtitle');
+    } catch {
+      /* private mode */
+    }
+    if (saved !== null) {
+      const id = Number(saved);
+      if (Number.isInteger(id) && (id === -1 || subtitles.some((s) => s.id === id))) {
+        setCurrentSubtitleIdState(id);
+        return;
+      }
+    }
+    const vi = subtitles.find((s) => s.lang === 'vi');
+    setCurrentSubtitleIdState(vi ? vi.id : -1);
+    // Only re-derive the default when the track list itself changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtitles.map((s) => s.id).join(',')]);
+
+  const setSubtitleId = useCallback((id: number) => {
+    setCurrentSubtitleIdState(id);
+    try {
+      window.localStorage.setItem('mw_player_subtitle', String(id));
+    } catch {
+      /* private mode */
+    }
+  }, []);
+
+  // `mode="showing"` on the <track> renders it; the element also needs the
+  // matching `textTracks` entry set, which is what actually drives the cue
+  // box in every browser we target.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const tracks = video.textTracks;
+    for (let i = 0; i < tracks.length; i++) {
+      tracks[i].mode = i === currentSubtitleId ? 'showing' : 'disabled';
+    }
+  }, [currentSubtitleId, subtitles, videoRef]);
+
   // ---- Skip-intro ---------------------------------------------------------
   // Titles do not declare intro ranges in the catalogue, so the window is a
   // conservative heuristic: offer the skip between 20s and 2m30s in, and only
@@ -156,11 +208,20 @@ export default function VideoControlsOverlay({
         ? 'Đã kết thúc'
         : `Đang phát ${formatTime(state.currentTime)} trên ${formatTime(state.duration)}`;
 
+  const { brightness, hud, adjusting } = useMobileGestures({
+    containerRef,
+    state,
+    actions,
+    enabled: !disabled && !isLocked,
+  });
+
+  // A vertical drag is a deliberate adjustment, so the chrome stays up for
+  // its duration instead of auto-hiding out from under the meter.
   const { visible, bindContainer } = useAutoHideControls({
     isPlaying: state.isPlaying,
     isBuffering: state.isBuffering,
     isEnded: state.isEnded,
-    forceVisible: settingsOpen || helpOpen || eqOpen,
+    forceVisible: settingsOpen || helpOpen || eqOpen || adjusting,
   });
 
   useKeyboardShortcuts({
@@ -169,13 +230,6 @@ export default function VideoControlsOverlay({
     actions,
     onNextEpisode,
     onToggleHelp: () => setHelpOpen((v) => !v),
-  });
-
-  const { brightness, hud } = useMobileGestures({
-    containerRef,
-    state,
-    actions,
-    enabled: !disabled && !isLocked,
   });
 
   // Apply gesture-driven brightness to the <video> via CSS filter. Real device
@@ -310,6 +364,9 @@ export default function VideoControlsOverlay({
     setFitMode,
     subtitleStyle,
     setSubtitleStyle,
+    subtitles,
+    currentSubtitleId,
+    setSubtitleId,
     skipSegment,
     liveMessage,
     audio,
@@ -352,25 +409,48 @@ export default function VideoControlsOverlay({
             {skipSegment.label}
           </button>
         )}
-        {/* Mobile gesture HUD */}
-        {hud && (
+        {/* Gesture HUD. A vertical drag shows a side-anchored meter — the
+            side you touched is the side it appears on, which is what makes the
+            gesture self-explanatory. A horizontal drag keeps the centred
+            time readout. */}
+        {hud && hud.kind === 'scrub' && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="rounded-lg bg-black/70 px-4 py-2 text-sm font-semibold text-ink-primary backdrop-blur-sm">
-              {hud.kind === 'scrub' && (
-                <>
-                  <span className="tabular-nums">{formatTime(hud.targetTime)}</span>
-                  <span className="ml-2 text-ink-secondary tabular-nums">
-                    {hud.delta >= 0 ? '+' : '−'}
-                    {Math.abs(Math.round(hud.delta))}s
-                  </span>
-                </>
+              <span className="tabular-nums">{formatTime(hud.targetTime)}</span>
+              <span className="ml-2 text-ink-secondary tabular-nums">
+                {hud.delta >= 0 ? '+' : '−'}
+                {Math.abs(Math.round(hud.delta))}s
+              </span>
+            </div>
+          </div>
+        )}
+        {hud && (hud.kind === 'volume' || hud.kind === 'brightness') && (
+          <div
+            className={`pointer-events-none absolute inset-y-0 flex items-center ${
+              hud.kind === 'volume' ? 'right-0 pr-5' : 'left-0 pl-5'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2 rounded-xl bg-black/70 px-3 py-3 backdrop-blur-sm">
+              {hud.kind === 'volume' ? (
+                <VolumeHighIcon size={18} className="text-ink-primary" />
+              ) : (
+                <BrightnessIcon size={18} className="text-ink-primary" />
               )}
-              {hud.kind === 'volume' && (
-                <span>Volume {Math.round(hud.value * 100)}%</span>
-              )}
-              {hud.kind === 'brightness' && (
-                <span>Brightness {Math.round(hud.value * 100)}%</span>
-              )}
+              {/* Meter. Fills from the bottom; the tick marks make a small
+                  change visible even when the bar barely moves. */}
+              <div className="relative h-32 w-2.5 overflow-hidden rounded-full bg-white/25">
+                <div
+                  className="absolute inset-x-0 bottom-0 rounded-full bg-brand transition-[height] duration-75"
+                  style={{
+                    height: `${Math.round(
+                      (hud.kind === 'volume' ? hud.value : (hud.value - 0.3) / 1.2) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+              <span className="text-[11px] font-semibold tabular-nums text-ink-primary">
+                {Math.round(hud.value * 100)}%
+              </span>
             </div>
           </div>
         )}

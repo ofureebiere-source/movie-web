@@ -49,7 +49,7 @@ export default function ActorItem({ actor }: { actor: Actor | string }) {
         />
       </div>
       <div className="mt-3 transition-colors group-hover:text-brand">{name}</div>
-      {character && <div className="text-sm text-gray-400">{character}</div>}
+      {character && <div className="text-sm text-content-muted">{character}</div>}
     </Link>
   );
 }

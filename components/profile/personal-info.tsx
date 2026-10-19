@@ -104,7 +104,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-white">{t('heading')}</h2>
+        <h2 className="text-xl font-semibold text-content-main">{t('heading')}</h2>
         {!isEditing && (
           <button
             onClick={handleEdit}
@@ -129,7 +129,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
               ) : user.photo ? (
                 <img src={user.photo} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <span className="text-white font-semibold text-2xl">
+                <span className="text-content-main font-semibold text-2xl">
                   {user.name?.charAt(0)?.toUpperCase() ||
                     user.email?.charAt(0)?.toUpperCase() ||
                     'U'}
@@ -149,14 +149,14 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
             )}
           </div>
           <div>
-            <h3 className="text-white font-medium">{t('avatar')}</h3>
-            <p className="text-gray-400 text-sm">{t('avatarHelp')}</p>
+            <h3 className="text-content-main font-medium">{t('avatar')}</h3>
+            <p className="text-content-muted text-sm">{t('avatarHelp')}</p>
           </div>
         </div>
 
         {/* Name Field */}
         <div>
-          <label htmlFor="name" className="block text-gray-300 mb-2">
+          <label htmlFor="name" className="block text-content-soft mb-2">
             {t('displayName')}
           </label>
           {isEditing ? (
@@ -164,8 +164,8 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
               type="text"
               id="name"
               className={`w-full p-3 border ${
-                errors.name ? 'border-red-500' : 'border-gray-600'
-              } bg-black text-white focus:outline-none focus:ring-2 ${
+                errors.name ? 'border-red-500' : 'border-line'
+              } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                 errors.name ? 'focus:ring-red-500' : 'focus:ring-custome-red'
               } rounded-lg`}
               {...register('name', {
@@ -177,7 +177,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
               })}
             />
           ) : (
-            <div className="p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white">
+            <div className="p-3 bg-surface-chip border border-line rounded-lg text-content-main">
               {user.name || tCommon('notUpdated')}
             </div>
           )}
@@ -186,7 +186,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
 
         {/* Email Field */}
         <div>
-          <label htmlFor="email" className="block text-gray-300 mb-2">
+          <label htmlFor="email" className="block text-content-soft mb-2">
             {t('email')}
           </label>
           {isEditing ? (
@@ -194,8 +194,8 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
               type="email"
               id="email"
               className={`w-full p-3 border ${
-                errors.email ? 'border-red-500' : 'border-gray-600'
-              } bg-black text-white focus:outline-none focus:ring-2 ${
+                errors.email ? 'border-red-500' : 'border-line'
+              } bg-surface-primary text-content-main focus:outline-none focus:ring-2 ${
                 errors.email ? 'focus:ring-red-500' : 'focus:ring-custome-red'
               } rounded-lg`}
               {...register('email', {
@@ -207,7 +207,7 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
               })}
             />
           ) : (
-            <div className="p-3 bg-gray-800/50 border border-gray-600 rounded-lg text-white" data-private>
+            <div className="p-3 bg-surface-chip border border-line rounded-lg text-content-main" data-private>
               {user.email}
             </div>
           )}
@@ -217,14 +217,14 @@ export default function PersonalInfo({ user }: PersonalInfoProps) {
         {/* Where this lives. Deliberately not the device id: it is an
             implementation detail of the keyless account, not something the
             viewer signed up for. */}
-        <div className="border-t border-gray-700 pt-6">
-          <h3 className="text-white font-medium mb-2">{t('savedHere')}</h3>
-          <p className="text-gray-400 text-sm">{t('savedHereHelp')}</p>
+        <div className="border-t border-line pt-6">
+          <h3 className="text-content-main font-medium mb-2">{t('savedHere')}</h3>
+          <p className="text-content-muted text-sm">{t('savedHereHelp')}</p>
         </div>
 
         {/* Action Buttons */}
         {isEditing && (
-          <div className="flex items-center space-x-3 pt-6 border-t border-gray-700">
+          <div className="flex items-center space-x-3 pt-6 border-t border-line">
             <button
               type="submit"
               disabled={isLoading}

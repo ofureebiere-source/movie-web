@@ -85,7 +85,7 @@ export default function MovieContent({
           </div>
 
           <div className="lg:flex-1">
-            <div className="rounded-lg bg-white/5 p-4 lg:p-5">
+            <div className="rounded-lg bg-surface-chip p-4 lg:p-5">
               <h3 className="mb-4 text-lg font-bold lg:text-xl">{t('title')}</h3>
               <div className="space-y-3 text-sm lg:text-base">
                 <InfoRow label={t('director')}>
@@ -165,7 +165,7 @@ export default function MovieContent({
 function InfoRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex gap-3">
-      <span className="w-24 shrink-0 pt-0.5 text-xs uppercase tracking-wide text-gray-400 lg:w-28 lg:text-sm">
+      <span className="w-24 shrink-0 pt-0.5 text-xs uppercase tracking-wide text-content-muted lg:w-28 lg:text-sm">
         {label}
       </span>
       <div className="min-w-0 flex-1">{children}</div>

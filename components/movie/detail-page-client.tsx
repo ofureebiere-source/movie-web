@@ -76,11 +76,11 @@ export default function DetailPageClient({ slug }: { slug: string }) {
   if (!data) {
     return (
       <div className="min-h-screen">
-        <div className="h-[60vh] w-full animate-pulse bg-neutral-800/60" />
+        <div className="h-[60vh] w-full animate-pulse bg-surface-secondary/60" />
         <div className="container-wrapper space-y-4 px-4 py-8">
-          <div className="h-8 w-1/3 animate-pulse rounded bg-neutral-800/60" />
-          <div className="h-4 w-2/3 animate-pulse rounded bg-neutral-800/60" />
-          <div className="h-4 w-1/2 animate-pulse rounded bg-neutral-800/60" />
+          <div className="h-8 w-1/3 animate-pulse rounded bg-surface-secondary/60" />
+          <div className="h-4 w-2/3 animate-pulse rounded bg-surface-secondary/60" />
+          <div className="h-4 w-1/2 animate-pulse rounded bg-surface-secondary/60" />
         </div>
       </div>
     );

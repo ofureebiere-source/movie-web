@@ -34,24 +34,24 @@ export default function NotificationMobile({
   };
 
   return (
-    <div className="border-t border-gray-800 pt-4">
+    <div className="border-t border-line pt-4">
       {/* Notification Header */}
       <div
-        className="flex items-center justify-between p-3 rounded-lg bg-gray-900/50 cursor-pointer hover:bg-gray-800/50 transition-colors"
+        className="flex items-center justify-between p-3 rounded-lg bg-surface-secondary/50 cursor-pointer hover:bg-surface-chip transition-colors"
         onClick={toggleExpanded}
       >
         <div className="flex items-center space-x-3">
           <div className="relative">
-            <IoNotifications className="text-white" size={24} />
+            <IoNotifications className="text-content-main" size={24} />
             {notificationsUnreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-5 h-5 bg-red-600 text-white text-xs font-bold rounded-full">
+              <span className="absolute -top-2 -right-2 flex items-center justify-center min-w-5 h-5 bg-red-600 text-content-main text-xs font-bold rounded-full">
                 {notificationsUnreadCount > 9 ? '9+' : notificationsUnreadCount}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-medium text-sm">{t('title')}</p>
-            <p className="text-gray-400 text-xs">
+            <p className="text-content-main font-medium text-sm">{t('title')}</p>
+            <p className="text-content-muted text-xs">
               {notificationsUnreadCount > 0
                 ? t('unreadCount', { count: notificationsUnreadCount })
                 : t('allRead')}
@@ -59,9 +59,9 @@ export default function NotificationMobile({
           </div>
         </div>
         {isExpanded ? (
-          <IoChevronUp className="text-gray-400" size={20} />
+          <IoChevronUp className="text-content-muted" size={20} />
         ) : (
-          <IoChevronDown className="text-gray-400" size={20} />
+          <IoChevronDown className="text-content-muted" size={20} />
         )}
       </div>
 
@@ -89,18 +89,18 @@ export default function NotificationMobile({
                     className={`p-3 rounded-lg transition-colors ${
                       !notification.read
                         ? 'bg-red-900/20 border-l-4 border-red-500'
-                        : 'bg-gray-800/30 hover:bg-gray-700/50'
+                        : 'bg-surface-chip hover:bg-surface-chip'
                     }`}
                     onClick={onCloseMenu}
                   >
                     <div className="flex items-start space-x-3">
                       <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-white font-semibold text-xs">
+                        <span className="text-content-main font-semibold text-xs">
                           {notification.userCreatedName?.charAt(0)?.toUpperCase() || 'U'}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm">
+                        <p className="text-content-main text-sm">
                           <span className="font-semibold">{notification.userCreatedName}</span>{' '}
                           {t('actions.did')}
                           {notification.type === 'react'
@@ -108,7 +108,7 @@ export default function NotificationMobile({
                             : t('actions.replied')}{' '}
                           {t('actions.yourComment')}
                         </p>
-                        <p className="text-gray-400 text-xs mt-1">
+                        <p className="text-content-muted text-xs mt-1">
                           {new Date(notification.timestamp).toLocaleString(locale, {
                             day: '2-digit',
                             month: '2-digit',
@@ -136,8 +136,8 @@ export default function NotificationMobile({
               </div>
             ) : (
               <div className="text-center py-8">
-                <IoNotifications className="text-gray-500 mx-auto mb-3" size={32} />
-                <p className="text-gray-400 text-sm">{t('empty')}</p>
+                <IoNotifications className="text-content-muted mx-auto mb-3" size={32} />
+                <p className="text-content-muted text-sm">{t('empty')}</p>
               </div>
             )}
           </div>

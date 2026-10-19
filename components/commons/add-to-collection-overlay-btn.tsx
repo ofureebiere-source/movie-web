@@ -111,15 +111,15 @@ export default function AddToCollectionOverlayBtn({ collectionItem }: Props) {
         'pointer-events-auto flex items-center justify-center w-9 h-9 md:w-8 md:h-8 rounded-full border backdrop-blur-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed',
         isInCollection
           ? 'bg-emerald-500/30 border-emerald-400 hover:bg-emerald-500/50'
-          : 'bg-white/15 border-white/40 hover:bg-white/40 hover:border-white',
+          : 'bg-surface-chip border-line hover:bg-surface-chip-hover hover:border-line',
       ].join(' ')}
     >
       {isHandling ? (
         <LoadingSpinerBtn />
       ) : isInCollection ? (
-        <TiTick className="text-white text-base md:text-lg" />
+        <TiTick className="text-content-main text-base md:text-lg" />
       ) : (
-        <FaPlus className="text-white text-[10px] md:text-xs" />
+        <FaPlus className="text-content-main text-[10px] md:text-xs" />
       )}
     </button>
   );

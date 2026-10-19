@@ -45,14 +45,14 @@ export default function InfiniteScrollSentinel({
   if (!hasMore) {
     if (isEmpty) {
       return (
-        <div className="flex flex-col items-center justify-center py-16 gap-2 text-white/60">
+        <div className="flex flex-col items-center justify-center py-16 gap-2 text-content-muted">
           <MdMovie className="text-4xl" />
           <div className="text-sm">{t('emptyCategory')}</div>
         </div>
       );
     }
     return (
-      <div className="flex items-center justify-center py-10 text-white/60 text-sm">
+      <div className="flex items-center justify-center py-10 text-content-muted text-sm">
         {t('endOfList')}
       </div>
     );

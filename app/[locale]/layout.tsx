@@ -50,7 +50,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} dir={RTL_LOCALES.has(locale) ? 'rtl' : 'ltr'}>
-      <body className="bg-black text-white relative flex flex-col">
+      <body className="bg-surface-primary text-content-main relative flex flex-col">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers initialDisclaimerAccepted={initialDisclaimerAccepted}>{children}</Providers>
         </NextIntlClientProvider>

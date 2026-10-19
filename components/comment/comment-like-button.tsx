@@ -59,7 +59,7 @@ export default function CommentLikeButton({
       type="button"
       onClick={handleToggleLike}
       className={`flex items-center gap-1.5 py-2 text-sm transition-colors ${
-        isLiked ? 'text-[#e20913]' : 'text-gray-400 hover:text-white'
+        isLiked ? 'text-[#e20913]' : 'text-content-muted hover:text-content-main'
       }`}
     >
       {isLiked ? <AiFillLike size={16} /> : <AiOutlineLike size={16} />}

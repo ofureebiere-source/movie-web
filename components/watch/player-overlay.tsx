@@ -29,9 +29,16 @@ import { tmdbBackdropLoader } from 'lib/tmdb-image';
 export default function PlayerOverlay({
   movie,
   onClose,
+  autoPlay = false,
 }: {
   movie: DetailMovie;
   onClose: () => void;
+  /**
+   * Start playback as soon as the stream is ready. Set by the callers that
+   * open this overlay from a Play button, so the viewer presses Play once
+   * rather than once to open and once again to start.
+   */
+  autoPlay?: boolean;
 }) {
   const t = useTranslations('watch');
   const [mounted, setMounted] = useState(false);
@@ -76,7 +83,7 @@ export default function PlayerOverlay({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[110] overflow-y-auto bg-black"
+      className="on-artwork fixed inset-0 z-[110] overflow-y-auto bg-black"
       role="dialog"
       aria-modal="true"
       aria-label={movie.movie.name}
@@ -114,7 +121,7 @@ export default function PlayerOverlay({
       </button>
 
       <div className="relative z-20 pt-14 lg:pt-4">
-        <MovieWatchPage movie={movie} playerOnly onClose={close} />
+        <MovieWatchPage movie={movie} playerOnly autoPlay={autoPlay} onClose={close} />
       </div>
     </div>,
     document.body

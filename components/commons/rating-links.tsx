@@ -41,7 +41,7 @@ export default function RatingLinks({ imdb, tmdb, variant = 'default' }: RatingL
             title="Điểm TMDB"
           >
             <span className="font-bold">{tmdb!.vote_average.toFixed(1)}</span>
-            <span className="text-white/60 text-xs">TMDB</span>
+            <span className="text-content-muted text-xs">TMDB</span>
           </span>
         )}
         {showImdb && (
@@ -69,10 +69,10 @@ export default function RatingLinks({ imdb, tmdb, variant = 'default' }: RatingL
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="font-bold text-lg">{tmdb!.vote_average.toFixed(1)}</span>
-            <span className="text-white/60 text-sm">/10</span>
+            <span className="text-content-muted text-sm">/10</span>
           </div>
           {tmdb!.vote_count > 0 && (
-            <span className="text-xs text-white/60">({formatVotes(tmdb!.vote_count)})</span>
+            <span className="text-xs text-content-muted">({formatVotes(tmdb!.vote_count)})</span>
           )}
         </span>
       )}
@@ -85,10 +85,10 @@ export default function RatingLinks({ imdb, tmdb, variant = 'default' }: RatingL
           <FaImdb className="text-yellow-400 text-3xl flex-shrink-0" />
           <div className="flex items-baseline gap-1.5">
             <span className="font-bold text-lg">{imdb!.vote_average.toFixed(1)}</span>
-            <span className="text-white/60 text-sm">/10</span>
+            <span className="text-content-muted text-sm">/10</span>
           </div>
           {imdb!.vote_count > 0 && (
-            <span className="text-xs text-white/60">({formatVotes(imdb!.vote_count)})</span>
+            <span className="text-xs text-content-muted">({formatVotes(imdb!.vote_count)})</span>
           )}
         </span>
       )}

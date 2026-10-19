@@ -134,14 +134,14 @@ export default function MovieFilterBar({
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <h1 className="text-2xl font-semibold tracking-tight lg:text-3xl">{title}</h1>
           {typeof count === 'number' && (
-            <span className="text-sm text-white/50">{t('count', { count })}</span>
+            <span className="text-sm text-content-muted">{t('count', { count })}</span>
           )}
         </div>
 
         {/* Control bar — filters left, sort pushed right (Netflix / Prime pattern). */}
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-0.5 hidden items-center gap-1.5 text-xs text-white/40 sm:flex">
+            <span className="mr-0.5 hidden items-center gap-1.5 text-xs text-content-muted/70 sm:flex">
               <IoOptionsOutline size={14} />
               {t('filtersLabel')}
             </span>
@@ -192,11 +192,11 @@ export default function MovieFilterBar({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-white/10" />
+      <div className="mt-4 border-t border-line" />
 
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 pt-3">
-          <span className="text-xs text-white/40">{t('activeLabel')}:</span>
+          <span className="text-xs text-content-muted/70">{t('activeLabel')}:</span>
           {activeFilters.map((f) => (
             <button
               key={f.param}
@@ -260,10 +260,10 @@ function FilterDropdown({
   const buttonClass =
     variant === 'ghost'
       ? `flex items-center gap-1.5 rounded-md px-2.5 py-2 text-sm transition-colors ${
-          open ? 'text-white' : 'text-gray-300 hover:text-white'
+          open ? 'text-content-main' : 'text-content-soft hover:text-content-main'
         }`
       : `glass-btn glass-btn-sm ${
-          active ? 'glass-btn-active' : 'border-white/15 text-gray-300 hover:border-white/30'
+          active ? 'glass-btn-active' : 'border-line text-content-soft hover:border-line'
         }`;
 
   return (
@@ -279,7 +279,7 @@ function FilterDropdown({
 
       {open && (
         <div
-          className={`absolute z-30 mt-2 max-h-72 w-44 overflow-y-auto rounded-lg border border-white/10 bg-black/95 py-1 shadow-custom backdrop-blur-md ${
+          className={`absolute z-30 mt-2 max-h-72 w-44 overflow-y-auto rounded-lg border border-line bg-surface-primary/95 py-1 shadow-custom backdrop-blur-md ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >
@@ -291,8 +291,8 @@ function FilterDropdown({
                 onChange(o.value);
                 setOpen(false);
               }}
-              className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-white/10 ${
-                o.value === value ? 'text-brand' : 'text-gray-200'
+              className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-chip ${
+                o.value === value ? 'text-brand' : 'text-content-soft'
               }`}
             >
               <span>{o.label}</span>

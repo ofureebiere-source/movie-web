@@ -116,7 +116,7 @@ export default function Trailer({ trailerKey }: { trailerKey: string }) {
         open &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+            className="on-artwork fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
             role="dialog"
             aria-modal="true"
             aria-label={t('trailer')}
@@ -130,11 +130,11 @@ export default function Trailer({ trailerKey }: { trailerKey: string }) {
                 type="button"
                 onClick={close}
                 aria-label={t('closeTrailer')}
-                className="absolute -top-10 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white/90 backdrop-blur-md ring-1 ring-white/20 transition hover:bg-white/20 hover:text-white"
+                className="absolute -top-10 right-0 flex h-9 w-9 items-center justify-center rounded-full bg-surface-chip text-content-main/90 backdrop-blur-md ring-1 ring-line transition hover:bg-surface-chip-hover hover:text-content-main"
               >
                 <FaTimes size={14} />
               </button>
-              <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-black">
+              <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-surface-primary">
                 <iframe
                   // Keyed on the host so switching instances remounts the
                   // frame instead of leaving the failed one in place.
@@ -151,7 +151,7 @@ export default function Trailer({ trailerKey }: { trailerKey: string }) {
                   A challenge page also loads "successfully", so there is nothing
                   to observe. The viewer rotates instead — they are the only one
                   who can see that the frame is blank. */}
-              <div className="mt-3 flex items-center justify-center gap-3 text-sm text-white/70">
+              <div className="mt-3 flex items-center justify-center gap-3 text-sm text-content-main/70">
                 <span>{hostLabel}</span>
                 {hosts.length > 1 && (
                   <button

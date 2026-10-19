@@ -121,7 +121,7 @@ export default function HeroMovieItem({
   const showTmdb = isValidScore(tmdb?.vote_average);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full on-artwork">
       {/* Desktop Layout — full-bleed background poster with overlaid content */}
       <div className="hidden lg:block container-wrapper relative w-full lg:h-screen">
         {/* `.container-wrapper` is `width: 96%` (globals.css), not 100vw —
@@ -136,7 +136,7 @@ export default function HeroMovieItem({
           sizes="96vw"
           className="object-cover"
         />
-        <div className={`absolute inset-0 bg-black ${overlayClass}`}></div>
+        <div className={`absolute inset-0 bg-surface-primary ${overlayClass}`}></div>
         <div className="absolute inset-0 bg-gradient-to-r from-black to-50%"></div>
         <div className="absolute inset-0 bg-gradient-to-b from-black to-10%"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black to-10%"></div>
@@ -167,7 +167,7 @@ export default function HeroMovieItem({
           ) : (
             <h2 className="text-5xl font-bold">{primaryTitle}</h2>
           )}
-          {showSubtitle && <h3 className="text-xl text-white/70 -mt-3">{subTitle}</h3>}
+          {showSubtitle && <h3 className="text-xl text-content-main/70 -mt-3">{subTitle}</h3>}
 
           <div className="flex items-center gap-x-2 text-sm">
             <div>{movie.year}</div>
@@ -186,10 +186,10 @@ export default function HeroMovieItem({
                 </div>
                 <div>
                   <span className="font-bold">{tmdb!.vote_average.toFixed(1)}</span>
-                  <span className="text-white/60">/10</span>
+                  <span className="text-content-muted">/10</span>
                 </div>
                 {tmdb!.vote_count > 0 && (
-                  <span className="text-sm text-white/60">
+                  <span className="text-sm text-content-muted">
                     ({formatVoteCount(tmdb!.vote_count)} {tRating('votes')})
                   </span>
                 )}
@@ -200,10 +200,10 @@ export default function HeroMovieItem({
                 <FaImdb className="text-yellow-400 text-3xl" />
                 <div>
                   <span className="font-bold">{imdb!.vote_average.toFixed(1)}</span>
-                  <span className="text-white/60">/10</span>
+                  <span className="text-content-muted">/10</span>
                 </div>
                 {imdb!.vote_count > 0 && (
-                  <span className="text-sm text-white/60">
+                  <span className="text-sm text-content-muted">
                     ({formatVoteCount(imdb!.vote_count)} {tRating('votes')})
                   </span>
                 )}
@@ -258,9 +258,9 @@ export default function HeroMovieItem({
               onClick={onNextSlide}
               className="absolute z-10 top-1/2 right-3 -translate-y-1/2
                          flex items-center justify-center w-9 h-9 rounded-full
-                         bg-white/10 backdrop-blur-md ring-1 ring-white/20
+                         bg-surface-chip backdrop-blur-md ring-1 ring-line
                          shadow-lg shadow-black/20
-                         text-white/90 hover:bg-white/20 hover:text-white
+                         text-content-main/90 hover:bg-surface-chip-hover hover:text-content-main
                          active:scale-90 transition-all duration-200"
             >
               <FaChevronRight size={13} />
@@ -268,7 +268,7 @@ export default function HeroMovieItem({
           )}
         </div>
 
-        <div className="bg-black px-4 pt-3 pb-6 space-y-3">
+        <div className="bg-surface-primary px-4 pt-3 pb-6 space-y-3">
           {/* Status badges */}
           <div className="flex items-center gap-2 flex-wrap">
             {subDocquyen ? <ExclusiveBadge /> : <NewUpdateBadge modifiedAt={modifiedAt} />}
@@ -284,30 +284,30 @@ export default function HeroMovieItem({
                 className="block max-h-16 w-auto max-w-[16rem] object-contain object-left drop-shadow-[0_3px_6px_rgba(0,0,0,0.55)]"
               />
             ) : (
-              <h2 className="text-2xl md:text-3xl font-bold text-white leading-tight">
+              <h2 className="text-2xl md:text-3xl font-bold text-content-main leading-tight">
                 {primaryTitle}
               </h2>
             )}
-            {showSubtitle && <h3 className="text-sm md:text-base text-white/60 mt-1">{subTitle}</h3>}
+            {showSubtitle && <h3 className="text-sm md:text-base text-content-muted mt-1">{subTitle}</h3>}
           </div>
 
           {/* Movie Metadata */}
-          <div className="flex items-center gap-x-3 text-sm text-white/90 flex-wrap">
+          <div className="flex items-center gap-x-3 text-sm text-content-main/90 flex-wrap">
             <div>{movie.year}</div>
-            <div className="text-white/60">•</div>
+            <div className="text-content-muted">•</div>
             <div>{localizedEpisodeCurrent(movie.episode_current, locale)}</div>
             {showTmdb && (
               <>
-                <div className="text-white/60">•</div>
-                <div className="text-white">
+                <div className="text-content-muted">•</div>
+                <div className="text-content-main">
                   <span className="font-bold">{tmdb!.vote_average.toFixed(1)}</span>
-                  <span className="text-white/60">/10 TMDB</span>
+                  <span className="text-content-muted">/10 TMDB</span>
                 </div>
               </>
             )}
             {showImdb && (
               <>
-                <div className="text-white/60">•</div>
+                <div className="text-content-muted">•</div>
                 <div className="flex items-center gap-x-1">
                   <FaImdb className="text-yellow-400 text-base" />
                   <span className="font-bold">{imdb!.vote_average.toFixed(1)}</span>
