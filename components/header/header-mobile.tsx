@@ -159,6 +159,19 @@ export default function HeaderMobile({
                     <li>
                       <Link
                         className={`block py-2 text-lg font-medium transition-colors ${
+                          pathname === '/profile' || pathname.startsWith('/profile/')
+                            ? 'text-custome-red'
+                            : 'text-white hover:text-custome-red'
+                        }`}
+                        href="/profile"
+                        onClick={closeMobileMenu}
+                      >
+                        {t('profile')}
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        className={`block py-2 text-lg font-medium transition-colors ${
                           pathname === '/movies/format/phim-le'
                             ? 'text-custome-red'
                             : 'text-white hover:text-custome-red'

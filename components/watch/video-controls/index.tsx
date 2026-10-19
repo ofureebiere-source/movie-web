@@ -11,6 +11,7 @@ import {
   type FitMode,
   type NextEpisodePreview,
   type PlayerMeta,
+  type PlayerProviderOption,
   type PlayerServer,
   type SubtitleStyle,
 } from './player-context';
@@ -48,6 +49,11 @@ export interface VideoControlsOverlayProps {
   /** Equaliser + loudness maximiser controller. */
   audio: AudioController;
 
+  /** Upstream servers the viewer can pin, and the current choice. */
+  playbackProviders: PlayerProviderOption[];
+  currentPlaybackProviderId: string | null;
+  onSelectPlaybackProvider: (id: string | null) => void;
+
   /** When true (initial state before stream is ready), overlay sits dormant. */
   disabled?: boolean;
 }
@@ -72,6 +78,9 @@ export default function VideoControlsOverlay({
   onNextEpisode,
   hls,
   audio,
+  playbackProviders,
+  currentPlaybackProviderId,
+  onSelectPlaybackProvider,
   disabled = false,
 }: VideoControlsOverlayProps) {
   const { state, actions } = usePlayerState(videoRef);
@@ -304,6 +313,9 @@ export default function VideoControlsOverlay({
     skipSegment,
     liveMessage,
     audio,
+    playbackProviders,
+    currentPlaybackProviderId,
+    onSelectPlaybackProvider,
   };
 
   return (

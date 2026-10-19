@@ -23,7 +23,7 @@ const GENRE_SLUGS = [
   'hai-huoc',
   'co-trang',
   'vien-tuong',
-  'tam-ly',
+  'gay-can',
   'hinh-su',
 ];
 

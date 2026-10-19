@@ -5,10 +5,6 @@ import { useTranslations } from 'next-intl';
 import {
   IoHome,
   IoHomeOutline,
-  IoSearch,
-  IoSearchOutline,
-  IoPerson,
-  IoPersonOutline,
   IoCodeSlash,
   IoCodeSlashOutline,
 } from 'react-icons/io5';
@@ -16,7 +12,7 @@ import { SiCrunchyroll } from 'react-icons/si';
 import type { IconType } from 'react-icons';
 
 interface Tab {
-  key: 'home' | 'search' | 'anime' | 'api' | 'profile';
+  key: 'home' | 'anime' | 'api';
   href: string;
   Icon: IconType;
   IconActive: IconType;
@@ -24,7 +20,6 @@ interface Tab {
 
 const TABS: Tab[] = [
   { key: 'home', href: '/', Icon: IoHomeOutline, IconActive: IoHome },
-  { key: 'search', href: '/search', Icon: IoSearchOutline, IconActive: IoSearch },
   // Anime replaces My List: the list is a saved-items view a viewer dips into,
   // while anime is a whole catalogue to browse, and a tab is for the latter.
   // My List moved into the hamburger drawer, which is where the saved view
@@ -33,13 +28,17 @@ const TABS: Tab[] = [
   // API mirrors the desktop nav entry, so the service landing page is reachable
   // from the phone bar too.
   { key: 'api', href: '/api', Icon: IoCodeSlashOutline, IconActive: IoCodeSlash },
-  { key: 'profile', href: '/profile', Icon: IoPersonOutline, IconActive: IoPerson },
 ];
 
 /**
  * Mobile-only bottom tab bar (the primary nav pattern of every major streaming
  * app). z-30 sits above page content but below the hamburger drawer (z-40) so
  * the drawer covers it when open.
+ *
+ * Three tabs only. Search is not one of them: it already has a permanent icon
+ * in the mobile header, so a tab would be a second door to the same room.
+ * Profile is not one either — it moved into the hamburger drawer, next to My
+ * List and the account controls it belongs with.
  *
  * No tab is gated any more: the device registers itself on first load, so
  * "my list" and the profile always have an account behind them.

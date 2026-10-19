@@ -13,6 +13,7 @@ import { useVidsrcBridge } from 'hooks/useVidsrcBridge';
 import { useVideoElementBridge } from 'hooks/useVideoElementBridge';
 import { useStreamReachability } from 'hooks/useStreamReachability';
 import { useResolvedStream } from 'hooks/useResolvedStream';
+import { usePlaybackProviders, withProvider } from 'hooks/usePlaybackProviders';
 import { analytics } from 'lib/posthog/events';
 import { subtitleLanguagesFor } from 'services/vidsrc-service';
 import { localizedLang } from 'constants/i18n-mappings';
@@ -44,7 +45,22 @@ import ExternalReviews from '../comment/external-reviews';
  * `serverIndex` picks the audio. Seasons are separate titles upstream and are
  * linked from the detail page.
  */
-export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
+export default function MovieWatchPage({
+  movie,
+  playerOnly = false,
+  onClose,
+}: {
+  movie: DetailMovie;
+  /**
+   * Render just the player and its server/episode pickers, without the title
+   * heading, reviews and comments. The detail page mounts it this way so
+   * "Watch" can start playback in place instead of navigating away — the
+   * surrounding page already owns that content.
+   */
+  playerOnly?: boolean;
+  /** Shown as a "close player" affordance when embedded in the detail page. */
+  onClose?: () => void;
+}) {
   const t = useTranslations('watch');
   const locale = useLocale() as Locale;
 
@@ -64,11 +80,17 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   const m3u8 = current?.link_m3u8 ?? '';
   const embed = current?.link_embed ?? '';
 
+  // The aggregator's server list and the viewer's choice of one. Picking a
+  // different server re-resolves the same episode through it; "Auto" leaves
+  // the backend to choose, which is the default.
+  const playback = usePlaybackProviders(movie.movie.type === 'anime');
+  const resolverLink = withProvider(m3u8, playback.currentProviderId);
+
   // `link_m3u8` is our own resolver, not a playlist: the catalogue mints its
   // playlist tokens with a short expiry, so the URL has to be fetched at play
   // time. Resolve it first — the reachability probe below needs a real m3u8 to
   // test, and probing the resolver would just read JSON.
-  const resolved = useResolvedStream(m3u8);
+  const resolved = useResolvedStream(resolverLink);
   const streamUrl = resolved.url;
 
   // ---- Which surface ------------------------------------------------------
@@ -77,7 +99,8 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   // A resolution failure ("the catalogue has no source for this title") is a
   // block like any other as far as the UI is concerned — it shows the notice
   // instead of a black player.
-  const resolveFailed = Boolean(m3u8) && !resolved.isLoading && Boolean(resolved.error);
+  const resolveFailed =
+    Boolean(resolverLink) && !resolved.isLoading && Boolean(resolved.error);
   const mainBlocked =
     Boolean(m3u8) && (reach.status === 'blocked' || mainFailed || resolveFailed);
   // The provider embed is used when the catalogue hands back a resolver link
@@ -285,6 +308,22 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
     },
   };
 
+  /**
+   * Pin a different upstream server. The resolver link gains the provider id,
+   * so `useResolvedStream` sees a new link and re-resolves the same episode
+   * through the new server. The position is carried over past the first few
+   * seconds, the same as an audio-track switch.
+   */
+  const handleSelectPlaybackProvider = useCallback(
+    (id: string | null) => {
+      const time = playbackRef.current?.currentTime ?? 0;
+      playback.selectProvider(id);
+      setMainFailed(false);
+      setVideoProgress(time > 3 ? time : null);
+    },
+    [playback, playbackRef, setVideoProgress]
+  );
+
   const retryMain = useCallback(() => {
     setMainFailed(false);
     // Re-resolve as well: the usual reason the main player gave up is that the
@@ -334,12 +373,24 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
   };
 
   return (
-    <div className="space-y-6 pt-20 lg:space-y-10 lg:pt-[3.75rem]">
+    <div className={`space-y-6 lg:space-y-10 ${playerOnly ? '' : 'pt-20 lg:pt-[3.75rem]'}`}>
       {/* The player column, matching upstream: the frame is the only element
           allowed to reach the viewport edge on a phone, and everything wider
           than `sm` sits in a centered `max-w-6xl` column with the same gutters
           the rest of the page uses. */}
       <div className="mx-auto w-full max-w-6xl px-0 sm:px-4 lg:px-6">
+        {playerOnly && onClose && (
+          <div className="mb-2 flex items-center justify-between px-3 sm:px-0">
+            <h2 className="text-lg font-semibold text-white lg:text-xl">{movie.movie.name}</h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md px-3 py-1.5 text-sm font-medium text-gray-300 transition hover:bg-white/10 hover:text-white"
+            >
+              {t('closePlayer')}
+            </button>
+          </div>
+        )}
         {surface === 'main' && mainBlocked ? (
           <StreamNotice
             reason={blockReason}
@@ -361,6 +412,9 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
             servers={playerServers}
             currentServerIndex={serverIndex}
             onSwitchLanguage={switchServer}
+            playbackProviders={playback.providers}
+            currentPlaybackProviderId={playback.currentProviderId}
+            onSelectPlaybackProvider={handleSelectPlaybackProvider}
             nextEpisode={nextEpisode}
             onNextEpisode={handleNextEpisode}
             onFatalError={() => {
@@ -379,10 +433,12 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
         )}
       </div>
 
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
-        <h1 className="text-xl lg:text-3xl">{movie.movie.name}</h1>
-        <h3 className="text-base lg:text-lg text-[#bbb6ae] mt-2">{movie.movie.origin_name}</h3>
-      </div>
+      {!playerOnly && (
+        <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
+          <h1 className="text-xl lg:text-3xl">{movie.movie.name}</h1>
+          <h3 className="text-base lg:text-lg text-[#bbb6ae] mt-2">{movie.movie.origin_name}</h3>
+        </div>
+      )}
 
       {/* Audio servers (Vietsub / Thuyết Minh / Lồng Tiếng) — only when there is a choice. */}
       {servers.length > 1 && (
@@ -431,13 +487,17 @@ export default function MovieWatchPage({ movie }: { movie: DetailMovie }) {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
-        <ExternalReviews movie={movie.movie} />
-      </div>
+      {!playerOnly && (
+        <>
+          <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
+            <ExternalReviews movie={movie.movie} />
+          </div>
 
-      <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
-        <CommentSection movie={movie} />
-      </div>
+          <div className="mx-auto w-full max-w-6xl px-3 sm:px-4 lg:px-6">
+            <CommentSection movie={movie} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') ?? 'movie';
   const season = searchParams.get('season');
   const episode = searchParams.get('episode');
+  const provider = searchParams.get('provider');
 
   if (!id) {
     return NextResponse.json({ message: 'missing id' }, { status: 400 });
@@ -70,6 +71,9 @@ export async function GET(request: NextRequest) {
   upstream.searchParams.set('type', type);
   if (season) upstream.searchParams.set('season', season);
   if (episode) upstream.searchParams.set('episode', episode);
+  // The viewer's server choice, when they made one. Absent, the aggregator
+  // picks for itself — which is what every request did before this existed.
+  if (provider) upstream.searchParams.set('provider', provider);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);

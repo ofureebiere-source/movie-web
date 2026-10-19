@@ -30,8 +30,15 @@ import type Movie from 'types/movie';
 const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
 const TVMAZE_ENDPOINT = 'https://api.tvmaze.com';
 
-/** Wikimedia asks clients to identify themselves; there is no key involved. */
-const USER_AGENT = 'netflix-2.0/1.0 (title reviews; keyless)';
+/**
+ * Wikimedia asks clients to identify themselves; there is no key involved.
+ *
+ * Sent only to Wikipedia. AniList's CORS preflight allow-list does not include
+ * `Api-User-Agent`, so sending it there fails the preflight and the browser
+ * blocks the request outright — which is why this is passed per call rather
+ * than set for every request.
+ */
+const WIKI_USER_AGENT = 'netflix-2.0/1.0 (title reviews; keyless)';
 
 const TIMEOUT_MS = 12000;
 
@@ -100,7 +107,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T | null> 
   try {
     const res = await fetch(url, {
       ...init,
-      headers: { accept: 'application/json', 'Api-User-Agent': USER_AGENT, ...(init?.headers ?? {}) },
+      headers: { accept: 'application/json', ...(init?.headers ?? {}) },
       signal: controller.signal,
     });
     if (!res.ok) return null;
@@ -241,7 +248,8 @@ async function fetchWikipediaReception(
   });
 
   const found = await fetchJson<WikiSearchResponse>(
-    `https://${lang}.wikipedia.org/w/api.php?${search.toString()}`
+    `https://${lang}.wikipedia.org/w/api.php?${search.toString()}`,
+    { headers: { 'Api-User-Agent': WIKI_USER_AGENT } }
   );
   const article = found?.query?.search?.[0]?.title;
   if (!article) return [];
@@ -256,7 +264,8 @@ async function fetchWikipediaReception(
   });
 
   const page = await fetchJson<WikiExtractResponse>(
-    `https://${lang}.wikipedia.org/w/api.php?${extractParams.toString()}`
+    `https://${lang}.wikipedia.org/w/api.php?${extractParams.toString()}`,
+    { headers: { 'Api-User-Agent': WIKI_USER_AGENT } }
   );
   const pages = page?.query?.pages;
   if (!pages) return [];

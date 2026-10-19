@@ -11,6 +11,7 @@ import { useAudioProcessing } from 'hooks/useAudioProcessing';
 import type {
   NextEpisodePreview,
   PlayerMeta,
+  PlayerProviderOption,
   PlayerServer,
 } from './video-controls/player-context';
 
@@ -39,6 +40,11 @@ type VideoPlayerProps = {
   onSwitchLanguage: (newServerIndex: number) => void;
   nextEpisode: NextEpisodePreview | null;
   onNextEpisode: () => void;
+
+  // Server (aggregator provider) selection — passes through to the overlay.
+  playbackProviders: PlayerProviderOption[];
+  currentPlaybackProviderId: string | null;
+  onSelectPlaybackProvider: (id: string | null) => void;
   /**
    * The stream could not be loaded (manifest/network error, or the native
    * player gave up). The watch page decides what to do: retry, another
@@ -68,6 +74,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       onSwitchLanguage,
       nextEpisode,
       onNextEpisode,
+      playbackProviders,
+      currentPlaybackProviderId,
+      onSelectPlaybackProvider,
       onFatalError,
     },
     videoRef
@@ -231,6 +240,9 @@ const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           onNextEpisode={onNextEpisode}
           hls={hls}
           audio={audio}
+          playbackProviders={playbackProviders}
+          currentPlaybackProviderId={currentPlaybackProviderId}
+          onSelectPlaybackProvider={onSelectPlaybackProvider}
           disabled={!hasStarted}
         />
 

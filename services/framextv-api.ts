@@ -510,17 +510,53 @@ export async function getSeason(id: string, season: number): Promise<FxEpisode[]
 export async function getStream(
   id: string,
   type: string,
-  opts: { season?: number; episode?: number } = {}
+  opts: { season?: number; episode?: number; provider?: string } = {}
 ): Promise<FxStream | null> {
   const path = type === 'anime' ? '/anime/api/stream' : '/api/stream';
   try {
     return await apiFetch<FxStream>(
       path,
-      { id, type, season: opts.season, episode: opts.episode },
+      { id, type, season: opts.season, episode: opts.episode, provider: opts.provider },
       REVALIDATE.search
     );
   } catch {
     return null;
+  }
+}
+
+/**
+ * One entry of the aggregator's server registry.
+ *
+ * `id` is what `/api/stream?provider=` accepts; `name` and `tagline` are the
+ * provider's own display strings ("Bowler XVIII", "Multi-Language"). `status`
+ * is the registry's own health claim and is not proof the server carries a
+ * given title — only a probe can say that.
+ */
+export interface FxProvider {
+  id: string;
+  name: string;
+  tagline?: string;
+  category?: string;
+  status?: string;
+  audio?: string;
+}
+
+/**
+ * The aggregator's server list.
+ *
+ * Used to offer the viewer a server choice, the way the source site's player
+ * does. Read client-side like every other catalogue call (the host refuses
+ * datacenter IPs), and an empty list on any failure: a title with no server
+ * picker still plays, because the backend picks a default when `provider` is
+ * absent.
+ */
+export async function getProviders(anime = false): Promise<FxProvider[]> {
+  const path = anime ? '/anime/api/providers' : '/api/providers';
+  try {
+    const body = await apiFetch<{ providers?: FxProvider[] }>(path, {}, REVALIDATE.taxonomy);
+    return (body.providers ?? []).filter((p) => p?.id);
+  } catch {
+    return [];
   }
 }
 

@@ -29,6 +29,7 @@
       "countries": "Quốc gia",
       "anime": "Anime",
       "myList": "Bộ sưu tập",
+      "profile": "Tài khoản",
       "api": "API"
     },
     "search": "Tìm kiếm phim"
@@ -108,6 +109,7 @@
       "reject": "Xem lại từ đầu"
     },
     "serverList": "Âm thanh",
+    "closePlayer": "Đóng trình phát",
     "player": {
       "settings": {
         "speed": "Tốc độ phát",
@@ -115,6 +117,8 @@
         "autoPlayNext": "Tự động phát tập tiếp theo",
         "normal": "Bình thường",
         "quality": "Chất lượng",
+        "server": "Máy chủ",
+        "serverAuto": "Tự động",
         "subtitle": "Phụ đề",
         "subtitleOff": "Tắt",
         "fit": "Chế độ hiển thị",

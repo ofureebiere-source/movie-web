@@ -24,7 +24,7 @@ import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from './icons';
  */
 const RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
-type Panel = 'root' | 'speed' | 'language' | 'quality' | 'audioTrack' | 'subtitle' | 'audio' | 'fit';
+type Panel = 'root' | 'speed' | 'language' | 'server' | 'quality' | 'audioTrack' | 'subtitle' | 'audio' | 'fit';
 
 export interface SettingsMenuProps {
   open: boolean;
@@ -49,6 +49,9 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
     subtitleStyle,
     setSubtitleStyle,
     audio,
+    playbackProviders,
+    currentPlaybackProviderId,
+    onSelectPlaybackProvider,
   } = usePlayer();
   const [panel, setPanel] = useState<Panel>('root');
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -143,6 +146,18 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
               label={t('settings.language')}
               value={currentServer?.name ?? ''}
               onClick={() => setPanel('language')}
+              trailing={<ChevronRightIcon size={18} />}
+            />
+          )}
+          {playbackProviders.length > 1 && (
+            <Row
+              label={t('settings.server')}
+              value={
+                currentPlaybackProviderId
+                  ? (playbackProviders.find((p) => p.id === currentPlaybackProviderId)?.name ?? '')
+                  : t('settings.serverAuto')
+              }
+              onClick={() => setPanel('server')}
               trailing={<ChevronRightIcon size={18} />}
             />
           )}
@@ -243,6 +258,33 @@ export default function SettingsMenu({ open, onClose, onShowShortcuts }: Setting
                 onSwitchLanguage(idx);
                 setPanel('root');
                 onClose();
+              }}
+            />
+          ))}
+        </Panel>
+
+        {/* Server panel — the upstream aggregator's own server list. Picking
+            one re-resolves the episode through it, which is the only way out
+            when the server in use is missing the title or refusing this
+            network. "Auto" hands the choice back to the aggregator. */}
+        <Panel active={panel === 'server'} direction="right">
+          <BackHeader title={t('settings.server')} onBack={() => setPanel('root')} />
+          <RadioRow
+            label={t('settings.serverAuto')}
+            selected={currentPlaybackProviderId === null}
+            onClick={() => {
+              onSelectPlaybackProvider(null);
+              setPanel('root');
+            }}
+          />
+          {playbackProviders.map((p) => (
+            <RadioRow
+              key={p.id}
+              label={p.tagline ? `${p.name} — ${p.tagline}` : p.name}
+              selected={currentPlaybackProviderId === p.id}
+              onClick={() => {
+                onSelectPlaybackProvider(p.id);
+                setPanel('root');
               }}
             />
           ))}

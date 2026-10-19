@@ -94,6 +94,26 @@ export interface PlayerContextValue {
   // ---- Phase 3: audio processing (equaliser + loudness) ----
   /** Graphic EQ + volume maximiser, driven by the Web Audio graph. */
   audio: AudioController;
+
+  // ---- Server (aggregator provider) selection ----
+  /**
+   * The upstream servers this title can be resolved through. Empty when the
+   * registry could not be read, which hides the picker rather than showing an
+   * empty one.
+   */
+  playbackProviders: PlayerProviderOption[];
+  /** The pinned server id, or null to let the aggregator choose. */
+  currentPlaybackProviderId: string | null;
+  /** Pin a server (or null to unpin). Re-resolves the current episode. */
+  onSelectPlaybackProvider: (id: string | null) => void;
+}
+
+/** One selectable upstream server. */
+export interface PlayerProviderOption {
+  id: string;
+  name: string;
+  /** The provider's own one-line description, e.g. "4K Ultra Multi-Server". */
+  tagline?: string;
 }
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);

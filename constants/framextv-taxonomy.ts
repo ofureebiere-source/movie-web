@@ -32,7 +32,7 @@ export const GENRE_ID: Record<string, number> = {
   'phieu-luu': 12, // Adventure
   'hai-huoc': 35, // Comedy
   'chinh-kich': 18, // Drama
-  'tam-ly': 53, // Thriller — "psychological"
+  'gay-can': 53, // Thriller
   'tinh-cam': 10749, // Romance
   'kinh-di': 27, // Horror
   'bi-an': 9648, // Mystery
@@ -60,7 +60,7 @@ export const BROWSE_GENRE_SLUGS: string[] = [
   'phieu-luu',
   'hai-huoc',
   'chinh-kich',
-  'tam-ly',
+  'gay-can',
   'tinh-cam',
   'kinh-di',
   'bi-an',
@@ -115,7 +115,7 @@ const NAME_TO_SLUG: Record<string, string> = {
   Romance: 'tinh-cam',
   'Science Fiction': 'vien-tuong',
   'Sci-Fi & Fantasy': 'vien-tuong',
-  Thriller: 'tam-ly',
+  Thriller: 'gay-can',
   War: 'chien-tranh',
   'War & Politics': 'chien-tranh',
   Western: 'mien-tay',
@@ -247,7 +247,7 @@ export function isKnownCountry(slug: string | undefined | null): boolean {
 
 export const LEGACY_GENRE_REDIRECTS: Record<string, string> = {
   'gia-tuong': 'than-thoai', // Fantasy → Mythology
-  'gay-can': 'tam-ly', // Thriller → Psychological
+  'tam-ly': 'gay-can', // "Psychological" was Thriller's slug in the keyless era
   'thieu-nhi': 'tre-em', // Kids
 };
 

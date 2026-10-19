@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type NewlyMovie from 'types/newly-movie';
 import DetailMovie from 'types/detail-movie';
 import type Movie from 'types/movie';
 import { FaPlay } from 'react-icons/fa';
 import MovieContent from './movie-content';
+import MovieWatchPage from '../watch';
 import ShareButton from './share-button';
 import Credit from 'types/credit';
 import BtnAddToCollection from '../buttons/btn-add-to-collection';
@@ -75,6 +76,21 @@ export default function MoviePage({
   const t = useTranslations('movie');
   const locale = useLocale() as Locale;
 
+  // In-page playback. "Watch" opens the player at the top of this page rather
+  // than navigating to /movies/watch/<slug>; the route still exists for direct
+  // links, but the detail page no longer sends anyone there.
+  const [playerOpen, setPlayerOpen] = useState(false);
+  const playerAnchorRef = useRef<HTMLDivElement | null>(null);
+  const canPlay = movie.movie.episode_current !== 'Trailer';
+
+  const openPlayer = useCallback(() => {
+    setPlayerOpen(true);
+    // Wait for the player to mount before scrolling it into view.
+    requestAnimationFrame(() => {
+      playerAnchorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, []);
+
   useEffect(() => {
     analytics.movieViewed({
       movie_id: movie.movie._id,
@@ -109,6 +125,15 @@ export default function MoviePage({
 
   return (
     <div>
+      {/* Inline player. Rendered above the hero once "Watch" is pressed, so the
+          viewer never leaves the page they were reading. The watch route is
+          still reachable directly; this is the detail page's own entry point. */}
+      {playerOpen && (
+        <div ref={playerAnchorRef} className="scroll-mt-20 pt-20 lg:pt-[3.75rem]">
+          <MovieWatchPage movie={movie} playerOnly onClose={() => setPlayerOpen(false)} />
+        </div>
+      )}
+
       {/* Cinematic full-bleed hero — DESKTOP only (poster + info cluster).
           Mobile uses the single-column streaming layout below. */}
       <div className="hidden lg:block relative w-full min-h-[42rem]">
@@ -186,14 +211,15 @@ export default function MoviePage({
 
               {/* Actions */}
               <div className="flex flex-wrap items-center gap-3">
-                {movie.movie.episode_current !== 'Trailer' && (
-                  <Link
+                {canPlay && (
+                  <button
+                    type="button"
+                    onClick={openPlayer}
                     className="flex items-center gap-x-2 rounded-md bg-[#e20913] px-5 py-2.5 font-semibold uppercase text-white transition duration-200 hover:bg-[#c20810]"
-                    href={`/movies/watch/${movie.movie.slug}`}
                   >
                     <FaPlay size={18} />
                     {t('watch')}
-                  </Link>
+                  </button>
                 )}
                 <BtnAddToCollection variant="secondary" detailMovie={movie} />
                 <ShareButton title={movie.movie.name} />
@@ -263,14 +289,15 @@ export default function MoviePage({
           </div>
 
           <div className="space-y-2.5">
-            {movie.movie.episode_current !== 'Trailer' && (
-              <Link
-                href={`/movies/watch/${movie.movie.slug}`}
+            {canPlay && (
+              <button
+                type="button"
+                onClick={openPlayer}
                 className="flex min-h-[48px] w-full items-center justify-center gap-x-2 rounded-lg bg-[#e20913] font-semibold uppercase text-white transition duration-200 hover:bg-[#c20810]"
               >
                 <FaPlay size={18} />
                 {t('watch')}
-              </Link>
+              </button>
             )}
             <div className="flex gap-2.5">
               <div className="flex-1 [&>button]:w-full [&>button]:justify-center">

@@ -311,11 +311,25 @@ function stripHtml(html: string | undefined): string {
 // DETAIL
 // ============================================================================
 
-/** Our own resolver route: it 302s to the provider's playlist. */
-export function streamUrl(id: string, type: string, season?: number, episode?: number): string {
+/**
+ * Our own resolver route: it 302s to the provider's playlist.
+ *
+ * `provider` pins the upstream aggregator to one of its servers (`bowler`,
+ * `titan`, …). Without it the backend picks one itself, which is fine for the
+ * default but leaves a viewer whose chosen server is failing with no way to
+ * ask for another. The value travels to `/api/stream`, which forwards it.
+ */
+export function streamUrl(
+  id: string,
+  type: string,
+  season?: number,
+  episode?: number,
+  provider?: string
+): string {
   const params = new URLSearchParams({ id, type });
   if (season != null) params.set('season', String(season));
   if (episode != null) params.set('episode', String(episode));
+  if (provider) params.set('provider', provider);
   return `/api/stream?${params.toString()}`;
 }
 

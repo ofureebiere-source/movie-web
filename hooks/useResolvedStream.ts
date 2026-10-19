@@ -93,8 +93,12 @@ function catalogUrlFor(link: string): { direct: string; proxy: string } | null {
   const search = new URLSearchParams({ id, type });
   const season = params.get('season');
   const episode = params.get('episode');
+  // The server the viewer picked rides along on the resolver link; dropping it
+  // here would silently send every request back to the backend's default.
+  const provider = params.get('provider');
   if (season) search.set('season', season);
   if (episode) search.set('episode', episode);
+  if (provider) search.set('provider', provider);
   upstream.search = search.toString();
 
   // The Edge proxy re-reads the same path server-side, which is the only way
