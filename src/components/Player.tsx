@@ -12,6 +12,7 @@ import {
   SkipBack,
   SkipForward,
   SlidersHorizontal,
+  Smartphone,
   Subtitles,
   Upload,
   Volume2,
@@ -37,6 +38,7 @@ import {
   type SubtitleTextColor,
 } from '@/lib/playerPreferences';
 import { applyAudioProcessing, EQ_BANDS, EQ_DEFAULT, EQ_PRESETS, resumeAudio } from '@/lib/audioEngine';
+import { VIEW_ASPECT_CLASS, nextView, type PlayerView } from '@/lib/viewOrientation';
 import { createCachingFragmentLoader } from '@/lib/segmentCache';
 import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/subtitles';
 import SeekBar from '@/components/SeekBar';
@@ -191,6 +193,11 @@ export default function Player({
 
   const [prefs, setPrefs] = useState(() => readSubtitlePreferences());
   const [aspect, setAspect] = useState<AspectRatio>(() => readAspectRatio());
+  // Orientation is independent of the aspect-ratio preference above: that one
+  // letterboxes the picture inside a fixed landscape box, this one changes the
+  // box itself. The player is a feature film, so it opens landscape (16:9); the
+  // toggle flips to 9:16. Not persisted — landscape is the default on reload.
+  const [view, setView] = useState<PlayerView>('landscape');
   const [boost, setBoost] = useState<AudioBoost>(() => readAudioBoost());
   const [autoplayNext, setAutoplayNext] = useState(() => readAutoplayNext());
   const [playbackRate, setPlaybackRate] = useState(initialSpeed);
@@ -640,6 +647,16 @@ export default function Player({
     }
   }, []);
 
+  // The frame's box is owned by the host, and an iframe cannot report its own
+  // size, so the orientation travels over the bridge. Emitted on mount and on
+  // every flip; the host resizes the box, which is what gives the portrait box
+  // height to bind to.
+  useEffect(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ event: 'frameXTV:view', view }, '*');
+    }
+  }, [view]);
+
   // Tell a host page when playback has genuinely failed — every source tried
   // and none worked — so an embedding watch page can hop servers instead of
   // showing the viewer a dead end.
@@ -794,7 +811,11 @@ export default function Player({
       data-testid="video-player"
       onMouseMove={showControls}
       onMouseLeave={() => playing && menuRef.current === 'none' && setControlsVisible(false)}
-      className={`media-surface relative w-full bg-black overflow-hidden ${ASPECT_CLASS[aspect] || 'aspect-video'} group`}
+      className={`media-surface relative bg-black overflow-hidden ${
+        view === 'portrait'
+          ? `h-full max-w-full mx-auto ${VIEW_ASPECT_CLASS.portrait}`
+          : `w-full ${ASPECT_CLASS[aspect] || VIEW_ASPECT_CLASS.landscape}`
+      } group`}
     >
       <video
         ref={videoRef}
@@ -1652,6 +1673,17 @@ export default function Player({
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              data-testid="player-view-toggle"
+              onClick={() => setView(nextView(view))}
+              aria-label={view === 'landscape' ? 'Switch to portrait view' : 'Switch to landscape view'}
+              title={view === 'landscape' ? 'Portrait' : 'Landscape'}
+              className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              {view === 'landscape' ? <Smartphone className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
 
             <button
               type="button"

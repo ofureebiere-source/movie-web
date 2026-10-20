@@ -5,6 +5,7 @@ import {
   ImageOff,
   Play,
   RefreshCw,
+  RotateCcw,
   Search,
   ShieldCheck,
   Star,
@@ -15,6 +16,7 @@ import MediaCard from './MediaCard';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
 import { getReleaseState } from '@/lib/releaseState';
 import { isUnavailable } from '@/lib/id';
+import { VIEW_ASPECT_CLASS, nextView, type PlayerView } from '@/lib/viewOrientation';
 import type { FxCastMember, FxDetail, FxItem, FxVideo } from '@/lib/api';
 
 /**
@@ -51,6 +53,8 @@ export function TrailerInline({
   slotRef,
   posterRef,
   title,
+  view = 'portrait',
+  onToggleView,
 }: {
   video: FxVideo;
   /** The trailer reached its end. The parent owns the replay/exhaust decision. */
@@ -60,6 +64,9 @@ export function TrailerInline({
   slotRef: React.RefObject<HTMLDivElement | null>;
   posterRef: React.RefObject<HTMLImageElement | null>;
   title?: string;
+  /** `portrait` (9:16) is the trailer's default; `landscape` is 16:9. */
+  view?: PlayerView;
+  onToggleView?: (next: PlayerView) => void;
 }) {
   const [entered, setEntered] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -141,18 +148,44 @@ export function TrailerInline({
       aria-label={title ? `${title} trailer` : 'Media trailer'}
       className={`absolute inset-0 z-20 overflow-hidden bg-black ${entered ? 'opacity-100' : 'opacity-0'}`}
     >
-      {/* Keyed on the replay nonce so a replay is a genuine remount: the embed
-          must start from 0:00, and re-setting src on the same element is not a
-          reliable restart. */}
-      <iframe
-        key={replayNonce}
-        ref={frameRef}
-        src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
-        title={video.name || `${title || 'Title'} Official Trailer`}
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        className="w-full h-full border-0"
-      />
+      {/* Portrait is driven by the panel's height (9:16, so it reads as a phone);
+          landscape fills the panel outright, exactly as it did before the
+          toggle existed. */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div
+          className={
+            view === 'portrait'
+              ? `relative h-full ${VIEW_ASPECT_CLASS.portrait}`
+              : 'relative w-full h-full'
+          }
+        >
+          {/* Keyed on the replay nonce so a replay is a genuine remount: the embed
+              must start from 0:00, and re-setting src on the same element is not a
+              reliable restart. */}
+          <iframe
+            key={replayNonce}
+            ref={frameRef}
+            src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
+            title={video.name || `${title || 'Title'} Official Trailer`}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="w-full h-full border-0"
+          />
+        </div>
+      </div>
+      {onToggleView && (
+        <button
+          type="button"
+          data-testid="trailer-view-toggle"
+          onClick={() => onToggleView(nextView(view))}
+          aria-label={view === 'portrait' ? 'Switch to landscape view' : 'Switch to portrait view'}
+          title={view === 'portrait' ? 'Landscape' : 'Portrait'}
+          className="absolute bottom-3 right-3 z-30 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/70 hover:bg-black/90 backdrop-blur-md border border-white/15 text-[11px] font-medium text-white transition-colors cursor-pointer"
+        >
+          <RotateCcw className="w-3.5 h-3.5" />
+          {view === 'portrait' ? 'Landscape' : 'Portrait'}
+        </button>
+      )}
     </div>
   );
 }
@@ -204,6 +237,9 @@ export function DetailHero({
   const [replays, setReplays] = useState(0);
   const [replayNonce, setReplayNonce] = useState(0);
   const [watchNowReady, setWatchNowReady] = useState(false);
+  // The trailer opens portrait (9:16); the toggle flips it to landscape. Not
+  // persisted — the default is a property of the trailer, not of the viewer.
+  const [trailerView, setTrailerView] = useState<PlayerView>('portrait');
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const posterSlotRef = useRef<HTMLDivElement | null>(null);
   const posterImgRef = useRef<HTMLImageElement | null>(null);
@@ -301,6 +337,8 @@ export function DetailHero({
           posterRef={posterImgRef}
           replayNonce={replayNonce}
           onFinish={onTrailerFinish}
+          view={trailerView}
+          onToggleView={setTrailerView}
         />
       )}
 
