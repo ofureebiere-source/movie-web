@@ -14,7 +14,7 @@ import SearchPage from '@/pages/SearchPage';
 import MyListPage from '@/pages/MyListPage';
 import HistoryPage from '@/pages/HistoryPage';
 import ApiPage from '@/pages/ApiPage';
-import ConfiguratorPage from '@/pages/ConfiguratorPage';
+import StreamConfiguratorPage from '@/pages/StreamConfiguratorPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { useTheme } from '@/lib/theme';
 
@@ -49,14 +49,18 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Bare player, outside the site chrome. */}
-          <Route path="/embed" element={<EmbedPage />} />
+          <Route path="/embed/anime/*" element={<EmbedPage />} />
           <Route path="/embed/anime" element={<EmbedPage />} />
+          <Route path="/anime/embed/*" element={<EmbedPage />} />
+          <Route path="/anime/embed" element={<EmbedPage />} />
           <Route path="/embed/movie/:tmdbId" element={<EmbedPage />} />
-          <Route path="/embed/tv/:tmdbId" element={<EmbedPage />} />
           <Route path="/embed/tv/:tmdbId/:season/:episode" element={<EmbedPage />} />
+          <Route path="/embed/tv/:tmdbId" element={<EmbedPage />} />
           <Route path="/embed/series/:tmdbId/:season/:episode" element={<EmbedPage />} />
-          <Route path="/embed/:tmdbId" element={<EmbedPage />} />
           <Route path="/embed/:tmdbId/:season/:episode" element={<EmbedPage />} />
+          <Route path="/embed/:tmdbId" element={<EmbedPage />} />
+          <Route path="/embed/*" element={<EmbedPage />} />
+          <Route path="/embed" element={<EmbedPage />} />
 
           <Route element={<Layout />}>
             <Route path="/" element={<HomePage />} />
@@ -67,7 +71,7 @@ export default function App() {
             <Route path="/api" element={<ApiPage />} />
             <Route path="/docs" element={<ApiPage />} />
             <Route path="/docs/*" element={<ApiPage />} />
-            <Route path="/configurator" element={<ConfiguratorPage />} />
+            <Route path="/configurator" element={<StreamConfiguratorPage />} />
             <Route path="/history" element={<HistoryPage />} />
             <Route path="/my-list" element={<MyListPage />} />
             <Route path="/search" element={<SearchPage />} />
@@ -77,8 +81,9 @@ export default function App() {
             <Route path="/tv/:tmdbId" element={<TVDetailPage />} />
             <Route path="/watch/anime/:anilistId" element={<WatchPage />} />
             <Route path="/watch/anime/:anilistId/:episode" element={<WatchPage />} />
-            <Route path="/watch/:id" element={<WatchPage />} />
-            <Route path="/watch/:id/:season/:episode" element={<WatchPage />} />
+            <Route path="/watch/:tmdbId" element={<WatchPage />} />
+            <Route path="/watch/:tmdbId/:season/:episode" element={<WatchPage />} />
+            <Route path="/404" element={<NotFoundPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

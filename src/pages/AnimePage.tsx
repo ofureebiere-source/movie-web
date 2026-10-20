@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertCircle, Search, Sparkles } from 'lucide-react';
+import { AlertCircle, Search, SlidersVertical, Sparkles } from 'lucide-react';
+import AnimeEmbedConfigurator from '@/components/AnimeEmbedConfigurator';
 import DiscoveryFilterBar, { type GenreOption } from '@/components/DiscoveryFilterBar';
 import DiscoveryRail from '@/components/DiscoveryRail';
 import MediaCard from '@/components/MediaCard';
@@ -10,12 +11,15 @@ import { useDiscoveryRail, useFilteredDiscovery } from '@/hooks/useApiQueries';
 import { pageTitle } from '@/lib/brand';
 
 /**
- * The anime browse page.
+ * The anime page.
  *
- * Ported 1:1 from frameXTV.xyz's `AnimePage`. The genre list is NAMES (the
- * anime upstream does not take TMDB ids), the hero comes from the trending
- * rail, and filtering switches the page to a grid. The reference also offers an
- * "Embed Configurator" tab here; that lives on `/configurator` in this port.
+ * Ported 1:1 from frameXTV.xyz's `AnimePage`, which is two pages in one: the
+ * browse view (hero, search, filter bar, then either the filtered grid or the
+ * ten curated rails) and the embed configurator, switched by an in-page tab.
+ *
+ * The configurator tab used to be a separate `/configurator` route; it is now
+ * the same component rendered inside this page, and `/configurator` still
+ * resolves to it so old links keep working.
  */
 
 const GENRES: GenreOption[] = [
@@ -48,9 +52,10 @@ const RAILS = [
 ];
 
 export default function AnimePage() {
+  const [mode, setMode] = useState<'browse' | 'configurator'>('browse');
+  const [query, setQuery] = useState('');
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const [query, setQuery] = useState('');
 
   const trending = useDiscoveryRail('anime', 'trending');
   const heroItem = trending.data?.results?.[0];
@@ -68,7 +73,7 @@ export default function AnimePage() {
     {
       genre,
       year,
-      minRating: rating ? String(Number(rating) * 10) : undefined,
+      minRating: rating ? String(parseFloat(rating) * 10) : undefined,
       sort,
       season,
       status,
@@ -94,111 +99,123 @@ export default function AnimePage() {
           <div className="flex items-center space-x-1 bg-black p-0.5 rounded-lg border border-white/[0.08] text-xs">
             <button
               type="button"
-              className="flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition-colors cursor-pointer bg-rose-500 text-white font-bold shadow-sm"
+              onClick={() => setMode('browse')}
+              className={`flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                mode === 'browse' ? 'bg-rose-500 text-white font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
+              }`}
             >
               <span>Anime Discovery</span>
             </button>
             <button
               type="button"
-              onClick={() => navigate('/configurator')}
-              className="flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition-colors cursor-pointer text-zinc-400 hover:text-white"
+              onClick={() => setMode('configurator')}
+              className={`flex items-center space-x-1.5 px-3 py-1 rounded-md font-medium transition-colors cursor-pointer ${
+                mode === 'configurator' ? 'bg-zinc-800 text-white font-bold shadow-sm' : 'text-zinc-400 hover:text-white'
+              }`}
             >
+              <SlidersVertical className="w-3 h-3" />
               <span>Embed Configurator</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div>
-        {!hasFilter && <Hero item={heroItem} isLoading={trending.isLoading} />}
+      {mode === 'browse' ? (
+        <div>
+          {!hasFilter && <Hero item={heroItem} isLoading={trending.isLoading} />}
 
-        <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}&type=anime`);
-            }}
-            className="relative max-w-lg w-full bg-zinc-950/80 p-1.5 rounded-xl border border-white/[0.08] flex items-center transition-all"
-          >
-            <Search className="w-4 h-4 ml-2.5 text-zinc-500 shrink-0" />
-            <input
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search anime by title or AniList ID..."
-              className="w-full bg-transparent text-white placeholder-zinc-500 text-xs px-3 py-1.5 outline-none focus:outline-none focus:ring-0"
-            />
-            <button
-              type="submit"
-              disabled={!query.trim()}
-              className="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:hover:bg-rose-500 text-white text-[11px] font-bold transition-colors cursor-pointer disabled:cursor-not-allowed shrink-0"
+          <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-6">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (query.trim()) navigate(`/search?q=${encodeURIComponent(query.trim())}&type=anime`);
+              }}
+              className="relative max-w-lg w-full bg-zinc-950/80 p-1.5 rounded-xl border border-white/[0.08] flex items-center transition-all"
             >
-              Search
-            </button>
-          </form>
+              <Search className="w-4 h-4 ml-2.5 text-zinc-500 shrink-0" />
+              <input
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search anime by title or AniList ID..."
+                className="w-full bg-transparent text-white placeholder-zinc-500 text-xs px-3 py-1.5 outline-none focus:outline-none focus:ring-0"
+              />
+              <button
+                type="submit"
+                disabled={!query.trim()}
+                className="px-3 py-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:hover:bg-rose-500 text-white text-[11px] font-bold transition-colors cursor-pointer disabled:cursor-not-allowed shrink-0"
+              >
+                Search
+              </button>
+            </form>
 
-          <DiscoveryFilterBar type="anime" genres={GENRES} />
+            <DiscoveryFilterBar type="anime" genres={GENRES} />
 
-          {hasFilter ? (
-            <div className="space-y-4 pt-2">
-              <div className="flex items-center justify-between border-b border-white/[0.04] pb-3">
-                <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                  <span>Filtered Anime Discovery</span>
-                  <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-zinc-400 text-xs font-mono font-semibold">
-                    {items.length} titles
-                  </span>
-                </h2>
+            {hasFilter ? (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between border-b border-white/[0.04] pb-3">
+                  <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                    <span>Filtered Anime Discovery</span>
+                    <span className="px-2 py-0.5 rounded-full bg-zinc-900 text-zinc-400 text-xs font-mono font-semibold">
+                      {items.length} titles
+                    </span>
+                  </h2>
+                </div>
+
+                {isLoading ? (
+                  <GridSkeleton count={12} />
+                ) : isError ? (
+                  <div className="p-8 rounded-2xl bg-zinc-950/60 border border-white/[0.06] text-center space-y-2">
+                    <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+                    <p className="text-sm font-semibold text-white">Failed to load filtered anime</p>
+                    <p className="text-xs text-zinc-500 font-mono">
+                      {error instanceof Error ? error.message : 'Upstream service unavailable'}
+                    </p>
+                  </div>
+                ) : items.length === 0 ? (
+                  <div className="p-12 text-center rounded-2xl bg-zinc-950/40 border border-white/[0.06] space-y-2">
+                    <p className="text-sm font-semibold text-zinc-300">No anime match your filter criteria</p>
+                    <p className="text-xs text-zinc-500">Try adjusting your genre, season, or year thresholds.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 xs:gap-3 sm:gap-4">
+                    {items.map((item) => (
+                      <MediaCard
+                        key={`filtered-anime-${item.id}`}
+                        id={item.id}
+                        type="anime"
+                        title={item.title}
+                        poster={item.poster || item.image}
+                        year={item.year}
+                        rating={item.rating}
+                        anilistId={item.anilistId || item.id}
+                        className="w-full"
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-
-              {isLoading ? (
-                <GridSkeleton count={12} />
-              ) : isError ? (
-                <div className="p-8 rounded-2xl bg-zinc-950/60 border border-white/[0.06] text-center space-y-2">
-                  <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
-                  <p className="text-sm font-semibold text-white">Failed to load filtered anime</p>
-                  <p className="text-xs text-zinc-500 font-mono">
-                    {error instanceof Error ? error.message : 'Upstream service unavailable'}
-                  </p>
-                </div>
-              ) : items.length === 0 ? (
-                <div className="p-12 text-center rounded-2xl bg-zinc-950/40 border border-white/[0.06] space-y-2">
-                  <p className="text-sm font-semibold text-zinc-300">No anime match your filter criteria</p>
-                  <p className="text-xs text-zinc-500">Try adjusting your genre, season, or year thresholds.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 xs:gap-3 sm:gap-4">
-                  {items.map((item) => (
-                    <MediaCard
-                      key={`filtered-anime-${item.id}`}
-                      id={item.id}
-                      type="anime"
-                      title={item.title}
-                      poster={item.poster || item.image}
-                      year={item.year}
-                      rating={item.rating}
-                      anilistId={item.anilistId || item.id}
-                      className="w-full"
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-8 pt-2">
-              {RAILS.map((rail) => (
-                <DiscoveryRail
-                  key={rail.title}
-                  title={rail.title}
-                  subtitle={rail.subtitle}
-                  type="anime"
-                  category={rail.category}
-                  extraParams={rail.genre ? { genre: rail.genre } : undefined}
-                />
-              ))}
-            </div>
-          )}
+            ) : (
+              <div className="space-y-8 pt-2">
+                {RAILS.map((rail) => (
+                  <DiscoveryRail
+                    key={rail.title}
+                    title={rail.title}
+                    subtitle={rail.subtitle}
+                    type="anime"
+                    category={rail.category}
+                    extraParams={rail.genre ? { genre: rail.genre } : undefined}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 py-8">
+          <AnimeEmbedConfigurator />
+        </div>
+      )}
     </div>
   );
 }

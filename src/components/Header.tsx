@@ -1,33 +1,59 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Bookmark, Clock, Film, Home, Search, Sparkles, Tv, Code2 } from 'lucide-react';
-import { WORDMARK_ACCENT, WORDMARK_LEAD } from '@/lib/brand';
+import { Bookmark, Check, Clock, Code2, Copy, Film, Home, Search, Sparkles, Tv } from 'lucide-react';
+import { DiscordIcon, PumpIcon, XIcon } from '@/components/BrandIcons';
+import {
+  BADGE,
+  DISCORD_URL,
+  SITE_LEAD,
+  SITE_MIDDLE,
+  SITE_TAIL,
+  TOKEN_CA,
+  TOKEN_SHORT,
+  TOKEN_URL,
+  X_HANDLE,
+  X_URL,
+} from '@/lib/brand';
 import MobileNav from './MobileNav';
 
 /**
  * The sticky top bar.
  *
- * Ported 1:1 from frameXTV.xyz's header: a 14-unit bar, a square badge + two
- * tone wordmark on the left, the five primary destinations in the middle
- * (hidden below `sm`), and the Search / My List / History actions on the right.
- * The mobile variant is the fixed bottom nav.
+ * Ported 1:1 from frameXTV.xyz's header: a 14-unit bar, a square `fX` badge +
+ * three-tone wordmark on the left, the five primary destinations in the middle
+ * (hidden below `sm`), then Search / My List / History / X / Discord / the
+ * $XTV token chip on the right. The mobile variant is the fixed bottom nav.
  *
  * The `/` shortcut focuses search from anywhere, and the `kbd` chip in the
- * search button advertises it.
+ * search button advertises it. The token chip's Copy button writes the CA to
+ * the clipboard and flips to "Copied!" for two seconds, and the chip body
+ * opens the donation modal through `framextv:open_donation_modal` — both as
+ * upstream.
  */
 
 const NAV = [
   { label: 'Home', path: '/', icon: Home, match: (p: string) => p === '/' },
-  { label: 'Movies', path: '/movies', icon: Film, match: (p: string) => p.startsWith('/movies') || p.startsWith('/movie') },
+  {
+    label: 'Movies',
+    path: '/movies',
+    icon: Film,
+    match: (p: string) => p.startsWith('/movies') || p.startsWith('/movie'),
+  },
   { label: 'TV', path: '/tv', icon: Tv, match: (p: string) => p.startsWith('/tv') },
   { label: 'Anime', path: '/anime', icon: Sparkles, match: (p: string) => p.startsWith('/anime') },
-  { label: 'API', path: '/api', icon: Code2, match: (p: string) => p.startsWith('/api') || p.startsWith('/docs') },
+  {
+    label: 'API',
+    path: '/api',
+    icon: Code2,
+    match: (p: string) => p.startsWith('/api') || p.startsWith('/docs'),
+  },
 ];
 
 export default function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -53,6 +79,14 @@ export default function Header() {
         : 'glass-control bg-zinc-950/80 hover:bg-zinc-900 border-white/[0.08] text-zinc-300 hover:text-white hover:border-white/[0.15]'
     }`;
 
+  const copyToken = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    void navigator.clipboard?.writeText(TOKEN_CA).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   return (
     <>
       <header className="border-b border-white/[0.05] bg-black/95 glass-panel backdrop-blur-md sticky top-0 z-50 w-full overflow-hidden">
@@ -60,12 +94,16 @@ export default function Header() {
           <div className="flex items-center space-x-2 shrink-0">
             <Link
               to="/"
-              className="flex items-center text-left focus-visible:ring-2 focus-visible:ring-zinc-400/50 rounded-md cursor-pointer group"
+              className="flex items-center space-x-2 text-left focus-visible:ring-2 focus-visible:ring-zinc-400/50 rounded-md cursor-pointer group"
             >
-              <div className="flex items-baseline whitespace-nowrap">
-                <span className="font-extrabold tracking-tight text-white text-base sm:text-lg transition-opacity group-hover:opacity-80">
-                  {WORDMARK_LEAD}
-                  <span className="text-brand-red">{WORDMARK_ACCENT}</span>
+              <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-bold font-mono text-xs tracking-tighter shadow-sm border border-zinc-200 transition-transform group-hover:scale-105 shrink-0">
+                {BADGE}
+              </div>
+              <div className="flex items-baseline space-x-1.5 whitespace-nowrap">
+                <span className="font-extrabold tracking-tight text-white text-base sm:text-lg">
+                  {SITE_LEAD}
+                  <span className="text-zinc-400">{SITE_MIDDLE}</span>
+                  {SITE_TAIL}
                 </span>
               </div>
             </Link>
@@ -134,6 +172,89 @@ export default function Header() {
               <Clock className={`w-3.5 h-3.5 ${isHistory ? 'text-black' : 'text-zinc-400'}`} />
               <span className="hidden md:inline">History</span>
             </Link>
+
+            <a
+              href={X_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg glass-control bg-zinc-950/80 hover:bg-zinc-900 border border-white/[0.08] hover:border-white/[0.15] text-zinc-300 hover:text-white transition-all text-xs font-medium shrink-0 items-center gap-1.5"
+              title={`Follow on X (${X_HANDLE})`}
+              aria-label="Follow on X"
+            >
+              <XIcon className="w-3.5 h-3.5" />
+              <span className="hidden xl:inline">{X_HANDLE}</span>
+            </a>
+
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg glass-control bg-zinc-950/80 hover:bg-zinc-900 border border-white/[0.08] hover:border-white/[0.15] text-zinc-300 hover:text-white transition-all text-xs font-medium shrink-0 flex items-center gap-1.5"
+              title="Join Discord community"
+              aria-label="Join Discord"
+            >
+              <DiscordIcon className="w-3.5 h-3.5" />
+              <span className="hidden lg:inline">Community</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('framextv:open_donation_modal'))}
+              className="sm:hidden p-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-900 border border-[#14F195]/30 hover:border-[#14F195]/60 text-[#14F195] transition-all text-xs shrink-0 flex items-center justify-center cursor-pointer active:scale-95"
+              title={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto (Solana / BTC)`}
+              aria-label={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto`}
+            >
+              <PumpIcon className="w-3.5 h-3.5" />
+            </button>
+
+            <div
+              className="hidden sm:flex items-center shrink-0 border border-zinc-700/80 rounded-md overflow-hidden text-xs font-mono select-none shadow-sm"
+              role="group"
+              aria-label={`${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} Token Contract Address`}
+            >
+              <a
+                href={TOKEN_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="View $XTV on pump.fun"
+                className="bg-white hover:bg-zinc-200 active:bg-zinc-300 text-black font-black px-2 sm:px-2.5 py-1 sm:py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer tracking-tight"
+              >
+                <PumpIcon className="w-3 h-3 text-black shrink-0" />
+                <span>$XTV</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event('framextv:open_donation_modal'))}
+                title={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto (Click to open donation modal)`}
+                aria-label={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto`}
+                className="bg-black hover:bg-zinc-900 active:bg-zinc-800 text-zinc-200 px-2 sm:px-2.5 py-1 sm:py-1.5 border-x border-zinc-700/80 transition-colors cursor-pointer tracking-wider font-semibold flex items-center gap-1"
+              >
+                <span>{TOKEN_SHORT}</span>
+              </button>
+              <button
+                type="button"
+                onClick={copyToken}
+                title="Copy Token CA"
+                aria-label="Copy Token Contract Address"
+                className={`px-2 sm:px-2.5 py-1 sm:py-1.5 font-bold text-[11px] sm:text-xs transition-all cursor-pointer flex items-center gap-1 ${
+                  copied
+                    ? 'bg-emerald-500 text-black font-extrabold shadow-inner'
+                    : 'bg-white hover:bg-zinc-200 active:bg-zinc-300 text-black'
+                }`}
+              >
+                {copied ? (
+                  <>
+                    <Check className="w-3 h-3 stroke-[3]" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </header>

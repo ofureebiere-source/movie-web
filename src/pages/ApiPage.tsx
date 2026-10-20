@@ -1,169 +1,323 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Check, Code2, Copy, ExternalLink, Lock, Zap } from 'lucide-react';
-import { SITE_NAME, TAGLINE } from '@/lib/brand';
-import { apiBase, BACKENDS } from '@/lib/config';
-import { pageTitle } from '@/lib/brand';
+import { BookOpen, Check, ChevronRight, Code2, Copy, Server, SlidersVertical } from 'lucide-react';
+import { SITE_NAME } from '@/lib/brand';
 
 /**
- * The API / docs page.
+ * The API / documentation page.
  *
- * Ported 1:1 from frameXTV.xyz's `DocsPage` + `Dashboard`: the endpoint table,
- * the copyable embed snippets, the feature list, and a live "active backend"
- * readout so a viewer can confirm which origin the failover settled on.
+ * Ported 1:1 from frameXTV.xyz's `DocsPage`: a sticky sidebar of four sections
+ * with a scroll spy, then Getting Started (iframe + React snippets), the
+ * query-parameter table, the postMessage SDK, and the provider pipeline.
+ *
+ * The one deliberate difference is the embed origin. The reference hardcodes
+ * its own apex domain unless it is running on a real deployment, which would
+ * make every snippet on a self-hosted copy point at somebody else's site. Here
+ * the origin is always `window.location.origin`, so the copied snippet targets
+ * the instance that produced it.
  */
 
-const ENDPOINTS: { method: string; path: string; description: string }[] = [
-  { method: 'GET', path: '/api/home', description: 'Curated hero plus the ten home rails in one payload' },
-  { method: 'GET', path: '/api/discover?type=movie|tv', description: 'Paged catalogue with category, genre, year, sort and min_rating' },
-  { method: 'GET', path: '/anime/api/discover', description: 'Paged anime catalogue (genre names, season, seasonYear, status)' },
-  { method: 'GET', path: '/api/search?q=&type=', description: 'Keyword search across films and series' },
-  { method: 'GET', path: '/api/details?id=&type=', description: 'One title with cast, videos, recommendations and seasons' },
-  { method: 'GET', path: '/api/season?id=&season=', description: "One season's episode list" },
-  { method: 'GET', path: '/api/stream?type=&id=&season=&episode=', description: 'Playable sources plus subtitle tracks' },
-  { method: 'GET', path: '/anime/api/stream', description: 'Playable anime sources' },
-  { method: 'GET', path: '/api/providers', description: 'The aggregator server directory' },
-  { method: 'GET', path: '/api/meta?id=&type=', description: 'Title, year and poster for a card' },
-  { method: 'GET', path: '/api/subtitles?id=&type=', description: 'Subtitle tracks for a title' },
+type SectionId = 'getting-started' | 'query-params' | 'post-message-api' | 'providers';
+
+const NAV: { id: SectionId; label: string; icon: typeof BookOpen }[] = [
+  { id: 'getting-started', label: 'Getting Started', icon: BookOpen },
+  { id: 'query-params', label: 'Query Parameters', icon: SlidersVertical },
+  { id: 'post-message-api', label: 'PostMessage API', icon: Code2 },
+  { id: 'providers', label: 'Providers & Pipeline', icon: Server },
 ];
 
-function CopyButton({ value, label = 'Copy' }: { value: string; label?: string }) {
-  const [copied, setCopied] = useState(false);
+const PARAMS: { name: string; values: string; fallback: string; description: string }[] = [
+  { name: 'autoplay', values: '1 | 0', fallback: '1', description: 'Automatically start video playback on iframe load.' },
+  { name: 'muted', values: '1 | 0', fallback: '0', description: 'Start playback muted (required by browsers for unmuted autoplay).' },
+  { name: 't / start', values: 'seconds (e.g. 120)', fallback: '0', description: 'Seek directly to specified timestamp in seconds on playback start.' },
+  { name: 'speed', values: '0.5 | 1 | 1.25 | 1.5 | 2', fallback: '1', description: 'Set initial video playback speed rate.' },
+  { name: 'controls', values: '1 | 0', fallback: '1', description: 'Show or hide custom bottom video player control bar.' },
+  { name: 'server / provider', values: 'barbarian | archer | goblin ...', fallback: 'auto', description: 'Pre-select active extraction server provider.' },
+  { name: 'title', values: 'string', fallback: 'null', description: 'Override title overlay banner text shown inside player header.' },
+  { name: 'poster / backdrop', values: 'image_url', fallback: 'null', description: 'Custom background poster image URL before video playback starts.' },
+];
+
+const PROVIDERS: { name: string; description: string }[] = [
+  { name: 'Barbarian I', description: 'Built-in multi-language subtitles & ultra-fast HLS stream decryption.' },
+  { name: 'Archer II', description: 'Multi-audio tracks & 4K Ultra HD playback support.' },
+  { name: 'Goblin III', description: 'Fast automatic stream extraction mirror for popular titles.' },
+  { name: 'P.E.K.K.A IV', description: 'High bitrate 1080p uncompressed stream server.' },
+];
+
+export default function ApiPage() {
+  const [section, setSection] = useState<SectionId>('getting-started');
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://example.com';
+
+  useEffect(() => {
+    document.title = `API & Embed Documentation — ${SITE_NAME}`;
+  }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY + 120;
+      for (let i = NAV.length - 1; i >= 0; i -= 1) {
+        const node = document.getElementById(NAV[i].id);
+        if (node && node.offsetTop <= y) {
+          setSection(NAV[i].id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const copy = (value: string, key: string) => {
+    void navigator.clipboard?.writeText(value);
+    setCopied(key);
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const goTo = (id: SectionId) => {
+    setSection(id);
+    const node = document.getElementById(id);
+    if (!node) return;
+    window.scrollTo({ top: node.getBoundingClientRect().top + window.pageYOffset - 80, behavior: 'smooth' });
+  };
+
+  const iframeSnippet = `<iframe
+  src="${origin}/embed/550?autoplay=1&muted=0"
+  width="100%"
+  height="100%"
+  frameborder="0"
+  allowfullscreen
+></iframe>`;
+
+  const reactSnippet = `import React from 'react';
+
+export function VideoPlayer({ tmdbId, season, episode }) {
+  const embedUrl = season && episode
+    ? "${origin}/embed/\${tmdbId}/\${season}/\${episode}"
+    : "${origin}/embed/\${tmdbId}";
+
   return (
-    <button
-      type="button"
-      onClick={() => {
-        void navigator.clipboard?.writeText(value);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono transition-colors cursor-pointer ${
-        copied ? 'bg-emerald-500 text-black' : 'bg-white text-black hover:bg-zinc-200'
-      }`}
-    >
-      {copied ? <Check className="w-3 h-3 stroke-[3]" /> : <Copy className="w-3 h-3" />}
-      <span>{copied ? 'Copied!' : label}</span>
-    </button>
+    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-zinc-800">
+      <iframe
+        src={embedUrl}
+        className="w-full h-full border-0"
+        allowFullScreen
+        title="${SITE_NAME} Stream Player"
+      />
+    </div>
+  );
+}`;
+
+  const postMessageSnippet = `// Select target iframe element
+const iframe = document.querySelector('iframe');
+
+// Send Play / Pause Commands
+iframe.contentWindow.postMessage({ action: 'play' }, '*');
+iframe.contentWindow.postMessage({ action: 'pause' }, '*');
+
+// Seek to specific timestamp (seconds) or relative offset (+10s / -10s)
+iframe.contentWindow.postMessage({ action: 'seek', time: 120 }, '*');
+iframe.contentWindow.postMessage({ action: 'seekBy', seconds: 10 }, '*');
+
+// Volume & Mute Control (0.0 to 1.0)
+iframe.contentWindow.postMessage({ action: 'setVolume', volume: 0.8 }, '*');
+iframe.contentWindow.postMessage({ action: 'mute' }, '*');
+
+// Switch Active Extraction Provider & Subtitle Index
+iframe.contentWindow.postMessage({ action: 'setProvider', provider: 'archer' }, '*');
+iframe.contentWindow.postMessage({ action: 'setSubtitle', index: 0 }, '*');
+
+// Listen to Real-Time Telemetry Events from Player
+window.addEventListener('message', (event) => {
+  if (event.data?.event === 'frameXTV:timeupdate') {
+    console.log('Progress:', event.data.currentTime, '/', event.data.duration);
+  }
+});`;
+
+  return (
+    <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans selection:bg-white selection:text-black">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col lg:flex-row gap-8">
+        <aside className="w-full lg:w-64 shrink-0 space-y-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 sticky top-20 shadow-md">
+            <div className="flex items-center space-x-2 border-b border-zinc-800 pb-3 mb-3">
+              <BookOpen className="w-4 h-4 text-white" />
+              <h2 className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-300">Documentation</h2>
+            </div>
+            <nav className="flex lg:flex-col overflow-x-auto lg:overflow-visible gap-1 pb-1 lg:pb-0 no-scrollbar scroll-touch">
+              {NAV.map((entry) => {
+                const active = section === entry.id;
+                const Icon = entry.icon;
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => goTo(entry.id)}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap lg:whitespace-normal w-full shrink-0 lg:shrink min-h-[36px] cursor-pointer active:scale-95 ${
+                      active ? 'bg-white text-black font-bold shadow-sm' : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Icon className={`w-3.5 h-3.5 ${active ? 'text-black' : 'text-zinc-400'}`} />
+                      <span>{entry.label}</span>
+                    </div>
+                    <ChevronRight className={`hidden lg:block w-3.5 h-3.5 opacity-60 ${active ? 'text-black' : 'text-transparent'}`} />
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+        </aside>
+
+        <div className="flex-1 min-w-0 space-y-12">
+          <section id="getting-started" className="space-y-6 scroll-mt-24">
+            <div className="border-b border-zinc-800 pb-4">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Overview</span>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
+                Getting Started with {SITE_NAME}
+              </h1>
+              <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-3xl">
+                {SITE_NAME} provides ultra-fast, clean, and responsive HTML5 iframe stream embeds for movies and TV
+                shows. Easily integrate high-bitrate video streams into any web app, CMS, or streaming portal using
+                standard IFrames or JavaScript controls.
+              </p>
+            </div>
+
+            <SnippetCard
+              title="Basic IFrame Integration"
+              code={iframeSnippet}
+              copied={copied === 'basic-iframe'}
+              onCopy={() => copy(iframeSnippet, 'basic-iframe')}
+              wrap
+            />
+            <SnippetCard
+              title="React / Next.js Component Example"
+              code={reactSnippet}
+              copied={copied === 'react-snippet'}
+              onCopy={() => copy(reactSnippet, 'react-snippet')}
+            />
+          </section>
+
+          <section id="query-params" className="space-y-6 scroll-mt-24">
+            <div className="border-b border-zinc-800 pb-4">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Configuration</span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">URL Query Parameters Reference</h2>
+              <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-3xl">
+                Customize playback behavior, pre-select server extractors, set initial timestamps, or hide UI controls
+                directly by appending URL query parameters to any embed link.
+              </p>
+            </div>
+
+            <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-lg">
+              <div className="overflow-x-auto scroll-touch">
+                <table className="w-full min-w-[500px] text-left text-xs font-mono border-collapse">
+                  <thead className="bg-zinc-900 text-zinc-400 border-b border-zinc-800 text-[10px] uppercase tracking-wider">
+                    <tr>
+                      <th className="p-3.5">Parameter</th>
+                      <th className="p-3.5">Accepted Values</th>
+                      <th className="p-3.5">Default</th>
+                      <th className="p-3.5">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800/80 text-zinc-300 text-[11px]">
+                    {PARAMS.map((param) => (
+                      <tr key={param.name} className="hover:bg-zinc-900/50 transition-colors">
+                        <td className="p-3.5 font-bold text-white">{param.name}</td>
+                        <td className="p-3.5 text-zinc-400">{param.values}</td>
+                        <td className="p-3.5 text-zinc-500">{param.fallback}</td>
+                        <td className="p-3.5 font-sans text-zinc-300">{param.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <section id="post-message-api" className="space-y-6 scroll-mt-24">
+            <div className="border-b border-zinc-800 pb-4">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">SDK Reference</span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
+                JavaScript postMessage API Controller
+              </h2>
+              <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-3xl">
+                Control the embedded {SITE_NAME} player dynamically from your host webpage using standard cross-window
+                postMessage events. Send playback actions (play, pause, seek, volume, provider) or listen to real-time
+                playback telemetry events.
+              </p>
+            </div>
+
+            <SnippetCard
+              title="postMessage JavaScript SDK Example"
+              code={postMessageSnippet}
+              copied={copied === 'postmessage-code'}
+              onCopy={() => copy(postMessageSnippet, 'postmessage-code')}
+            />
+          </section>
+
+          <section id="providers" className="space-y-6 scroll-mt-24">
+            <div className="border-b border-zinc-800 pb-4">
+              <span className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Infrastructure</span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white mt-1">
+                Extraction Providers &amp; Fallback Pipeline
+              </h2>
+              <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-3xl">
+                {SITE_NAME} aggregates multi-tier stream extraction servers (Barbarian, Archer, Goblin, P.E.K.K.A,
+                etc.). If an extraction source experiences downtime or buffering issues, the engine automatically falls
+                back to alternative active providers.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {PROVIDERS.map((provider) => (
+                <div key={provider.name} className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 space-y-2">
+                  <h4 className="text-xs font-mono font-bold uppercase text-white flex items-center space-x-2">
+                    <span className="w-2 h-2 rounded-full bg-white" />
+                    <span>{provider.name}</span>
+                  </h4>
+                  <p className="text-xs text-zinc-400 font-sans">{provider.description}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
   );
 }
 
-export default function ApiPage() {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://example.com';
-  const [backend, setBackend] = useState(() => apiBase());
-
-  useEffect(() => {
-    document.title = pageTitle('API & Embeds');
-  }, []);
-
-  useEffect(() => {
-    const onSwitch = () => setBackend(apiBase());
-    window.addEventListener('framextv:backend_switch', onSwitch);
-    return () => window.removeEventListener('framextv:backend_switch', onSwitch);
-  }, []);
-
-  const movieEmbed = `<iframe\n  src="${origin}/embed/27205"\n  width="100%" height="100%"\n  frameborder="0"\n  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"\n  allowfullscreen\n></iframe>`;
-
-  const tvEmbed = `<iframe\n  src="${origin}/embed/tv/1396/1/1?autoplay=1"\n  width="100%" height="100%"\n  frameborder="0"\n  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"\n  allowfullscreen\n></iframe>`;
-
-  const animeEmbed = `<iframe\n  src="${origin}/embed/anime?id=21&episode=1&autoplay=1"\n  width="100%" height="100%"\n  frameborder="0"\n  allow="autoplay; encrypted-media; picture-in-picture; fullscreen"\n  allowfullscreen\n></iframe>`;
-
+function SnippetCard({
+  title,
+  code,
+  copied,
+  onCopy,
+  wrap = false,
+}: {
+  title: string;
+  code: string;
+  copied: boolean;
+  onCopy: () => void;
+  wrap?: boolean;
+}) {
   return (
-    <div className="max-w-7xl w-full mx-auto px-3 sm:px-6 py-6 sm:py-8 space-y-8">
-      <div className="space-y-2 border-b border-white/[0.04] pb-5">
-        <div className="flex items-center space-x-2">
-          <Code2 className="w-4 h-4 text-white" />
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">API &amp; Embeds</h1>
-        </div>
-        <p className="text-xs sm:text-sm text-zinc-400 max-w-3xl leading-relaxed">
-          {SITE_NAME} exposes a keyless catalogue API and a drop-in iframe player. {TAGLINE}. All endpoints are
-          CORS-enabled and answer JSON.
-        </p>
+    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 shadow-lg space-y-4">
+      <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-white">{title}</h3>
+        <button
+          type="button"
+          onClick={onCopy}
+          className="flex items-center space-x-1.5 text-xs text-zinc-400 hover:text-white transition-all cursor-pointer min-h-[32px] px-2.5 py-1 rounded-md hover:bg-zinc-900 active:scale-95"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+          <span>{copied ? 'Copied' : 'Copy'}</span>
+        </button>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {[
-          { icon: Zap, title: 'No keys, no quotas', body: 'Every endpoint is public. No token, no account, no rate-limit header to chase.' },
-          { icon: Lock, title: 'Multi-origin failover', body: 'Three interchangeable origins rotate automatically on a 5xx or a dropped connection.' },
-          { icon: ExternalLink, title: 'Drop-in player', body: 'One iframe with autoplay, resume and subtitle support, sized to your container.' },
-        ].map((feature) => (
-          <div key={feature.title} className="bg-zinc-950/60 border border-white/[0.05] rounded-xl p-4 space-y-2">
-            <feature.icon className="w-4 h-4 text-rose-500" />
-            <h2 className="text-xs font-bold text-white">{feature.title}</h2>
-            <p className="text-[11px] text-zinc-400 leading-relaxed">{feature.body}</p>
-          </div>
-        ))}
-      </div>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-bold text-white tracking-tight">Active backend</h2>
-        <div className="bg-zinc-950/60 border border-white/[0.05] rounded-xl p-4 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <code className="text-[11px] font-mono text-emerald-400">{backend}</code>
-            <CopyButton value={backend} label="Copy base URL" />
-          </div>
-          <p className="text-[11px] text-zinc-500 font-mono">Known origins: {BACKENDS.join(' · ')}</p>
-          <p className="text-[11px] text-zinc-500">
-            Pin one with <code className="font-mono text-zinc-300">?backend=xyz</code> in any URL.
-          </p>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-bold text-white tracking-tight">Endpoints</h2>
-        <div className="overflow-hidden rounded-xl border border-white/[0.05]">
-          <table className="w-full text-left">
-            <thead className="bg-zinc-950/80">
-              <tr>
-                <th className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-500">Method</th>
-                <th className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-500">Path</th>
-                <th className="px-3 py-2 text-[10px] font-mono uppercase tracking-wider text-zinc-500">Description</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ENDPOINTS.map((endpoint) => (
-                <tr key={endpoint.path} className="border-t border-white/[0.04] hover:bg-zinc-950/60 transition-colors">
-                  <td className="px-3 py-2">
-                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-mono font-bold">
-                      {endpoint.method}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2 text-[11px] font-mono text-zinc-200 whitespace-nowrap">{endpoint.path}</td>
-                  <td className="px-3 py-2 text-[11px] text-zinc-400">{endpoint.description}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-bold text-white tracking-tight">Embed snippets</h2>
-        <div className="space-y-3">
-          {[
-            { title: 'Movie', snippet: movieEmbed, demo: '/embed/27205' },
-            { title: 'TV episode', snippet: tvEmbed, demo: '/embed/tv/1396/1/1?autoplay=1' },
-            { title: 'Anime episode', snippet: animeEmbed, demo: '/embed/anime?id=21&episode=1&autoplay=1' },
-          ].map((entry) => (
-            <div key={entry.title} className="bg-zinc-950/60 border border-white/[0.05] rounded-xl overflow-hidden">
-              <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.05] bg-zinc-900/40">
-                <h3 className="text-xs font-bold text-zinc-200">{entry.title}</h3>
-                <div className="flex items-center gap-2">
-                  <Link
-                    to={entry.demo}
-                    className="text-[10px] font-mono text-zinc-400 hover:text-white transition-colors"
-                  >
-                    open demo
-                  </Link>
-                  <CopyButton value={entry.snippet} label="Copy iframe" />
-                </div>
-              </div>
-              <pre className="p-3 overflow-x-auto text-[11px] font-mono text-zinc-300 leading-relaxed">
-                <code>{entry.snippet}</code>
-              </pre>
-            </div>
-          ))}
-        </div>
-      </section>
+      <pre
+        className={`p-4 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-mono text-zinc-200 overflow-x-auto leading-relaxed ${
+          wrap ? 'whitespace-pre-wrap break-all select-all' : 'whitespace-pre-wrap'
+        }`}
+      >
+        <code>{code}</code>
+      </pre>
     </div>
   );
 }

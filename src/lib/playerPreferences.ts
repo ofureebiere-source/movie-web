@@ -3,10 +3,14 @@
  * `playerPreferences` chunk. Same keys, same allowed values, same defaults.
  */
 
+import { EQ_BANDS, EQ_DEFAULT, type EqualizerSettings } from '@/lib/audioEngine';
+
 const SUBTITLE_KEY = 'framextv_subtitle_preferences';
 const ASPECT_KEY = 'framextv_aspect_ratio';
 const AUTOPLAY_KEY = 'framextv_autoplay_next';
 const AUDIO_BOOST_KEY = 'framextv_audio_boost';
+const EQ_KEY = 'framextv_equalizer';
+const DOWNLOADER_KEY = 'framextv_enable_downloader';
 
 export type SubtitleFontSize = 'sm' | 'md' | 'lg' | 'xl' | '3xl';
 export type SubtitlePosition = 'bottom' | 'mid' | 'top';
@@ -162,6 +166,68 @@ export interface DownloadCapability {
   downloadUrl?: string;
 }
 
+/** Whether the browser exposes a local downloader (reference `isDownloaderEnabled`). */
+export function isDownloaderEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const flag = (params.get('downloader') || params.get('download') || '').toLowerCase();
+    if (flag === '1' || flag === 'true' || flag === 'on') return true;
+    if (flag === '0' || flag === 'false' || flag === 'off') return false;
+  } catch {
+    /* malformed query */
+  }
+  const storage = store();
+  if (storage) {
+    try {
+      const stored = storage.getItem(DOWNLOADER_KEY);
+      if (stored === 'true') return true;
+      if (stored === 'false') return false;
+    } catch {
+      /* disabled */
+    }
+  }
+  const host = window.location.hostname;
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host === 'framextv-fe.hybrows.workers.dev';
+}
+
+/** The saved equaliser, clamped to ten bands and a sane pre-amp. */
+export function readEqualizer(): EqualizerSettings {
+  const storage = store();
+  if (!storage) return { ...EQ_DEFAULT, gains: [...EQ_DEFAULT.gains] };
+  try {
+    const raw = storage.getItem(EQ_KEY);
+    if (!raw) return { ...EQ_DEFAULT, gains: [...EQ_DEFAULT.gains] };
+    const parsed = JSON.parse(raw) as Partial<EqualizerSettings>;
+    if (typeof parsed !== 'object' || !parsed) return { ...EQ_DEFAULT, gains: [...EQ_DEFAULT.gains] };
+    const gains = Array.isArray(parsed.gains)
+      ? EQ_BANDS.map((_, index) => {
+          const value = Number(parsed.gains?.[index]);
+          return Number.isFinite(value) ? Math.max(-12, Math.min(12, value)) : 0;
+        })
+      : [...EQ_DEFAULT.gains];
+    const preamp = Number(parsed.preamp);
+    return {
+      enabled: Boolean(parsed.enabled),
+      gains,
+      preamp: Number.isFinite(preamp) ? Math.max(-12, Math.min(12, preamp)) : 0,
+    };
+  } catch {
+    return { ...EQ_DEFAULT, gains: [...EQ_DEFAULT.gains] };
+  }
+}
+
+export function saveEqualizer(value: EqualizerSettings): void {
+  const storage = store();
+  if (!storage) return;
+  try {
+    storage.setItem(EQ_KEY, JSON.stringify(value));
+    window.dispatchEvent(new CustomEvent('framextv:equalizer_preference', { detail: value }));
+  } catch {
+    /* disabled */
+  }
+}
+
 /** Whether the active source can be downloaded directly (reference `getDownloadInfo`). */
 export function getDownloadInfo(source: { url?: string; type?: string } | null): DownloadCapability {
   if (!source || !source.url) {
@@ -176,10 +242,13 @@ export function getDownloadInfo(source: { url?: string; type?: string } | null):
     };
   }
   if (source.type === 'hls' || url.includes('.m3u8') || url.includes('m3u8=') || url.includes('/hls/')) {
+    if (isDownloaderEnabled()) {
+      return { canDownload: true, sourceType: 'hls', reason: '', downloadUrl: source.url };
+    }
     return {
       canDownload: false,
       sourceType: 'hls',
-      reason: 'Direct download is unavailable for HLS adaptive streams.',
+      reason: 'Client-side downloader is in private preview.',
     };
   }
   if (source.type === 'mp4' || /\.(mp4|m4v|webm|mkv|avi|mov)($|\?)/i.test(source.url)) {

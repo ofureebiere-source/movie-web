@@ -1,19 +1,30 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Clock, Film, Home, Sparkles, Tv } from 'lucide-react';
+import { Code2, Film, Home, Sparkles, Tv } from 'lucide-react';
 
 /**
  * The fixed bottom navigation, shown below `sm`.
  *
- * Ported 1:1 from frameXTV.xyz's mobile nav: five destinations, safe-area
- * padding for the home indicator, and the active item in white.
+ * Ported 1:1 from frameXTV.xyz's mobile nav: the same five destinations as the
+ * desktop bar — Home / Movies / TV / Anime / API — with safe-area padding for
+ * the home indicator and the active item in white.
  */
 
 const ITEMS = [
   { label: 'Home', path: '/', icon: Home, match: (p: string) => p === '/' },
-  { label: 'Movies', path: '/movies', icon: Film, match: (p: string) => p.startsWith('/movies') || p.startsWith('/movie') },
+  {
+    label: 'Movies',
+    path: '/movies',
+    icon: Film,
+    match: (p: string) => p.startsWith('/movies') || p.startsWith('/movie'),
+  },
   { label: 'TV', path: '/tv', icon: Tv, match: (p: string) => p.startsWith('/tv') },
   { label: 'Anime', path: '/anime', icon: Sparkles, match: (p: string) => p.startsWith('/anime') },
-  { label: 'History', path: '/history', icon: Clock, match: (p: string) => p.startsWith('/history') },
+  {
+    label: 'API',
+    path: '/api',
+    icon: Code2,
+    match: (p: string) => p.startsWith('/api') || p.startsWith('/docs'),
+  },
 ];
 
 export default function MobileNav() {

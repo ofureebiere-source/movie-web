@@ -18,7 +18,8 @@ import { SITE_NAME } from '@/lib/brand';
  *   /embed/:tmdbId/:season/:episode    /embed/tv/:tmdbId/:season/:episode
  *   /embed/series/:tmdbId/:s/:e        /embed/anime?id=&episode=
  *
- * `?autoplay=1&origin=internal&t=SECONDS` are honoured.
+ * and the reference's full query contract: `autoplay`, `muted`, `t`/`start`,
+ * `speed`, `controls`, `server`/`provider`, `title` and `poster`/`backdrop`.
  */
 export default function EmbedPage() {
   const { tmdbId, season, episode } = useParams();
@@ -31,8 +32,14 @@ export default function EmbedPage() {
   const mediaKey = mediaId(tmdbId || params.get('id'));
   const seasonNumber = Math.max(1, parseInt(season || params.get('season') || '1', 10) || 1);
   const episodeNumber = Math.max(1, parseInt(episode || params.get('episode') || '1', 10) || 1);
-  const startTime = Math.max(0, parseInt(params.get('t') || '0', 10) || 0);
+  const startTime = Math.max(0, parseFloat(params.get('t') || params.get('start') || '0') || 0);
   const autoPlay = params.get('autoplay') !== '0';
+  const startMuted = params.get('muted') === '1';
+  const initialSpeed = parseFloat(params.get('speed') || '1') || 1;
+  const hideControls = params.get('controls') === '0';
+  const provider = params.get('provider') || params.get('server') || undefined;
+  const customTitle = params.get('title') || undefined;
+  const customPoster = params.get('poster') || params.get('backdrop') || undefined;
 
   useEffect(() => {
     document.title = `${SITE_NAME} Embed`;
@@ -40,11 +47,12 @@ export default function EmbedPage() {
   }, []);
 
   const stream = useQuery({
-    queryKey: ['embed-stream', mediaType, mediaKey, seasonNumber, episodeNumber],
+    queryKey: ['embed-stream', mediaType, mediaKey, seasonNumber, episodeNumber, provider ?? 'auto'],
     queryFn: () =>
       getStream(mediaKey, mediaType, {
         season: mediaType === 'movie' ? undefined : seasonNumber,
         episode: mediaType === 'movie' ? undefined : episodeNumber,
+        provider,
       }),
     enabled: Boolean(mediaKey),
     staleTime: 600_000,
@@ -83,16 +91,21 @@ export default function EmbedPage() {
       <Player
         src={activeSource.url}
         sourceType={activeSource.type}
+        poster={customPoster}
         title={
-          mediaType === 'tv'
+          customTitle ??
+          (mediaType === 'tv'
             ? `S${seasonNumber} · E${episodeNumber}`
             : mediaType === 'anime'
               ? `Episode ${episodeNumber}`
-              : undefined
+              : undefined)
         }
         subtitles={stream.data?.subtitles ?? []}
         startTime={startTime}
         autoPlay={autoPlay}
+        startMuted={startMuted}
+        initialSpeed={initialSpeed}
+        hideControls={hideControls}
         onProgress={(seconds, duration) =>
           saveProgress({
             mediaType,

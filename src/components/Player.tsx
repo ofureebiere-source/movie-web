@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AudioLines,
+  Check,
   Maximize,
   Pause,
   Play,
   RotateCcw,
+  Server,
   Settings,
   SkipBack,
   SkipForward,
+  SlidersHorizontal,
   Subtitles,
+  Upload,
   Volume2,
   VolumeX,
 } from 'lucide-react';
@@ -16,27 +21,43 @@ import {
   readAspectRatio,
   readAudioBoost,
   readAutoplayNext,
+  readEqualizer,
   readSubtitlePreferences,
   saveAspectRatio,
   saveAudioBoost,
   saveAutoplayNext,
+  saveEqualizer,
   saveSubtitlePreferences,
   type AspectRatio,
   type AudioBoost,
+  type SubtitleBgOpacity,
+  type SubtitleFontSize,
+  type SubtitlePosition,
+  type SubtitleTextColor,
 } from '@/lib/playerPreferences';
+import { applyAudioProcessing, EQ_BANDS, EQ_DEFAULT, EQ_PRESETS, resumeAudio } from '@/lib/audioEngine';
+import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/subtitles';
 import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
-import type { FxStreamSource, FxSubtitle } from '@/lib/api';
+import type { FxProvider, FxStreamSource, FxSubtitle } from '@/lib/api';
 
 /**
  * The video player.
  *
- * Ported 1:1 from frameXTV.xyz's `Player` chunk: a native `<video>` element
- * (not an iframe) fed either an HLS playlist through hls.js or a progressive
- * MP4, with a bottom control bar (play/pause, -10s, +10s, next, volume, the
- * current time / duration, aspect ratio, audio boost, subtitle picker, quality,
- * fullscreen), keyboard shortcuts, and a resume prompt. The
- * `playerPreferences` values are the same keys the reference persists.
+ * Ported from frameXTV.xyz's `Player` chunk, with the parts our port had
+ * stubbed out now actually wired:
+ *
+ *  - Subtitles are fetched through the backend's subtitle proxy, parsed into
+ *    cues and drawn by an overlay we control. Handing a cross-origin
+ *    `application/x-subrip` URL to `<track src>` renders nothing, which is why
+ *    the reference proxies and parses instead. In-stream tracks, uploaded
+ *    `.srt`/`.vtt` files, a sync offset and auto-advance to the next working
+ *    track are supported.
+ *  - Audio boost builds the reference's Web Audio graph for real. On top of it
+ *    sits our own ten-band equaliser with presets and a pre-amp.
+ *  - Switching servers re-requests the stream from the chosen provider and
+ *    re-seeks to the same playhead, instead of only swapping between the
+ *    qualities of whichever provider answered first.
  */
 
 const CONTROLS_TIMEOUT = 3000;
@@ -49,6 +70,27 @@ const ASPECT_CLASS: Record<AspectRatio, string> = {
   '1:1': 'aspect-square',
 };
 
+const FONT_PX: Record<SubtitleFontSize, string> = {
+  sm: '14px',
+  md: '17px',
+  lg: '22px',
+  xl: '28px',
+  '3xl': '36px',
+};
+
+const TEXT_COLOR: Record<SubtitleTextColor, string> = {
+  white: '#ffffff',
+  yellow: '#facc15',
+  cyan: '#22d3ee',
+};
+
+const BG_COLOR: Record<SubtitleBgOpacity, string> = {
+  none: 'transparent',
+  semi: 'rgba(0,0,0,0.45)',
+  solid: '#000000',
+  dark: 'rgba(0,0,0,0.85)',
+};
+
 export interface PlayerProps {
   src?: string;
   sourceType?: string;
@@ -58,13 +100,26 @@ export interface PlayerProps {
   sources?: FxStreamSource[];
   activeSourceIndex?: number;
   onSelectSource?: (index: number) => void;
+  /** The aggregator's provider list, for the in-player server switcher. */
+  providers?: FxProvider[];
+  activeProvider?: string;
+  onSelectProvider?: (provider: string | undefined) => void;
+  connecting?: boolean;
   onProgress?: (seconds: number, duration: number) => void;
   onEnded?: () => void;
   onNext?: () => void;
   onPrev?: () => void;
   startTime?: number;
   autoPlay?: boolean;
+  /** `controls=0` in the embed URL: render the video only, no chrome. */
+  hideControls?: boolean;
+  /** `muted=1`: start muted, as browsers require for unmuted autoplay. */
+  startMuted?: boolean;
+  /** `speed=1.25`: initial playback rate. */
+  initialSpeed?: number;
 }
+
+type Menu = 'none' | 'settings' | 'subs' | 'eq' | 'servers';
 
 export default function Player({
   src,
@@ -75,36 +130,125 @@ export default function Player({
   sources = [],
   activeSourceIndex = 0,
   onSelectSource,
+  providers = [],
+  activeProvider,
+  onSelectProvider,
+  connecting = false,
   onProgress,
   onEnded,
   onNext,
   onPrev,
   startTime = 0,
   autoPlay = true,
+  hideControls = false,
+  startMuted = false,
+  initialSpeed = 1,
 }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const shellRef = useRef<HTMLDivElement | null>(null);
   const hideTimer = useRef<number | null>(null);
   const resumeApplied = useRef(false);
   const lastReport = useRef(0);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const seekAfterReload = useRef(0);
+  const failoverCount = useRef(0);
 
   const [playing, setPlaying] = useState(false);
-  const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(startMuted);
+  const [volume, setVolume] = useState(startMuted ? 0 : 1);
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffering, setBuffering] = useState(false);
   const [buffered, setBuffered] = useState<Array<[number, number]>>([]);
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [menu, setMenu] = useState<'none' | 'settings' | 'subs' | 'speed'>('none');
+  const [menu, setMenu] = useState<Menu>('none');
 
-  const [subtitleIndex, setSubtitleIndex] = useState(-1);
   const [prefs, setPrefs] = useState(() => readSubtitlePreferences());
   const [aspect, setAspect] = useState<AspectRatio>(() => readAspectRatio());
   const [boost, setBoost] = useState<AudioBoost>(() => readAudioBoost());
   const [autoplayNext, setAutoplayNext] = useState(() => readAutoplayNext());
-  const [playbackRate, setPlaybackRate] = useState(1);
+  const [playbackRate, setPlaybackRate] = useState(initialSpeed);
+  const [eq, setEq] = useState(() => readEqualizer());
+
+  // --- subtitles -----------------------------------------------------------
+
+  const [trackIndex, setTrackIndex] = useState<number | null>(null);
+  const [cues, setCues] = useState<ParsedCue[]>([]);
+  const [uploaded, setUploaded] = useState<{ label: string; cues: ParsedCue[] } | null>(null);
+  const [subSync, setSubSync] = useState(0);
+  const [subError, setSubError] = useState<string | null>(null);
+
+  const activeTrack = trackIndex !== null ? subtitles[trackIndex] : undefined;
+
+  // Fetch and parse the selected track. `<track src>` cannot be used: the
+  // hosts answer with SRT and no usable cross-origin track semantics, so the
+  // browser renders nothing. Proxy + parse is the reference's approach.
+  useEffect(() => {
+    if (uploaded || !activeTrack?.url) {
+      if (!uploaded) setCues([]);
+      return;
+    }
+    let cancelled = false;
+    setSubError(null);
+    const url = subtitleUrl(activeTrack.url);
+    fetch(url)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Subtitle fetch failed: ${response.status}`);
+        return response.text();
+      })
+      .then((body) => {
+        if (cancelled) return;
+        if (body.includes('Error') && body.length < 100) throw new Error('Invalid subtitle response body');
+        const parsed = parseSubtitles(body);
+        if (parsed.length === 0) throw new Error('Zero valid cues parsed');
+        setCues(parsed);
+        failoverCount.current = 0;
+      })
+      .catch((reason: unknown) => {
+        if (cancelled) return;
+        console.warn(`Subtitle load error for "${activeTrack.label}":`, reason);
+        setSubError('This subtitle track could not be loaded.');
+        // Advance to the next track in the same language, twice at most, so a
+        // dead host does not turn into an endless shuffle.
+        if (failoverCount.current < 2 && subtitles.length > 1) {
+          failoverCount.current += 1;
+          const lang = (activeTrack.language || activeTrack.lang || 'en').toLowerCase().slice(0, 2);
+          let next = subtitles.findIndex(
+            (entry, index) =>
+              index > (trackIndex ?? -1) &&
+              (entry.language || entry.lang || 'en').toLowerCase().startsWith(lang)
+          );
+          if (next <= (trackIndex ?? -1)) next = (trackIndex ?? 0) + 1;
+          if (next < subtitles.length) setTrackIndex(next);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTrack, trackIndex, uploaded, subtitles]);
+
+  // Cues are shifted at render time so changing the offset refetches nothing.
+  const shiftedCues = useMemo(
+    () => (uploaded ? uploaded.cues : shiftCues(cues, subSync)),
+    [uploaded, cues, subSync]
+  );
+  const activeCue = shiftedCues.find((cue) => current >= cue.start && current <= cue.end) ?? null;
+  const subtitlesOn = Boolean(uploaded) || trackIndex !== null;
+
+  // --- audio graph ---------------------------------------------------------
+
+  useEffect(() => {
+    applyAudioProcessing(videoRef.current, boost, eq);
+  }, [boost, eq, src]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const resume = () => resumeAudio(video);
+    video.addEventListener('play', resume);
+    return () => video.removeEventListener('play', resume);
+  }, [src]);
 
   // --- source wiring -------------------------------------------------------
 
@@ -114,6 +258,14 @@ export default function Player({
 
     setError(null);
     resumeApplied.current = false;
+
+    const restore = () => {
+      if (seekAfterReload.current > 0) {
+        video.currentTime = seekAfterReload.current;
+        seekAfterReload.current = 0;
+      }
+      if (autoPlay) void video.play().catch(() => undefined);
+    };
 
     const isHls = sourceType === 'hls' || /\.m3u8(\?|$)/i.test(src);
 
@@ -126,6 +278,7 @@ export default function Player({
         if (cancelled) return;
         if (!Hls.isSupported()) {
           video.src = src;
+          video.addEventListener('loadeddata', restore, { once: true });
           return;
         }
         const hls = new Hls({
@@ -139,16 +292,13 @@ export default function Player({
           maxMaxBufferLength: 600,
           backBufferLength: 90,
           maxBufferSize: 240 * 1000 * 1000,
-          // Start playback with some slack rather than at the very first
-          // fragment, so a brief stall does not interrupt startup.
           startFragPrefetch: true,
-          // Tolerate small gaps between fragments instead of stalling to fill
-          // them, and detect a genuinely wedged buffer sooner.
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 3,
         });
         hls.loadSource(src);
         hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, restore);
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) setError(`Playback error: ${data.details || 'unknown'}`);
         });
@@ -161,8 +311,9 @@ export default function Player({
     }
 
     video.src = src;
+    video.addEventListener('loadeddata', restore, { once: true });
     return undefined;
-  }, [src, sourceType]);
+  }, [src, sourceType, autoPlay]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -209,15 +360,22 @@ export default function Player({
     }, CONTROLS_TIMEOUT);
   }, []);
 
-  useEffect(() => () => {
-    if (hideTimer.current) window.clearTimeout(hideTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    },
+    []
+  );
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-    if (video.paused) void video.play().catch(() => setError('Autoplay was blocked. Press play to start.'));
-    else video.pause();
+    if (video.paused) {
+      resumeAudio(video);
+      void video.play().catch(() => setError('Autoplay was blocked. Press play to start.'));
+    } else {
+      video.pause();
+    }
   }, []);
 
   const seekBy = useCallback((delta: number) => {
@@ -233,6 +391,17 @@ export default function Player({
     else void shell.requestFullscreen?.();
   }, []);
 
+  const selectSource = useCallback(
+    (index: number) => {
+      const video = videoRef.current;
+      // Keep the playhead across a server switch — a new provider means a new
+      // stream URL, so the element reloads from zero otherwise.
+      if (video && video.currentTime > 1) seekAfterReload.current = video.currentTime;
+      onSelectSource?.(index);
+    },
+    [onSelectSource]
+  );
+
   // --- keyboard shortcuts --------------------------------------------------
 
   useEffect(() => {
@@ -247,15 +416,13 @@ export default function Player({
           togglePlay();
           break;
         case 'ArrowLeft':
+        case 'j':
+          event.preventDefault();
           seekBy(-10);
           break;
         case 'ArrowRight':
-          seekBy(10);
-          break;
-        case 'j':
-          seekBy(-10);
-          break;
         case 'l':
+          event.preventDefault();
           seekBy(10);
           break;
         case 'f':
@@ -273,6 +440,102 @@ export default function Player({
     return () => window.removeEventListener('keydown', onKey);
   }, [togglePlay, seekBy, toggleFullscreen, showControls]);
 
+  // --- postMessage SDK -----------------------------------------------------
+
+  // The reference's embed contract, in both directions. Outbound: `ready` on
+  // mount and on first play, `timeupdate` on every tick, `ended` at the end,
+  // plus an `autoplay_preference` notice when the viewer flips the toggle.
+  // Inbound: the documented `action` vocabulary, so a host page can drive the
+  // player without touching the DOM.
+  useEffect(() => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ event: 'frameXTV:ready' }, '*');
+    }
+  }, []);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onPlay = () => {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ event: 'frameXTV:ready' }, '*');
+      }
+    };
+    const onTime = () => {
+      if (!window.parent || window.parent === window) return;
+      window.parent.postMessage(
+        { event: 'frameXTV:timeupdate', currentTime: video.currentTime, duration: video.duration || 0 },
+        '*'
+      );
+    };
+    const onEnded = () => {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ event: 'frameXTV:ended' }, '*');
+      }
+    };
+    video.addEventListener('play', onPlay);
+    video.addEventListener('timeupdate', onTime);
+    video.addEventListener('ended', onEnded);
+    return () => {
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('timeupdate', onTime);
+      video.removeEventListener('ended', onEnded);
+    };
+  }, [src]);
+
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as Record<string, unknown> | null;
+      if (!data || typeof data !== 'object') return;
+      const video = videoRef.current;
+      const action = data.action;
+      switch (action) {
+        case 'play':
+          resumeAudio(video);
+          void video?.play().catch(() => {});
+          break;
+        case 'pause':
+          video?.pause();
+          break;
+        case 'togglePlay':
+          togglePlay();
+          break;
+        case 'seek':
+          if (typeof data.time === 'number' && video) video.currentTime = data.time;
+          break;
+        case 'seekBy':
+          if (typeof data.seconds === 'number') seekBy(data.seconds);
+          break;
+        case 'setVolume':
+          if (typeof data.volume === 'number') {
+            const next = Math.max(0, Math.min(1, data.volume));
+            setVolume(next);
+            setMuted(next === 0);
+          }
+          break;
+        case 'mute':
+          setMuted(true);
+          break;
+        case 'unmute':
+          setMuted(false);
+          break;
+        case 'setProvider':
+          if (typeof data.provider === 'string') onSelectProvider?.(data.provider);
+          break;
+        case 'setSubtitle':
+          if (typeof data.index === 'number') setTrackIndex(data.index);
+          break;
+        case 'setSpeed':
+          if (typeof data.speed === 'number') setPlaybackRate(data.speed);
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [togglePlay, seekBy, onSelectProvider]);
+
   // --- progress reporting --------------------------------------------------
 
   const report = useCallback(
@@ -287,7 +550,33 @@ export default function Player({
     [onProgress]
   );
 
-  const totalHours = Math.floor(duration / 3600);
+  // --- subtitle track selection --------------------------------------------
+
+  const onUpload = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const parsed = parseSubtitles(String(reader.result ?? ''));
+      if (parsed.length === 0) return;
+      setUploaded({ label: file.name.replace(/\.(srt|vtt|ass|ssa)$/i, ''), cues: parsed });
+      setTrackIndex(null);
+      setMenu('none');
+    };
+    reader.readAsText(file);
+  };
+
+  const selectTrack = (index: number | null) => {
+    setUploaded(null);
+    setTrackIndex(index);
+    failoverCount.current = 0;
+    if (index === null) {
+      saveSubtitlePreferences({ preferredLanguage: 'off' });
+    } else {
+      const track = subtitles[index];
+      if (track) saveSubtitlePreferences({ preferredLanguage: track.language || track.lang || 'en' });
+    }
+    setMenu('none');
+  };
 
   if (!src) {
     return (
@@ -349,18 +638,30 @@ export default function Player({
           else onEnded?.();
         }}
         onError={() => setError('This stream could not be played. Try another server.')}
-      >
-        {subtitleIndex >= 0 && subtitles[subtitleIndex] && (
-          <track
-            key={subtitles[subtitleIndex].url}
-            kind="subtitles"
-            src={subtitles[subtitleIndex].url}
-            srcLang={subtitles[subtitleIndex].lang || subtitles[subtitleIndex].language || 'en'}
-            label={subtitles[subtitleIndex].label || 'Subtitles'}
-            default
-          />
-        )}
-      </video>
+      />
+
+      {activeCue && subtitlesOn && (
+        <div
+          data-testid="subtitle-cue"
+          aria-live="off"
+          className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none text-center px-3.5 py-1.5 rounded-lg max-w-[88%] font-sans font-medium tracking-wide shadow-2xl"
+          style={{
+            fontSize: FONT_PX[prefs.fontSize],
+            bottom: prefs.position === 'top' ? '80%' : prefs.position === 'mid' ? '75px' : '28px',
+            color: TEXT_COLOR[prefs.textColor],
+            backgroundColor: BG_COLOR[prefs.bgOpacity],
+            textShadow: '0 2px 4px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.9)',
+            lineHeight: 1.35,
+          }}
+        >
+          {activeCue.text.split('\n').map((line, index, all) => (
+            <span key={`${line}-${index}`}>
+              {line}
+              {index < all.length - 1 && <br />}
+            </span>
+          ))}
+        </div>
+      )}
 
       {buffering && !error && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -372,26 +673,41 @@ export default function Player({
         <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6">
           <div className="max-w-sm text-center space-y-3">
             <p className="text-sm font-semibold text-white">{error}</p>
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                const video = videoRef.current;
-                if (video && src) {
-                  video.load();
-                  void video.play().catch(() => undefined);
-                }
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black text-xs font-bold"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Retry</span>
-            </button>
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  const video = videoRef.current;
+                  if (video && src) {
+                    video.load();
+                    void video.play().catch(() => undefined);
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black text-xs font-bold"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Retry</span>
+              </button>
+              {sources.length > 1 && onSelectSource && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError(null);
+                    selectSource((activeSourceIndex + 1) % sources.length);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-white text-xs font-bold border border-zinc-700"
+                >
+                  <SkipForward className="w-3.5 h-3.5" />
+                  <span>Try next server</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
 
-      {title && (
+      {title && !hideControls && (
         <div
           className={`absolute top-0 left-0 right-0 p-3 sm:p-4 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-200 ${
             controlsVisible ? 'opacity-100' : 'opacity-0'
@@ -404,7 +720,7 @@ export default function Player({
       <div
         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-200 ${
           controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
+        } ${hideControls ? 'hidden' : ''}`}
       >
         <div className="px-2 sm:px-3 pt-6">
           <SeekBar
@@ -483,13 +799,77 @@ export default function Player({
           </div>
 
           <div className="flex items-center gap-0.5 sm:gap-1">
+            {connecting && (
+              <span className="hidden sm:inline-flex items-center gap-1.5 mr-1 text-[10px] font-mono text-amber-400">
+                <span className="w-2.5 h-2.5 rounded-full border border-amber-400/30 border-t-amber-400 animate-spin" />
+                connecting…
+              </span>
+            )}
+
+            {/* Server switcher: re-requests the stream from another provider. */}
+            {onSelectProvider && providers.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMenu((prev) => (prev === 'servers' ? 'none' : 'servers'))}
+                  aria-label="Switch server"
+                  title="Switch server"
+                  className={`p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
+                    activeProvider ? 'text-rose-500' : 'text-white'
+                  }`}
+                >
+                  <Server className="w-4 h-4" />
+                </button>
+                {menu === 'servers' && (
+                  <div className="absolute bottom-full right-0 mb-2 w-64 max-h-72 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={!activeProvider}
+                      onClick={() => {
+                        onSelectProvider(undefined);
+                        setMenu('none');
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer flex items-center justify-between ${
+                        !activeProvider ? 'bg-white text-black font-bold' : 'text-zinc-300 hover:bg-zinc-900'
+                      }`}
+                    >
+                      <span>Auto (best available)</span>
+                      {!activeProvider && <Check className="w-3 h-3" />}
+                    </button>
+                    {providers.map((entry) => (
+                      <button
+                        key={entry.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={activeProvider === entry.id}
+                        onClick={() => {
+                          onSelectProvider(entry.id);
+                          setMenu('none');
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer flex items-center justify-between ${
+                          activeProvider === entry.id ? 'bg-white text-black font-bold' : 'text-zinc-300 hover:bg-zinc-900'
+                        }`}
+                      >
+                        <span className="truncate">
+                          {entry.name}
+                          {entry.tagline ? ` — ${entry.tagline}` : ''}
+                        </span>
+                        {activeProvider === entry.id && <Check className="w-3 h-3" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
             {sources.length > 1 && onSelectSource && (
               <div className="hidden sm:flex items-center gap-1 mr-1">
                 {sources.slice(0, 4).map((source, index) => (
                   <button
                     key={`${source.url}-${index}`}
                     type="button"
-                    onClick={() => onSelectSource(index)}
+                    onClick={() => selectSource(index)}
                     title={source.server || source.quality}
                     className={`px-2 py-1 rounded text-[10px] font-mono transition-colors cursor-pointer ${
                       index === activeSourceIndex
@@ -503,48 +883,240 @@ export default function Player({
               </div>
             )}
 
-            {subtitles.length > 0 && (
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setMenu((prev) => (prev === 'subs' ? 'none' : 'subs'))}
-                  aria-label="Subtitles"
-                  className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <Subtitles className="w-4 h-4" />
-                </button>
-                {menu === 'subs' && (
-                  <div className="absolute bottom-full right-0 mb-2 w-56 max-h-64 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
+            {/* Subtitles: uploaded file, in-stream tracks, sync offset. */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenu((prev) => (prev === 'subs' ? 'none' : 'subs'))}
+                aria-label="Subtitles"
+                className={`p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
+                  subtitlesOn ? 'text-rose-500' : 'text-white'
+                }`}
+              >
+                <Subtitles className="w-4 h-4" />
+              </button>
+              {menu === 'subs' && (
+                <div className="absolute bottom-full right-0 mb-2 w-64 max-h-72 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    aria-checked={!subtitlesOn}
+                    onClick={() => selectTrack(null)}
+                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer flex items-center justify-between ${
+                      !subtitlesOn ? 'bg-white text-black font-bold' : 'text-zinc-300 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <span>Off</span>
+                    {!subtitlesOn && <Check className="w-3 h-3" />}
+                  </button>
+
+                  {uploaded && (
+                    <button
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked
+                      onClick={() => setMenu('none')}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] bg-white text-black font-bold flex items-center justify-between"
+                    >
+                      <span className="truncate">{uploaded.label} (Uploaded)</span>
+                      <Check className="w-3 h-3" />
+                    </button>
+                  )}
+
+                  {subtitles.map((track, index) => (
+                    <button
+                      key={`${track.url}-${index}`}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={trackIndex === index}
+                      onClick={() => selectTrack(index)}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer flex items-center justify-between ${
+                        trackIndex === index ? 'bg-white text-black font-bold' : 'text-zinc-300 hover:bg-zinc-900'
+                      }`}
+                    >
+                      <span className="truncate">
+                        {track.label || track.lang || `Track ${index + 1}`} (In-Stream)
+                      </span>
+                      {trackIndex === index && <Check className="w-3 h-3" />}
+                    </button>
+                  ))}
+
+                  {subError && <p className="px-2.5 py-1 text-[10px] text-amber-400">{subError}</p>}
+
+                  <div className="border-t border-zinc-800/80 pt-1 mt-1 space-y-1">
                     <button
                       type="button"
                       onClick={() => {
-                        setSubtitleIndex(-1);
                         setMenu('none');
+                        fileInput.current?.click();
                       }}
-                      className="w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] text-zinc-300 hover:bg-zinc-900 transition-colors cursor-pointer"
+                      className="w-full text-left px-2 py-1 rounded-md text-[11px] text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      Off
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload .srt / .vtt</span>
                     </button>
-                    {subtitles.map((subtitle, index) => (
+                    {subtitlesOn && (
+                      <div className="px-2 py-1 space-y-1">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                          <span>Sync offset</span>
+                          <span className="tabular-nums">
+                            {subSync > 0 ? `+${subSync.toFixed(1)}` : subSync.toFixed(1)}s
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setSubSync((value) => Math.round((value - 0.5) * 10) / 10)}
+                            className="px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 text-[10px] font-mono hover:text-white cursor-pointer"
+                          >
+                            −0.5s
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubSync(0)}
+                            className="px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 text-[10px] font-mono hover:text-white cursor-pointer"
+                          >
+                            reset
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSubSync((value) => Math.round((value + 0.5) * 10) / 10)}
+                            className="px-2 py-0.5 rounded bg-zinc-900 text-zinc-300 text-[10px] font-mono hover:text-white cursor-pointer"
+                          >
+                            +0.5s
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              <input
+                ref={fileInput}
+                type="file"
+                accept=".srt,.vtt,text/vtt,application/x-subrip"
+                className="hidden"
+                onChange={(event) => onUpload(event.target.files?.[0])}
+              />
+            </div>
+
+            {/* Our own equaliser, on top of the reference's audio boost. */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMenu((prev) => (prev === 'eq' ? 'none' : 'eq'))}
+                aria-label="Equaliser"
+                title="Equaliser"
+                className={`p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
+                  eq.enabled ? 'text-rose-500' : 'text-white'
+                }`}
+              >
+                <AudioLines className="w-4 h-4" />
+              </button>
+              {menu === 'eq' && (
+                <div className="absolute bottom-full right-0 mb-2 w-72 bg-zinc-950/98 border border-zinc-800 rounded-xl p-2.5 shadow-2xl space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-3 h-3" /> Equaliser
+                    </p>
+                    <label className="flex items-center gap-1.5 text-[10px] text-zinc-300 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={eq.enabled}
+                        onChange={(event) => {
+                          const next = { ...eq, enabled: event.target.checked };
+                          setEq(next);
+                          saveEqualizer(next);
+                        }}
+                        className="accent-rose-500 cursor-pointer"
+                      />
+                      <span>On</span>
+                    </label>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1">
+                    {EQ_PRESETS.map((preset) => (
                       <button
-                        key={`${subtitle.url}-${index}`}
+                        key={preset.id}
                         type="button"
                         onClick={() => {
-                          setSubtitleIndex(index);
-                          saveSubtitlePreferences({ preferredLanguage: subtitle.lang || null });
-                          setMenu('none');
+                          const next = { ...eq, enabled: true, gains: [...preset.gains] };
+                          setEq(next);
+                          saveEqualizer(next);
                         }}
-                        className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] transition-colors cursor-pointer truncate ${
-                          index === subtitleIndex ? 'bg-rose-500/20 text-rose-300' : 'text-zinc-300 hover:bg-zinc-900'
-                        }`}
+                        className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-400 hover:text-white transition-colors cursor-pointer"
                       >
-                        {subtitle.label || subtitle.lang || `Track ${index + 1}`}
+                        {preset.label}
                       </button>
                     ))}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = { ...eq, enabled: false, gains: [...EQ_DEFAULT.gains], preamp: 0 };
+                        setEq(next);
+                        saveEqualizer(next);
+                      }}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                    >
+                      reset
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
+
+                  <div className="flex items-end justify-between gap-1 h-28">
+                    {EQ_BANDS.map((frequency, index) => (
+                      <div key={frequency} className="flex flex-col items-center gap-1 flex-1">
+                        <span className="text-[9px] font-mono text-zinc-500 tabular-nums">
+                          {eq.gains[index] > 0 ? `+${eq.gains[index]}` : eq.gains[index]}
+                        </span>
+                        <input
+                          type="range"
+                          min={-12}
+                          max={12}
+                          step={1}
+                          value={eq.gains[index]}
+                          aria-label={`${frequency} Hz`}
+                          disabled={!eq.enabled}
+                          onChange={(event) => {
+                            const gains = [...eq.gains];
+                            gains[index] = Number(event.target.value);
+                            const next = { ...eq, enabled: true, gains };
+                            setEq(next);
+                            saveEqualizer(next);
+                          }}
+                          className="accent-rose-500 cursor-pointer disabled:opacity-40"
+                          style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '14px', height: '64px' }}
+                        />
+                        <span className="text-[9px] font-mono text-zinc-600">
+                          {frequency >= 1000 ? `${frequency / 1000}k` : frequency}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono text-zinc-500 shrink-0">Pre-amp</span>
+                    <input
+                      type="range"
+                      min={-12}
+                      max={12}
+                      step={1}
+                      value={eq.preamp}
+                      aria-label="Pre-amp"
+                      disabled={!eq.enabled}
+                      onChange={(event) => {
+                        const next = { ...eq, enabled: true, preamp: Number(event.target.value) };
+                        setEq(next);
+                        saveEqualizer(next);
+                      }}
+                      className="flex-1 accent-rose-500 cursor-pointer disabled:opacity-40"
+                    />
+                    <span className="text-[10px] font-mono text-zinc-400 tabular-nums w-9 text-right">
+                      {eq.preamp > 0 ? `+${eq.preamp}` : eq.preamp}dB
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="relative">
               <button
@@ -556,7 +1128,7 @@ export default function Player({
                 <Settings className="w-4 h-4" />
               </button>
               {menu === 'settings' && (
-                <div className="absolute bottom-full right-0 mb-2 w-52 bg-zinc-950/98 border border-zinc-800 rounded-xl p-2 shadow-2xl space-y-2.5">
+                <div className="absolute bottom-full right-0 mb-2 w-56 max-h-72 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-2 shadow-2xl space-y-2.5">
                   <div className="space-y-1">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Aspect ratio</p>
                     <div className="flex flex-wrap gap-1">
@@ -617,7 +1189,7 @@ export default function Player({
                   <div className="space-y-1">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Subtitle size</p>
                     <div className="flex flex-wrap gap-1">
-                      {(['sm', 'md', 'lg', 'xl', '3xl'] as const).map((size) => (
+                      {(['sm', 'md', 'lg', 'xl', '3xl'] as SubtitleFontSize[]).map((size) => (
                         <button
                           key={size}
                           type="button"
@@ -634,14 +1206,81 @@ export default function Player({
                       ))}
                     </div>
                   </div>
-                  <label className="flex items-center justify-between gap-2 text-[11px] text-zinc-300 cursor-pointer pt-0.5">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Subtitle position</p>
+                    <div className="flex flex-wrap gap-1">
+                      {(['bottom', 'mid', 'top'] as SubtitlePosition[]).map((position) => (
+                        <button
+                          key={position}
+                          type="button"
+                          onClick={() => {
+                            setPrefs((prev) => ({ ...prev, position }));
+                            saveSubtitlePreferences({ position });
+                          }}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                            prefs.position === position ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {position}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Subtitle colour</p>
+                    <div className="flex flex-wrap gap-1">
+                      {(['white', 'yellow', 'cyan'] as SubtitleTextColor[]).map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => {
+                            setPrefs((prev) => ({ ...prev, textColor: color }));
+                            saveSubtitlePreferences({ textColor: color });
+                          }}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                            prefs.textColor === color ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {color}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Subtitle background</p>
+                    <div className="flex flex-wrap gap-1">
+                      {(['dark', 'semi', 'none', 'solid'] as SubtitleBgOpacity[]).map((opacity) => (
+                        <button
+                          key={opacity}
+                          type="button"
+                          onClick={() => {
+                            setPrefs((prev) => ({ ...prev, bgOpacity: opacity }));
+                            saveSubtitlePreferences({ bgOpacity: opacity });
+                          }}
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
+                            prefs.bgOpacity === opacity ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {opacity}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <label
+                    data-testid="player-autoplay-toggle"
+                    className="flex items-center justify-between gap-2 text-[11px] text-zinc-300 cursor-pointer pt-0.5"
+                  >
                     <span>Autoplay next</span>
                     <input
                       type="checkbox"
                       checked={autoplayNext}
                       onChange={(event) => {
-                        setAutoplayNext(event.target.checked);
-                        saveAutoplayNext(event.target.checked);
+                        const enabled = event.target.checked;
+                        setAutoplayNext(enabled);
+                        saveAutoplayNext(enabled);
+                        if (window.parent && window.parent !== window) {
+                          window.parent.postMessage({ event: 'frameXTV:autoplay_preference', enabled }, '*');
+                        }
                       }}
                       className="accent-rose-500 cursor-pointer"
                     />
@@ -661,15 +1300,6 @@ export default function Player({
           </div>
         </div>
       </div>
-
-      {/* Subtitle styling is driven by the persisted preferences. */}
-      <style>{`
-        video::cue {
-          font-size: ${{ sm: '0.75rem', md: '0.9rem', lg: '1.1rem', xl: '1.4rem', '3xl': '2rem' }[prefs.fontSize] || '0.9rem'};
-          color: ${prefs.textColor === 'yellow' ? '#fde047' : prefs.textColor === 'cyan' ? '#67e8f9' : '#ffffff'};
-          background-color: ${prefs.bgOpacity === 'solid' ? 'rgba(0,0,0,1)' : prefs.bgOpacity === 'dark' ? 'rgba(0,0,0,0.7)' : prefs.bgOpacity === 'semi' ? 'rgba(0,0,0,0.4)' : 'transparent'};
-        }
-      `}</style>
     </div>
   );
 }

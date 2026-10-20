@@ -356,3 +356,44 @@ body {
   background: var(--border-hover);
   border-radius: 9999px;
 }
+
+/* --------------------------------------------------------------------------
+   Modal entrances.
+   The reference's stylesheet defines `animate-fade-in` (backdrop) and
+   `animate-scale-up` (donation card). Tailwind v4 ships neither, so both are
+   declared here.
+   -------------------------------------------------------------------------- */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-up {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
+.animate-scale-up {
+  animation: scale-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-up {
+    animation: none;
+  }
+}
