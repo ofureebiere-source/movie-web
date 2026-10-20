@@ -21,7 +21,6 @@ import {
   Volume2,
   VolumeX,
   X,
-  Zap,
 } from 'lucide-react';
 import {
   AUDIO_BOOST_PRESETS,
@@ -49,6 +48,7 @@ import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/su
 import { useCast } from '@/hooks/useCast';
 import { useHolder } from '@/hooks/HolderContext';
 import TokenGateModal, { type TokenGateMode } from '@/components/TokenGateModal';
+import { downloadUrlFor, isNetwebEnabled } from '@/lib/netweb';
 import { vidboltEmbedUrl, isBackupProvider } from '@/lib/vidbolt';
 import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
@@ -107,6 +107,15 @@ const BG_COLOR: Record<SubtitleBgOpacity, string> = {
 export interface PlayerProps {
   src?: string;
   sourceType?: string;
+  /**
+   * The source the Download button saves.
+   *
+   * This is the gateway's own stream, not `src`: `src` is already a `/proxy`
+   * URL, which returns HLS with rewritten segment URLs and is not a file to
+   * hand to the browser. `/v1/download` fetches the upstream stream itself and
+   * remuxes it. When absent the button falls back to `src`.
+   */
+  downloadSource?: { url: string; type?: string; headers?: Record<string, string> };
   poster?: string;
   title?: string;
   subtitles?: FxSubtitle[];
@@ -146,6 +155,7 @@ type Menu = 'none' | 'settings' | 'subs' | 'eq' | 'servers' | 'cast';
 export default function Player({
   src,
   sourceType,
+  downloadSource,
   poster,
   title,
   subtitles = [],
@@ -267,6 +277,39 @@ export default function Player({
   );
 
   const downloadInfo = getDownloadInfo(src ? { url: src, type: sourceType } : null);
+
+  /**
+   * What the Download button saves, and how.
+   *
+   * The gateway's `/v1/download` remuxes an HLS stream to a single MP4 with
+   * ffmpeg and returns it as an attachment, so a plain navigation saves the
+   * file. That is the whole path: no wallet, no holder perk, no client-side
+   * downloader. The `downloadSource` is the upstream stream (not the `/proxy`
+   * URL the player itself loads), because the gateway must fetch the segments
+   * itself to remux them.
+   */
+  const saveUrl = useMemo(() => {
+    const source = downloadSource ?? (src ? { url: src, type: sourceType } : null);
+    if (!source?.url || isBackupProvider(activeProvider)) return null;
+    const name = (title || 'video').replace(/[^\w.\- ]+/g, '_').slice(0, 120) || 'video';
+    if (isNetwebEnabled() && downloadSource) return downloadUrlFor(downloadSource, name);
+    // No gateway: only a plain file container can be saved directly.
+    return downloadInfo.canDownload ? downloadInfo.downloadUrl ?? null : null;
+  }, [downloadSource, src, sourceType, title, downloadInfo, activeProvider]);
+
+  /**
+   * Why the Download row is disabled.
+   *
+   * With the gateway in play the row's state is `saveUrl`, not
+   * `getDownloadInfo`'s verdict — that helper only understands direct files and
+   * calls an HLS playlist "in private preview". Reporting its reason next to a
+   * disabled row would name the wrong cause, so the gateway's own reason is
+   * used whenever it is the one that would have served the save.
+   */
+  const downloadBlockedReason =
+    isNetwebEnabled() && downloadSource
+      ? 'The gateway could not resolve a saveable stream for this title.'
+      : downloadInfo.reason;
 
   const cast = useCast(videoRef, {
     onRemoteTimeUpdate: (time, duration) => {
@@ -805,18 +848,19 @@ export default function Player({
     []
   );
 
+  /**
+   * Save the stream. The gateway returns the file as an attachment, so a
+   * navigation is the download; there is no gate in front of it.
+   */
   const handleDownload = useCallback(() => {
-    gateOr(holderStatus.canDownload, 'download', () => {
-      if (!downloadInfo.canDownload || !downloadInfo.downloadUrl) return;
-      const anchor = document.createElement('a');
-      anchor.href = downloadInfo.downloadUrl;
-      anchor.download = (title || 'video').replace(/[^\w.-]+/g, '_');
-      anchor.rel = 'noreferrer';
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-    });
-  }, [gateOr, holderStatus.canDownload, downloadInfo, title]);
+    if (!saveUrl) return;
+    const anchor = document.createElement('a');
+    anchor.href = saveUrl;
+    anchor.rel = 'noreferrer';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }, [saveUrl]);
 
   const handleSelectAudioBoost = useCallback(
     (preset: AudioBoost) => {
@@ -2052,44 +2096,37 @@ export default function Player({
                     />
                   </label>
 
-                  {/* Download: a holder perk. Locked wallets open the token
-                      gate; unlocked wallets save the direct media file. */}
+                  {/* Download: saves through our own gateway, with no holder
+                      perk and no token gate in front of it. */}
                   <button
                     type="button"
                     data-testid="player-download"
                     onClick={handleDownload}
+                    disabled={!saveUrl}
                     title={
-                      !holderStatus.canDownload
-                        ? 'Holder Perk: connect Phantom holding $XTV to download'
-                        : downloadInfo.canDownload
-                          ? 'Download direct media file'
-                          : downloadInfo.reason
+                      saveUrl
+                        ? 'Download direct media file'
+                        : downloadBlockedReason
                     }
-                    className={`w-full flex items-center justify-between gap-2 p-1.5 rounded-lg transition-colors text-left cursor-pointer ${
-                      holderStatus.canDownload && downloadInfo.canDownload
-                        ? 'text-zinc-300 hover:bg-zinc-900'
-                        : holderStatus.canDownload
-                          ? 'text-zinc-500 opacity-60'
-                          : 'text-zinc-300 hover:bg-zinc-900'
+                    className={`w-full flex items-center justify-between gap-2 p-1.5 rounded-lg transition-colors text-left ${
+                      saveUrl
+                        ? 'text-zinc-300 hover:bg-zinc-900 cursor-pointer'
+                        : 'text-zinc-500 opacity-60 cursor-not-allowed'
                     }`}
                   >
                     <span className="flex items-center gap-2">
-                      {holderStatus.canDownload ? (
-                        <Download className="w-3.5 h-3.5" />
-                      ) : (
-                        <Zap className="w-3.5 h-3.5 text-purple-400" />
-                      )}
+                      <Download className="w-3.5 h-3.5" />
                       <span className="text-[11px]">Download</span>
                     </span>
                     <span className="flex items-center gap-1 text-[10px] font-mono">
-                      {holderStatus.canDownload ? (
-                        downloadInfo.canDownload ? (
-                          <span className="text-emerald-400 font-bold">MP4 Available</span>
-                        ) : (
-                          <span className="text-zinc-500">{downloadInfo.sourceType.toUpperCase()}</span>
-                        )
+                      {saveUrl ? (
+                        <span className="text-emerald-400 font-bold">MP4 Available</span>
                       ) : (
-                        <span className="text-purple-300 font-semibold">Holder Perk</span>
+                        <span className="text-zinc-500">
+                          {downloadInfo.sourceType === 'none'
+                            ? 'Unavailable'
+                            : downloadInfo.sourceType.toUpperCase()}
+                        </span>
                       )}
                     </span>
                   </button>

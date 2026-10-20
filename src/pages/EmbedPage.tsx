@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import Player from '@/components/Player';
 import { getStream, type FxStream, type MediaType } from '@/lib/api';
 import { mediaId } from '@/lib/id';
+import { isNetwebEnabled, proxiedUrl, resolveNetwebSources, type NetwebSource } from '@/lib/netweb';
 import { saveProgress } from '@/lib/watchProgress';
 import { readWarmedStream } from '@/lib/streamWarm';
 import { isBackupProvider } from '@/lib/vidbolt';
@@ -103,7 +104,41 @@ export default function EmbedPage() {
 
   const sources = stream.data?.sources ?? [];
   const activeSource = sources[0];
-  const noSource = Boolean(mediaKey) && !backupMode && !stream.isLoading && !activeSource;
+
+  // Our own gateway resolves the same title independently of the aggregator.
+  // When it answers, the player loads its stream through `/proxy` and the
+  // Download button saves through `/v1/download`, so neither the picture nor a
+  // save depends on a CDN the browser cannot reach. The aggregator's own
+  // sources remain the fallback, so an unreachable gateway degrades to the old
+  // behaviour rather than a black screen.
+  const netweb = useQuery<NetwebSource[]>({
+    queryKey: ['netweb-stream', mediaType, mediaKey, seasonNumber, episodeNumber],
+    queryFn: () =>
+      resolveNetwebSources(mediaKey, mediaType, {
+        season: mediaType === 'movie' ? undefined : seasonNumber,
+        episode: mediaType === 'movie' ? undefined : episodeNumber,
+      }),
+    enabled: Boolean(mediaKey) && !backupMode && isNetwebEnabled(),
+    staleTime: 600_000,
+    gcTime: 900_000,
+    retry: 1,
+  });
+
+  const netwebSource = netweb.data?.[0];
+  // The gateway's stream wins when it answered: it is proxied, so the CDN sees
+  // the headers it wants and an HLS playlist is rewritten to route its segments
+  // through the gateway too. The aggregator's own source is the fallback and is
+  // loaded directly, exactly as before this gateway existed.
+  const playerSrc = netwebSource ? proxiedUrl(netwebSource) : activeSource?.url;
+  const playerType = netwebSource ? netwebSource.type : activeSource?.type;
+  // The gateway's stream is preferred, so when it is in use the player waits for
+  // it to settle. Mounting as soon as the aggregator answered would hand the
+  // player the fallback URL and quietly undo the preference; the request itself
+  // is time-boxed in `resolveNetwebSources`, so an unreachable gateway costs a
+  // bounded pause rather than a hang.
+  const gatewayPending = isNetwebEnabled() && !backupMode && Boolean(mediaKey) && netweb.isLoading;
+  const resolving = !playerSrc && (stream.isLoading || gatewayPending);
+  const noSource = Boolean(mediaKey) && !backupMode && !resolving && !playerSrc;
 
   // A resolution with zero sources is a dead end for this server. Report it to
   // the host straight away rather than waiting out the frame watchdog, so the
@@ -124,7 +159,11 @@ export default function EmbedPage() {
     );
   }
 
-  if (stream.isLoading && !backupMode) {
+  // The gateway is the slower resolver and its stream is the one the player
+  // prefers, so wait for it before mounting. Mounting earlier hands `Player` an
+  // undefined `src`, which trips its "all servers exhausted" fallback and swaps
+  // in the backup iframe for a title the gateway was about to serve.
+  if (resolving) {
     return (
       <div className="w-full h-screen bg-black flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -132,7 +171,7 @@ export default function EmbedPage() {
     );
   }
 
-  if (!activeSource && !backupMode) {
+  if (!playerSrc && !backupMode) {
     return (
       <div className="w-full h-screen bg-black flex items-center justify-center text-xs font-mono text-zinc-500">
         No playable source for this title.
@@ -143,8 +182,15 @@ export default function EmbedPage() {
   return (
     <div className="w-full h-screen bg-black overflow-hidden">
       <Player
-        src={activeSource?.url}
-        sourceType={activeSource?.type}
+        src={playerSrc}
+        sourceType={playerType}
+        downloadSource={
+          netwebSource
+            ? { url: netwebSource.url, type: netwebSource.type, headers: netwebSource.headers }
+            : activeSource
+              ? { url: activeSource.url, type: activeSource.type }
+              : undefined
+        }
         poster={customPoster}
         title={
           customTitle ??
