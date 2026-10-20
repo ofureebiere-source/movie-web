@@ -36,6 +36,7 @@ import {
   type SubtitleTextColor,
 } from '@/lib/playerPreferences';
 import { applyAudioProcessing, EQ_BANDS, EQ_DEFAULT, EQ_PRESETS, resumeAudio } from '@/lib/audioEngine';
+import { createCachingFragmentLoader } from '@/lib/segmentCache';
 import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/subtitles';
 import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
@@ -321,13 +322,21 @@ export default function Player({
           video.addEventListener('loadeddata', restore, { once: true });
           return;
         }
+        // Segments are cached in Cache Storage so a rewind or a scrub back
+        // into a region already played is served from disk, not the network.
+        // hls.js types the constructor as the full `Loader` class (it also
+        // carries `context`/`stats` fields our subclass never touches), so the
+        // cast is on the constructor, not on the config.
+        const CachingLoader = createCachingFragmentLoader(
+          Hls as unknown as Parameters<typeof createCachingFragmentLoader>[0]
+        ) as unknown as typeof Hls.DefaultConfig.fLoader;
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          // Default forward buffer is ~30 s, which is what made seeking feel
-          // network-bound: anything further ahead than that had to be fetched
-          // on demand. These push the target out to a few minutes so scrubbing
-          // within the buffered region is served from memory.
+          // The reference caps forward buffering at 30 s, which is what made
+          // seeking feel network-bound: anything further ahead had to be
+          // fetched on demand. These push the target out to a few minutes so
+          // scrubbing within the buffered region is served from memory.
           maxBufferLength: 300,
           maxMaxBufferLength: 600,
           backBufferLength: 90,
@@ -335,6 +344,7 @@ export default function Player({
           startFragPrefetch: true,
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 3,
+          fLoader: CachingLoader,
         });
         hls.loadSource(src);
         hls.attachMedia(video);
