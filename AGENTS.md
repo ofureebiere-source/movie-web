@@ -68,3 +68,30 @@ filmography and the browse grids cannot drift apart.
 Browser checks live in `/tmp/verify.cjs` and `/tmp/verify2.cjs` (Playwright +
 chromium). They cover the theme suite and the live device-flip suite, and must
 both pass before committing.
+
+## Player chrome gotchas
+
+Three traps in `Player.tsx` / `PlayerEmbed.tsx` / `ProviderBar.tsx` cost real
+time to find; do not reintroduce them.
+
+- **Stacking contexts beat z-index.** `ProviderBar`'s dropdown is `z-30`, but
+  the bar had `backdrop-blur-md`, which creates a stacking context; the player
+  (`relative`, later in the DOM) then painted over the menu. A blurred
+  ancestor traps every descendant's z-index. Keep the bar's surface plain
+  translucent and give the *bar itself* the elevated level.
+- **`disabled` swallows the gesture that enables a control.** The EQ band and
+  pre-amp sliders were `disabled={!eq.enabled}` while their `onChange` set
+  `enabled: true` — so the first drag could never fire. Use opacity styling,
+  not `disabled`, when the interaction itself is meant to switch the control on.
+- **Auto-hide must yield to open menus.** The 3 s `CONTROLS_TIMEOUT` and
+  `onMouseLeave` both hid the chrome while a menu was open, so panels vanished
+  mid-interaction. `menuRef` pins the controls while `menu !== 'none'`.
+
+## Server failover
+
+The watch page renders an `<iframe>` (`PlayerEmbed`) whose inner `Player` owns
+one source. The inner player posts `frameXTV:error` only after it has tried
+everything it holds; `PlayerEmbed` forwards it through `onFailure`, and
+`WatchPage` owns the failover budget (`triedProviders`) so it can hop through
+the provider bar and show the error overlay only once every provider has been
+tried. Do not let the frame show its own error before the host has had a turn.
