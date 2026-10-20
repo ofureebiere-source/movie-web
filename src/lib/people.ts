@@ -14,8 +14,10 @@
  *              person id (P4985) which resolves to the entity; from there we
  *              read birth/death dates, birthplace, occupations, the Commons
  *              portrait, the English Wikipedia sitelink, and every credited
- *              work (P161) carrying a TMDB id (P4947) — so filmography rows
- *              link back into our own detail pages.
+ *              work — via the cast (P161) *and* voice (P725) predicates, over
+ *              every subclass of film/TV/animations/shorts/specials, carrying a
+ *              TMDB id (P4947) — so filmography rows link back into our own
+ *              detail pages.
  *   Wikipedia  the biography prose, via the REST summary endpoint.
  *   TVMaze     a fallback portrait when Commons has none, keyed by name.
  *
@@ -28,13 +30,41 @@ const WIKIDATA_API = 'https://www.wikidata.org/w/api.php';
 const WIKIPEDIA_SUMMARY = 'https://en.wikipedia.org/api/rest_v1/page/summary';
 const TVMAZE = 'https://api.tvmaze.com';
 
-/** Wikidata item kinds that count as an acting credit on a profile page. */
-const WORK_TYPES = [
+/**
+ * Wikidata classes that count as an acting credit, as *roots*: the query walks
+ * `wdt:P279*` from these, so every subclass is included too.
+ *
+ * Listing the exact classes instead was the bug this replaced. A whitelist of
+ * four (`film`, `television series`, `television film`, `miniseries`) silently
+ * dropped everything else — and the things it dropped were not obscure:
+ * `animated film` (Q202866) took out most voice work, `film project`
+ * (Q18011172) took out unreleased titles people are most likely to look for
+ * (Tom Hanks' *The Comebacker* 2027, *Toy Story 5* 2026), and `short film`
+ * (Q24862), `television special` (Q1261214) and `web series` (Q526877) took
+ * out the rest. Since these carry TMDB ids just like films do, they are all
+ * linkable and all belong on the page.
+ */
+const WORK_TYPE_ROOTS = [
   'Q11424', // film
   'Q5398426', // television series
   'Q506240', // television film
   'Q1259759', // miniseries
+  'Q202866', // animated film
+  'Q24862', // short film
+  'Q1261214', // television special
+  'Q526877', // web series
+  'Q18011172', // film project — how unreleased films are typed
 ];
+
+/**
+ * The predicates that credit a person on a work.
+ *
+ * P161 is the normal cast-member link, but voice roles frequently use P725
+ * instead and are not duplicated into P161 — so a query on P161 alone loses the
+ * entire Toy Story, Shrek and How to Train Your Dragon filmographies. Both are
+ * unioned.
+ */
+const CREDIT_PREDICATES = ['P161', 'P725'];
 
 export interface PersonProfile {
   /** Wikidata entity id, e.g. `Q35332`. */
@@ -169,17 +199,35 @@ async function fetchEntityFacts(qid: string, signal?: AbortSignal): Promise<Enti
   return facts;
 }
 
+/**
+ * Every credited work for a person, oldest data first.
+ *
+ * Two things here are load-bearing and were both bugs before:
+ *
+ * 1. The credit predicates are unioned (see `CREDIT_PREDICATES`) and the type
+ *    filter walks subclasses (see `WORK_TYPE_ROOTS`), so voice work and
+ *    unreleased titles survive.
+ * 2. `ORDER BY DESC(?year)` before `LIMIT` is what makes the cap safe. With no
+ *    ORDER BY the service may cut the result at the cap in any order, so the
+ *    newest — and most-wanted — credits could be the ones thrown away for a
+ *    prolific actor. Ordering first means the cap can only ever cost the oldest
+ *    titles, which is the acceptable end to lose. `year` is optional, so rows
+ *    without one sort last rather than displacing dated work.
+ */
 async function fetchFilmography(qid: string, signal?: AbortSignal): Promise<PersonCredit[]> {
-  const values = WORK_TYPES.map((type) => `wd:${type}`).join(' ');
+  const roots = WORK_TYPE_ROOTS.map((type) => `wd:${type}`).join(' ');
+  const predicates = CREDIT_PREDICATES.map((predicate) => `{ ?work wdt:${predicate} wd:${qid} }`).join(' UNION ');
   const rows = await sparql(
     `SELECT DISTINCT ?work ?workLabel ?year ?tmdb ?characterLabel ?type WHERE {
-       ?work wdt:P161 wd:${qid} ; wdt:P31 ?type .
-       VALUES ?type { ${values} }
+       ${predicates}
+       ?work wdt:P31 ?type .
+       ?type wdt:P279* ?root .
+       VALUES ?root { ${roots} }
        OPTIONAL { ?work wdt:P577 ?date . BIND(YEAR(?date) AS ?year) }
        OPTIONAL { ?work wdt:P4947 ?tmdb }
        OPTIONAL { ?work wdt:P453 ?character }
        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-     } LIMIT 400`,
+     } ORDER BY DESC(?year) LIMIT 1000`,
     signal
   );
 
