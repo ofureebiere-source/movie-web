@@ -191,6 +191,9 @@ export default function Player({
   const [subError, setSubError] = useState<string | null>(null);
   const [seekIndicator, setSeekIndicator] = useState<string | null>(null);
   const [bufferElapsed, setBufferElapsed] = useState(0);
+  // A transient "switching servers" notice, shown while an automatic failover
+  // is in flight so the hop is visible without looking like an error.
+  const [failoverNotice, setFailoverNotice] = useState<string | null>(null);
 
   const activeTrack = trackIndex !== null ? subtitles[trackIndex] : undefined;
 
@@ -293,6 +296,14 @@ export default function Player({
 
   // --- source wiring -------------------------------------------------------
 
+  // A fresh source list means a fresh start: a new title, or the viewer picked
+  // a provider themselves, so the failover budget is restored. Automatic hops
+  // between sources do not change this list, so their counter persists.
+  useEffect(() => {
+    failoverCount.current = 0;
+    setFailoverNotice(null);
+  }, [sources]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
@@ -350,7 +361,12 @@ export default function Player({
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, restore);
         hls.on(Hls.Events.ERROR, (_event, data) => {
-          if (data.fatal) setError(`Playback error: ${data.details || 'unknown'}`);
+          // A fatal hls.js error is the same situation as the element firing
+          // `error`: the provider answered but its stream is unusable, so hop
+          // to the next source instead of showing the viewer a dead end.
+          if (data.fatal && !autoFailover()) {
+            setError(`Playback error: ${data.details || 'unknown'}`);
+          }
         });
         destroy = () => hls.destroy();
       });
@@ -515,6 +531,30 @@ export default function Player({
     },
     [onSelectSource]
   );
+
+  /**
+   * Move to another resolved source after the current one fails.
+   *
+   * A provider that resolves but then 403s on the first segment, or serves a
+   * dead manifest, should not become the viewer's problem. Instead of showing
+   * "could not be played, try another server", this hops to the next source on
+   * its own and only surfaces an error once every source has been tried.
+   *
+   * Returns true when a hop was made, false when the sources are exhausted.
+   */
+  const autoFailover = useCallback((): boolean => {
+    if (!onSelectSource || sources.length < 2) return false;
+    if (failoverCount.current >= sources.length - 1) return false;
+    failoverCount.current += 1;
+    const next = (activeSourceIndex + 1) % sources.length;
+    const video = videoRef.current;
+    if (video && video.currentTime > 1) seekAfterReload.current = video.currentTime;
+    // Brief, non-blocking notice so the switch is visible but not a dialog.
+    setError(null);
+    setFailoverNotice('Switching to another server…');
+    onSelectSource(next);
+    return true;
+  }, [onSelectSource, sources.length, activeSourceIndex]);
 
   // --- keyboard shortcuts --------------------------------------------------
 
@@ -735,7 +775,13 @@ export default function Player({
           setControlsVisible(true);
         }}
         onWaiting={() => setBuffering(true)}
-        onPlaying={() => setBuffering(false)}
+        onPlaying={() => {
+          setBuffering(false);
+          // The current source is genuinely playing, so the failover budget is
+          // restored and any "switching servers" notice is dismissed.
+          failoverCount.current = 0;
+          setFailoverNotice(null);
+        }}
         onLoadedMetadata={(event) => {
           const video = event.currentTarget;
           setDuration(video.duration || 0);
@@ -756,7 +802,13 @@ export default function Player({
           if (autoplayNext && onNext) onNext();
           else onEnded?.();
         }}
-        onError={() => setError('This stream could not be played. Try another server.')}
+        onError={() => {
+          // Try the next resolved source before troubling the viewer. Only when
+          // every source has failed does the error overlay appear.
+          if (!autoFailover()) {
+            setError('This stream could not be played. Try another server.');
+          }
+        }}
       />
 
       {/* Double-tap-to-seek zones. The outer thirds seek; the middle third is
@@ -841,6 +893,18 @@ export default function Player({
         </div>
       )}
 
+      {failoverNotice && !error && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="failover-notice"
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-40 pointer-events-none inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/80 backdrop-blur-md border border-white/15 text-[11px] font-mono text-zinc-200 shadow-2xl animate-fade-in"
+        >
+          <span className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+          {failoverNotice}
+        </div>
+      )}
+
       {buffering && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none bg-black/20">
           <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -856,7 +920,7 @@ export default function Player({
       )}
 
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
           <div className="max-w-sm text-center space-y-3">
             <p className="text-sm font-semibold text-white">{error}</p>
             <div className="flex items-center justify-center gap-2">
@@ -904,7 +968,7 @@ export default function Player({
       )}
 
       <div
-        className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-200 ${
+        className={`absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-200 ${
           controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         } ${hideControls ? 'hidden' : ''}`}
         onClick={(event) => event.stopPropagation()}

@@ -186,6 +186,11 @@ export function DetailHero({
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const posterSlotRef = useRef<HTMLDivElement | null>(null);
   const posterImgRef = useRef<HTMLImageElement | null>(null);
+  // The backdrop panel is the trailer's morph target: the wide artwork becomes
+  // the video, while the poster keeps its own slot and stays on screen.
+  const backdropSlotRef = useRef<HTMLDivElement | null>(null);
+  // The backdrop `<img>` inside that panel — the morph's starting rect.
+  const backdropImgRef = useRef<HTMLImageElement | null>(null);
 
   const { isReleased } = getReleaseState({
     mediaType: detail.type,
@@ -199,25 +204,54 @@ export function DetailHero({
   const typeLabel = detail.type === 'anime' ? 'Anime' : detail.type === 'tv' ? 'TV Series' : 'Movie';
 
   return (
-    <div className="media-surface relative w-full overflow-hidden bg-black text-white">
-      {detail.backdrop && (
-        <div className="absolute inset-0 pointer-events-none select-none overflow-hidden opacity-35">
+    <div className="media-surface relative w-full overflow-hidden bg-black text-white min-h-[380px] sm:min-h-[460px] lg:min-h-[520px] flex flex-col justify-end">
+      {/* The backdrop is the hero's fill, not a blurred wash. It spans the whole
+          hero at 16:9 so the wide artwork reads edge to edge, and it doubles as
+          the trailer's stage: Watch Trailer morphs this panel into the video,
+          which is the landscape-friendly area, while the poster keeps its own
+          small slot at the bottom-left and stays visible throughout. */}
+      <div
+        ref={backdropSlotRef}
+        className="absolute inset-0 overflow-hidden pointer-events-none select-none"
+      >
+        {detail.backdrop ? (
           <img
+            ref={backdropImgRef}
             src={detail.backdrop}
             alt=""
             aria-hidden="true"
-            className="w-full h-full object-cover filter blur-3xl scale-110 transform translate-y-[-10%]"
+            className="w-full h-full object-cover object-top"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
-        </div>
+        ) : (
+          <div className="w-full h-full bg-zinc-950" />
+        )}
+        {/* Scrims keep the copy legible over the artwork without hiding it. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/60 to-transparent" />
+      </div>
+
+      {/* The morphing trailer sits above the backdrop but below the copy, so the
+          text stays readable while the video plays. */}
+      {trailerOpen && trailer && trailer.key && (
+        <TrailerInline
+          video={trailer}
+          title={detail.title}
+          slotRef={backdropSlotRef}
+          posterRef={backdropImgRef}
+          onClose={() => setTrailerOpen(false)}
+        />
       )}
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-8 sm:pb-12 z-10">
-        <div className="flex flex-col md:flex-row items-start gap-6 sm:gap-8 lg:gap-10">
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-8 sm:pb-12 z-30">
+        <div className="flex flex-col-reverse md:flex-row items-start md:items-end gap-6 sm:gap-8 lg:gap-10">
+          {/* The poster is a small companion to the backdrop rather than the
+              hero's main panel: bottom-left, 2:3, sitting over the artwork so
+              the wide backdrop carries the visual weight. It is a sibling of
+              the copy, not inside it, so it stays visible while the trailer
+              plays and only the text fades. */}
           <div
             ref={posterSlotRef}
-            className="w-40 sm:w-52 md:w-60 lg:w-72 aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl shrink-0 mx-auto md:mx-0 relative"
+            className="w-24 sm:w-28 md:w-32 aspect-[2/3] rounded-lg overflow-hidden bg-zinc-900 border border-white/15 shadow-2xl shrink-0 relative"
           >
             {detail.poster && !posterErrored ? (
               <>
@@ -232,23 +266,18 @@ export function DetailHero({
                 {!posterLoaded && <div className="absolute inset-0 bg-zinc-900 animate-pulse" />}
               </>
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center text-zinc-600 bg-zinc-900">
-                <ImageOff className="w-10 h-10 mb-2 opacity-50" />
-                <span className="text-[11px] font-mono text-zinc-500 line-clamp-2">{detail.title}</span>
+              <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-zinc-600 bg-zinc-900">
+                <ImageOff className="w-6 h-6 mb-1 opacity-50" />
+                <span className="text-[10px] font-mono text-zinc-500 line-clamp-2">{detail.title}</span>
               </div>
-            )}
-            {trailerOpen && trailer && trailer.key && (
-              <TrailerInline
-                video={trailer}
-                title={detail.title}
-                slotRef={posterSlotRef}
-                posterRef={posterImgRef}
-                onClose={() => setTrailerOpen(false)}
-              />
             )}
           </div>
 
-          <div className="flex-1 space-y-4 text-left w-full">
+          <div
+            className={`flex-1 space-y-4 text-left w-full transition-opacity duration-300 ${
+              trailerOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold tracking-wider text-zinc-300 uppercase">
                 {typeLabel}
@@ -399,7 +428,15 @@ export function DetailHero({
 function CastMemberCard({ member }: { member: FxCastMember }) {
   const [loaded, setLoaded] = useState(false);
   const [errored, setErrored] = useState(false);
-  return (
+
+  // A cast member's `id` is their TMDB person id, which is what the profile
+  // page resolves from. The name rides along in `?name=` so a person Wikidata
+  // has not linked to a TMDB id can still be found by label.
+  const profileId = String(member.id ?? '').trim();
+  const linkable = Boolean(profileId);
+  const href = `/person/${encodeURIComponent(profileId)}?name=${encodeURIComponent(member.name ?? '')}`;
+
+  const card = (
     <div className="flex-shrink-0 w-24 sm:w-28 text-left group">
       <div className="relative aspect-[3/4] w-full rounded-lg overflow-hidden bg-zinc-900 border border-zinc-800 shadow-sm mb-2">
         {member.profile && !errored ? (
@@ -425,6 +462,13 @@ function CastMemberCard({ member }: { member: FxCastMember }) {
       </h5>
       {member.character && <p className="text-[11px] font-mono text-zinc-400 truncate">{member.character}</p>}
     </div>
+  );
+
+  if (!linkable) return card;
+  return (
+    <Link to={href} aria-label={`View ${member.name}`} className="block focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 rounded-lg">
+      {card}
+    </Link>
   );
 }
 

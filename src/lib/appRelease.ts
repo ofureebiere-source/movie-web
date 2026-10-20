@@ -1,4 +1,4 @@
-import { APP_RELEASE_TAG, APP_RELEASES_URL, APP_VERSION } from '@/lib/brand';
+import { APP_RELEASE_TAG, APP_RELEASES_URL } from '@/lib/brand';
 
 /**
  * Where the companion mobile app is downloaded from.
@@ -25,19 +25,21 @@ export interface AppDownload {
   version: string;
 }
 
-/** The deterministic URL for a known version, used when the API is unavailable. */
-export function directApkUrl(version: string = APP_VERSION): string {
-  return `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro-${version}.apk`;
-}
+/**
+ * The version-independent alias the workflow publishes alongside the versioned
+ * asset. Unlike a `netflix-pro-<version>.apk` link, this never goes stale when
+ * the version is bumped, so it is the fallback when the API cannot be read.
+ */
+export const STABLE_APK_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro.apk`;
 
 const FALLBACK: AppDownload = {
-  apkUrl: directApkUrl(),
+  apkUrl: STABLE_APK_URL,
   releaseUrl: APP_RELEASES_URL,
-  version: APP_VERSION,
+  version: '',
 };
 
 /**
- * Resolve the published APK, falling back to the deterministic URL.
+ * Resolve the published APK, falling back to the stable alias.
  *
  * Never throws and never rejects: a rate-limited or unreachable API must not
  * turn the install banner into a dead link.
@@ -53,15 +55,20 @@ export async function resolveAppDownload(signal?: AbortSignal): Promise<AppDownl
     const release = (await response.json()) as {
       assets?: { name?: string; browser_download_url?: string }[];
     };
-    const asset = (release.assets ?? []).find((entry) =>
+    const assets = (release.assets ?? []).filter((entry) =>
       entry?.name?.toLowerCase().endsWith('.apk')
     );
+    // Prefer the versioned asset over the stable alias, so the resolved version
+    // is real rather than empty; asset order in the API response is not
+    // guaranteed.
+    const asset =
+      assets.find((entry) => /\d+\.\d+\.\d+/.test(entry?.name ?? '')) ?? assets[0];
     if (!asset?.browser_download_url) return FALLBACK;
 
     return {
       apkUrl: asset.browser_download_url,
       releaseUrl: APP_RELEASES_URL,
-      version: asset.name?.match(/(\d+\.\d+\.\d+)/)?.[1] ?? APP_VERSION,
+      version: asset.name?.match(/(\d+\.\d+\.\d+)/)?.[1] ?? '',
     };
   } catch {
     return FALLBACK;

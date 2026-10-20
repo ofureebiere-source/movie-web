@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 import { RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { SORT_ANIME, SORT_MOVIE, SELECT_CLASS, type SortOption } from '@/components/SortSelect';
 import type { MediaType } from '@/lib/api';
 
 /**
@@ -11,26 +12,15 @@ import type { MediaType } from '@/lib/api';
  * does not have. The genre option list is per-media-type because the two
  * upstreams disagree — films and series take numeric TMDB ids, anime takes
  * genre NAMES.
+ *
+ * The sort list itself lives in `SortSelect`, shared with the person page's
+ * filmography so both read identically.
  */
 
 export interface GenreOption {
   id: string;
   label: string;
 }
-
-const SORT_MOVIE: GenreOption[] = [
-  { id: 'popularity.desc', label: 'Most Popular' },
-  { id: 'vote_average.desc', label: 'Top Rated' },
-  { id: 'primary_release_date.desc', label: 'Newest First' },
-  { id: 'primary_release_date.asc', label: 'Oldest First' },
-];
-
-const SORT_ANIME: GenreOption[] = [
-  { id: 'TRENDING_DESC', label: 'Trending Now' },
-  { id: 'POPULARITY_DESC', label: 'Most Popular' },
-  { id: 'SCORE_DESC', label: 'Highest Rated' },
-  { id: 'START_DATE_DESC', label: 'Newest Releases' },
-];
 
 const SEASONS: GenreOption[] = [
   { id: 'WINTER', label: 'Winter' },
@@ -56,9 +46,6 @@ const YEARS: GenreOption[] = Array.from({ length: 15 }, (_, index) => {
   return { id: year, label: year };
 });
 
-const SELECT_CLASS =
-  'w-full bg-zinc-900/80 border border-white/[0.08] hover:border-white/[0.18] text-zinc-200 text-xs px-2 sm:px-2.5 py-1.5 min-h-[36px] rounded-xl focus:outline-none focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 transition-all cursor-pointer truncate';
-
 export default function DiscoveryFilterBar({ type, genres }: { type: MediaType; genres: GenreOption[] }) {
   const [params, setParams] = useSearchParams();
 
@@ -69,7 +56,7 @@ export default function DiscoveryFilterBar({ type, genres }: { type: MediaType; 
   const season = params.get('season') || '';
   const status = params.get('status') || '';
 
-  const sortOptions = type === 'anime' ? SORT_ANIME : SORT_MOVIE;
+  const sortOptions: SortOption[] = type === 'anime' ? SORT_ANIME : SORT_MOVIE;
   const hasActive = Boolean(genre || year || rating || sort || season || status);
 
   const update = (key: string, value: string) => {

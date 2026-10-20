@@ -39,11 +39,14 @@ export const BITCOIN_ADDRESS = 'bc1qframextvsupport000000000000000000000';
 /** The companion mobile app, downloaded straight from GitHub releases. */
 export const APP_RELEASES_URL = 'https://github.com/King-Fisher000/netflix-pro/releases';
 export const APP_RELEASE_TAG = 'android-latest';
-export const APP_VERSION = '1.2.3';
-/** The release asset is named `netflix-pro-<version>.apk`; keep in sync with the workflow. */
-// The banner resolves the live asset (src/lib/appRelease.ts); this stays as the
-// deterministic fallback the resolver itself uses.
-export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro-${APP_VERSION}.apk`;
+/**
+ * The version-independent alias the release workflow publishes next to the
+ * versioned `netflix-pro-<version>.apk`. It always points at the newest build,
+ * so this URL never goes stale when the version is bumped. The install banner
+ * asks the release API for the versioned asset first (src/lib/appRelease.ts)
+ * and uses this only as the fallback.
+ */
+export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro.apk`;
 
 /** Support address shown in the footer / profile. */
 export const SUPPORT_EMAIL = 'support@framextv.xyz';

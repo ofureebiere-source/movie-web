@@ -15,6 +15,7 @@ import MyListPage from '@/pages/MyListPage';
 import HistoryPage from '@/pages/HistoryPage';
 import ApiPage from '@/pages/ApiPage';
 import StreamConfiguratorPage from '@/pages/StreamConfiguratorPage';
+import PersonPage from '@/pages/PersonPage';
 import NotFoundPage from '@/pages/NotFoundPage';
 import { useTheme } from '@/lib/theme';
 
@@ -83,6 +84,7 @@ export default function App() {
             <Route path="/watch/anime/:anilistId/:episode" element={<WatchPage />} />
             <Route path="/watch/:tmdbId" element={<WatchPage />} />
             <Route path="/watch/:tmdbId/:season/:episode" element={<WatchPage />} />
+            <Route path="/person/:tmdbId" element={<PersonPage />} />
             <Route path="/404" element={<NotFoundPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
