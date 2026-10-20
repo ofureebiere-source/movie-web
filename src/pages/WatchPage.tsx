@@ -130,6 +130,29 @@ export default function WatchPage() {
   const [promptVisible, setPromptVisible] = useState(false);
   const [countdown, setCountdown] = useState(AUTOPLAY_COUNTDOWN);
 
+  // Automatic server failover. The frame owns one source; when it reports a
+  // dead end the watch page moves to the next provider in the bar rather than
+  // showing the viewer an error, and only surfaces the error overlay once the
+  // whole provider list has been walked.
+  const [failoverNotice, setFailoverNotice] = useState<string | null>(null);
+  const [exhausted, setExhausted] = useState(false);
+  const triedProviders = useRef<Set<string>>(new Set());
+
+  const handlePlayerFailure = useCallback(() => {
+    const tried = triedProviders.current;
+    if (activeProvider) tried.add(activeProvider);
+    // Prefer a provider the viewer has not been on yet this session.
+    const next = providers.find((entry) => !tried.has(entry.id) && entry.id !== activeProvider);
+    if (!next) {
+      setFailoverNotice(null);
+      setExhausted(true);
+      return;
+    }
+    tried.add(next.id);
+    setFailoverNotice(`Switching to ${next.name}…`);
+    setActiveProvider(next.id);
+  }, [activeProvider, providers]);
+
   const promptStarted = useRef(false);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const navigated = useRef(false);
@@ -725,6 +748,15 @@ export default function WatchPage() {
             resumedTime={showResume ? resumeTime : 0}
             onTimeUpdate={onTimeUpdate}
             onAutoplayChange={setAutoplay}
+            onFailure={handlePlayerFailure}
+            failoverNotice={failoverNotice}
+            showErrorOverlay={exhausted}
+            onPlayerReady={() => {
+              // A provider answered, so clear the hop notice and re-arm the
+              // failover budget for whatever comes next.
+              setFailoverNotice(null);
+              setExhausted(false);
+            }}
           />
         </div>
 

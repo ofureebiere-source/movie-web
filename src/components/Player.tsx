@@ -170,10 +170,19 @@ export default function Player({
   const [current, setCurrent] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffering, setBuffering] = useState(false);
+  // True once the current source has produced a frame. Drives the staged
+  // loading overlay: before the first frame the viewer sees the connect stages,
+  // after it they only see the light buffering spinner.
+  const [hasStarted, setHasStarted] = useState(false);
   const [buffered, setBuffered] = useState<Array<[number, number]>>([]);
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [menu, setMenu] = useState<Menu>('none');
+  // Mirrors `menu` for callbacks that must not re-create on every menu change
+  // (notably the auto-hide timer).
+  const menuRef = useRef<Menu>('none');
+  // Named in the staged loading overlay ("Connecting to …").
+  const activeProviderEntry = activeProvider ? providers.find((entry) => entry.id === activeProvider) : undefined;
 
   const [prefs, setPrefs] = useState(() => readSubtitlePreferences());
   const [aspect, setAspect] = useState<AspectRatio>(() => readAspectRatio());
@@ -309,6 +318,7 @@ export default function Player({
     if (!video || !src) return;
 
     setError(null);
+    setHasStarted(false);
     resumeApplied.current = false;
 
     const restore = () => {
@@ -422,6 +432,10 @@ export default function Player({
     setControlsVisible(true);
     if (hideTimer.current) window.clearTimeout(hideTimer.current);
     hideTimer.current = window.setTimeout(() => {
+      // Never hide the chrome out from under an open menu: the viewer is
+      // mid-interaction and the panel would vanish with the bar. The timer is
+      // re-armed by whatever closes the menu.
+      if (menuRef.current !== 'none') return;
       if (!videoRef.current?.paused) setControlsVisible(false);
     }, CONTROLS_TIMEOUT);
   }, []);
@@ -432,6 +446,19 @@ export default function Player({
     },
     []
   );
+
+  // An open menu pins the controls: the panel is anchored to the bar, so the
+  // bar must not fade while the viewer is choosing a track or a band. Closing
+  // the menu re-arms the ordinary auto-hide timer.
+  useEffect(() => {
+    menuRef.current = menu;
+    if (menu !== 'none') {
+      setControlsVisible(true);
+      if (hideTimer.current) window.clearTimeout(hideTimer.current);
+    } else {
+      showControls();
+    }
+  }, [menu, showControls]);
 
   const togglePlay = useCallback(() => {
     const video = videoRef.current;
@@ -607,6 +634,16 @@ export default function Player({
     }
   }, []);
 
+  // Tell a host page when playback has genuinely failed — every source tried
+  // and none worked — so an embedding watch page can hop servers instead of
+  // showing the viewer a dead end.
+  useEffect(() => {
+    if (!error) return;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ event: 'frameXTV:error', message: error }, '*');
+    }
+  }, [error]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -750,7 +787,7 @@ export default function Player({
       ref={shellRef}
       data-testid="video-player"
       onMouseMove={showControls}
-      onMouseLeave={() => playing && setControlsVisible(false)}
+      onMouseLeave={() => playing && menuRef.current === 'none' && setControlsVisible(false)}
       className={`media-surface relative w-full bg-black overflow-hidden ${ASPECT_CLASS[aspect] || 'aspect-video'} group`}
     >
       <video
@@ -777,6 +814,7 @@ export default function Player({
         onWaiting={() => setBuffering(true)}
         onPlaying={() => {
           setBuffering(false);
+          setHasStarted(true);
           // The current source is genuinely playing, so the failover budget is
           // restored and any "switching servers" notice is dismissed.
           failoverCount.current = 0;
@@ -905,7 +943,34 @@ export default function Player({
         </div>
       )}
 
-      {buffering && !error && (
+      {/* Staged loading overlay, ported from the reference. Before the first
+          frame the viewer gets the full "connecting" card — a spinner with the
+          fX badge, the provider being contacted, and the establishing line —
+          rather than a bare spinner. Once a frame has been shown the overlay
+          drops back to the light buffering spinner so a mid-playback stall is
+          not mistaken for a fresh load. */}
+      {buffering && !error && !hasStarted && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm z-30 space-y-4 animate-fade-in p-4">
+          <div className="relative z-10 flex flex-col items-center space-y-3 p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-white/[0.08] shadow-2xl backdrop-blur-xl max-w-xs sm:max-w-sm w-full text-center">
+            <div className="relative flex items-center justify-center">
+              <div className="w-10 h-10 rounded-full border-2 border-rose-500/20 border-t-rose-500 animate-spin" />
+              <div className="absolute w-6 h-6 rounded-lg bg-gradient-to-br from-rose-600 to-red-700 text-white font-bold font-mono text-[10px] flex items-center justify-center shadow-lg shadow-rose-500/30 border border-rose-400/30">
+                fX
+              </div>
+            </div>
+            <div className="space-y-0.5">
+              <p className="text-xs font-mono font-bold uppercase tracking-wider text-white">
+                {activeProviderEntry ? `Connecting to ${activeProviderEntry.name}` : 'Decrypting Stream'}
+              </p>
+              <p className="text-[11px] font-mono text-zinc-400 animate-pulse">
+                {bufferElapsed >= 3 ? `${bufferElapsed}s — still establishing…` : 'Establishing stream connection...'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {buffering && !error && hasStarted && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none bg-black/20">
           <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
           {bufferElapsed >= 3 && (
@@ -1328,7 +1393,10 @@ export default function Player({
                           step={1}
                           value={eq.gains[index]}
                           aria-label={`${frequency} Hz`}
-                          disabled={!eq.enabled}
+                          // Deliberately not `disabled`: a disabled range never
+                          // fires `onChange`, so dragging a band with the EQ off
+                          // did nothing. The handler turns the EQ on, which is
+                          // the behaviour the panel's copy already promised.
                           onChange={(event) => {
                             const gains = [...eq.gains];
                             gains[index] = Number(event.target.value);
@@ -1336,7 +1404,7 @@ export default function Player({
                             setEq(next);
                             saveEqualizer(next);
                           }}
-                          className="accent-rose-500 cursor-pointer disabled:opacity-40"
+                          className={`accent-rose-500 cursor-pointer ${eq.enabled ? '' : 'opacity-40'}`}
                           style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '12px', height: '56px' }}
                         />
                         <span className="text-[9px] font-mono text-zinc-600">
@@ -1355,13 +1423,14 @@ export default function Player({
                       step={1}
                       value={eq.preamp}
                       aria-label="Pre-amp"
-                      disabled={!eq.enabled}
+                      // See the band sliders: `disabled` would swallow the very
+                      // drag that is meant to switch the EQ on.
                       onChange={(event) => {
                         const next = { ...eq, enabled: true, preamp: Number(event.target.value) };
                         setEq(next);
                         saveEqualizer(next);
                       }}
-                      className="flex-1 accent-rose-500 cursor-pointer disabled:opacity-40"
+                      className={`flex-1 accent-rose-500 cursor-pointer ${eq.enabled ? '' : 'opacity-40'}`}
                     />
                     <span className="text-[10px] font-mono text-zinc-400 tabular-nums w-9 text-right">
                       {eq.preamp > 0 ? `+${eq.preamp}` : eq.preamp}dB

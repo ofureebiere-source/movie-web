@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Play, RotateCcw, Server, X } from 'lucide-react';
 import { formatTime } from '@/lib/watchProgress';
@@ -32,10 +32,36 @@ export interface PlayerEmbedProps {
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onPlayerReady?: () => void;
   onAutoplayChange?: (enabled: boolean) => void;
+  /**
+   * Called when the frame fails to reach a playable state. When supplied, the
+   * embed does not show its own dead-end overlay: the owner is expected to move
+   * to another server and hand back a fresh `embedUrl`. The error overlay only
+   * appears once the owner reports that every server has been tried.
+   */
+  onFailure?: (reason: 'error' | 'timeout') => void;
+  /** Shown instead of the error overlay when `onFailure` owns recovery. */
+  failoverNotice?: string | null;
+  /** True when the owner has exhausted every server and wants the overlay. */
+  showErrorOverlay?: boolean;
 }
 
+/** How long to wait for `frameXTV:ready` before treating the frame as failed. */
+const READY_TIMEOUT_MS = 12000;
+
 const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function PlayerEmbed(
-  { embedUrl, title, posterUrl, backUrl = '/', resumedTime = 0, onTimeUpdate, onPlayerReady, onAutoplayChange },
+  {
+    embedUrl,
+    title,
+    posterUrl,
+    backUrl = '/',
+    resumedTime = 0,
+    onTimeUpdate,
+    onPlayerReady,
+    onAutoplayChange,
+    onFailure,
+    failoverNotice = null,
+    showErrorOverlay = false,
+  },
   ref
 ) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
@@ -44,12 +70,44 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
   const [showResume, setShowResume] = useState(resumedTime > 15);
   const [tipDismissed, setTipDismissed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  // Guards against reporting the same frame twice: a frame that errors and then
+  // also times out must only advance the server once.
+  const reportedRef = useRef(false);
 
   useEffect(() => {
     setReady(false);
     setFailed(false);
     setShowResume(resumedTime > 15);
+    reportedRef.current = false;
   }, [embedUrl, resumedTime]);
+
+  const reportFailure = useCallback(
+    (reason: 'error' | 'timeout') => {
+      if (reportedRef.current) return;
+      reportedRef.current = true;
+      if (onFailure) {
+        // The owner will swap the server and re-render with a new URL; leaving
+        // `failed` unset keeps the initialising overlay up during the hop
+        // rather than flashing a dead end.
+        onFailure(reason);
+      } else {
+        setFailed(true);
+      }
+    },
+    [onFailure]
+  );
+
+  // An iframe that points at a dead server frequently loads *something* (an
+  // error page) and never fires `onError`, so silence is the only reliable
+  // signal. If the embed never announces itself, treat the server as failed.
+  useEffect(() => {
+    if (ready) return;
+    if (!onFailure) return;
+    const timer = window.setTimeout(() => {
+      if (!reportedRef.current) reportFailure('timeout');
+    }, READY_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [ready, onFailure, reportFailure, embedUrl]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -67,10 +125,16 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
         const { enabled } = data as { enabled?: boolean };
         if (typeof enabled === 'boolean') onAutoplayChange?.(enabled);
       }
+      // The embedded player reports a dead end only after it has itself tried
+      // every source it holds. A host that owns more servers (the provider bar)
+      // takes over here rather than letting the frame show an error.
+      if (data.event === 'frameXTV:error') {
+        reportFailure('error');
+      }
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [onTimeUpdate, onPlayerReady, onAutoplayChange]);
+  }, [onTimeUpdate, onPlayerReady, onAutoplayChange, reportFailure]);
 
   const restart = () => {
     try {
@@ -132,7 +196,21 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
           </div>
         )}
 
-        {failed && (
+        {/* A silent automatic hop between servers. Shown in place of the error
+            overlay so a dead server never reaches the viewer as a failure. */}
+        {failoverNotice && !failed && (
+          <div
+            role="status"
+            aria-live="polite"
+            data-testid="embed-failover-notice"
+            className="absolute top-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-black/85 backdrop-blur-md border border-white/15 text-[11px] font-mono text-zinc-200 shadow-2xl animate-fade-in"
+          >
+            <span className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+            {failoverNotice}
+          </div>
+        )}
+
+        {(failed || showErrorOverlay) && (
           <div className="absolute inset-0 z-20 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center space-y-4">
             <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 flex items-center justify-center">
               <AlertTriangle className="w-6 h-6" />
@@ -149,6 +227,7 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
                 onClick={() => {
                   setFailed(false);
                   setReady(false);
+                  reportedRef.current = false;
                   setReloadKey((value) => value + 1);
                 }}
                 className="px-4 py-2 rounded-lg bg-white hover:bg-zinc-200 text-black text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95"
@@ -200,7 +279,7 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media; display-capture; presentation"
           allowFullScreen
           onLoad={() => setReady(true)}
-          onError={() => setFailed(true)}
+          onError={() => reportFailure('error')}
           key={`${embedUrl}-${reloadKey}`}
         />
       </div>

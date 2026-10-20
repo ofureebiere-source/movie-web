@@ -80,7 +80,11 @@ export default function ProviderBar({
   return (
     <div
       data-testid="provider-bar"
-      className="w-full flex items-center justify-between gap-2 rounded-xl bg-zinc-950/80 border border-white/[0.06] backdrop-blur-md px-3 py-2"
+      // No backdrop-blur here: a filter creates a stacking context, which would
+      // trap the dropdown's z-index below the player that follows this bar in
+      // the DOM. The blur is faked with a translucent background instead so the
+      // menu can escape and paint over the frame.
+      className="relative z-30 w-full flex items-center justify-between gap-2 rounded-xl bg-zinc-950/95 border border-white/[0.06] px-3 py-2"
     >
       <div className="flex items-center gap-2 min-w-0">
         <Server className="w-3.5 h-3.5 text-rose-500 shrink-0" />
