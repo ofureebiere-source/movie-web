@@ -185,11 +185,11 @@ export interface DetailHeroProps {
   isSaved?: boolean;
   onToggleWatchlist?: () => void;
   /**
-   * Resolve and warm the title's stream in the background while the trailer is
-   * on screen. Called once per trailer open, after a short grace period so a
-   * viewer who immediately closes the trailer does not trigger a resolve they
-   * will never use. The detail page owns this because it alone knows the id,
-   * type and season/episode the watch page will ask for.
+   * Resolve and warm the title's stream in the background. Fired on mount
+   * (after a short grace period) and again when the trailer opens, so the
+   * stream and every provider in the server bar are resolved before playback.
+   * The detail page owns this because it alone knows the id, type and
+   * season/episode the watch page will ask for.
    */
   onWarmStream?: () => void;
 }
@@ -271,6 +271,18 @@ export function DetailHero({
     const timer = window.setTimeout(() => onWarmStreamRef.current?.(), 1500);
     return () => window.clearTimeout(timer);
   }, [trailerOpen]);
+
+  // Resolve on the detail page itself, not only when the trailer opens. The
+  // viewer is reading the synopsis and cast for a few seconds before they press
+  // play, and that time is enough to resolve the stream and every provider the
+  // server bar offers — so Watch Now, and any later server switch, are instant.
+  // The grace period keeps a viewer who bounces straight back out from paying
+  // for a resolve they will not use; a repeated resolve is cheap because every
+  // already-warmed provider is skipped.
+  useEffect(() => {
+    const timer = window.setTimeout(() => onWarmStreamRef.current?.(), 800);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   // Escape is a hard stop at any point in the three plays. It clears the flag so
   // the label cannot appear from a course the viewer abandoned.

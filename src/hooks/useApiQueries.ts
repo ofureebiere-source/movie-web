@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAnimeDetail, searchAnime } from '@/lib/anilist';
 import { warmStream } from '@/lib/streamWarm';
@@ -242,6 +242,9 @@ export function useProviders() {
  * the host's cache alone would not save the embed anything. `warmStream` bridges
  * that gap through Cache Storage and `sessionStorage`; this hook is just the
  * component-facing wrapper so a detail page can hand it to `DetailHero`.
+ *
+ * The provider list comes from the same `/api/providers` query the watch page's
+ * bar uses, so the pre-resolve covers exactly the servers the viewer can pick.
  */
 export function useWarmStream(
   id: string | undefined,
@@ -250,10 +253,12 @@ export function useWarmStream(
   episode?: number
 ) {
   const clean = (id || '').trim();
+  const providers = useProviders().data ?? [];
+  const providerIds = useMemo(() => providers.map((provider) => provider.id), [providers]);
   return useCallback(() => {
     if (!clean) return;
-    void warmStream(clean, type, { season, episode });
-  }, [clean, type, season, episode]);
+    void warmStream(clean, type, { season, episode, providers: providerIds.map((id) => ({ id })) });
+  }, [clean, type, season, episode, providerIds]);
 }
 
 /** Per-title metadata (title/year/poster). */

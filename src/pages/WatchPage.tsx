@@ -25,6 +25,7 @@ import { mediaId } from '@/lib/id';
 import { isNotFoundPath } from '@/lib/notFound';
 import { readAutoplayNext, saveAutoplayNext } from '@/lib/playerPreferences';
 import { getReleaseState } from '@/lib/releaseState';
+import { warmStream } from '@/lib/streamWarm';
 import { getProgress, saveProgress } from '@/lib/watchProgress';
 import { toggleMyList, useIsInMyList } from '@/lib/watchlist';
 import NotFoundPage from './NotFoundPage';
@@ -112,6 +113,30 @@ export default function WatchPage() {
 
   const providersQuery = useProviders();
   const providers = providersQuery.data ?? [];
+  // A stable identity for the provider set, so the warm effect below does not
+  // re-run on every render while the list is still loading (an empty `providers`
+  // is a fresh array each render).
+  const providerIds = useMemo(() => providers.map((provider) => provider.id).join(','), [providers]);
+
+  // Resolve on arrival, not only from the detail page. A direct link or a
+  // refresh lands here without a warm, so the stream and every provider in the
+  // bar are resolved in the background while the embed boots. The embed prefers
+  // a warmed entry on its first attempt, so this is what makes a cold visit
+  // start instantly too. Keyed on the title/episode so an episode change
+  // re-warms the one about to play.
+  useEffect(() => {
+    if (!mediaKey || notFound) return;
+    const timer = window.setTimeout(() => {
+      void warmStream(mediaKey, mediaType, {
+        season: mediaType === 'movie' ? undefined : seasonNumber,
+        episode: mediaType === 'movie' ? undefined : episodeNumber,
+        providers: providerIds
+          ? providerIds.split(',').map((id) => ({ id }))
+          : [],
+      });
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [mediaKey, mediaType, seasonNumber, episodeNumber, notFound, providerIds]);
 
   // --- state ---------------------------------------------------------------
 

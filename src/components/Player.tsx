@@ -5,6 +5,7 @@ import {
   Check,
   Maximize,
   Pause,
+  PictureInPicture2,
   Play,
   RotateCcw,
   Server,
@@ -664,6 +665,22 @@ export default function Player({
     }, 500);
     return () => window.clearInterval(timer);
   }, [buffering]);
+
+  // Picture-in-Picture, ported from the reference's `togglePiP`: flip the
+  // document's single PiP element rather than tracking state ourselves, so the
+  // button stays correct when the viewer leaves PiP with the browser's own
+  // control. `requestPictureInPicture` rejects when the document is not allowed
+  // to enter PiP (no user gesture, or a browser that does not support it), so
+  // the rejection is swallowed — the button is simply a no-op there.
+  const togglePiP = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (document.pictureInPictureElement) {
+      void document.exitPictureInPicture().catch(() => undefined);
+      return;
+    }
+    void video.requestPictureInPicture().catch(() => undefined);
+  }, []);
 
   const toggleFullscreen = useCallback(() => {
     const shell = shellRef.current;
@@ -1831,6 +1848,16 @@ export default function Player({
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              onClick={togglePiP}
+              aria-label="Picture in Picture"
+              title="Picture in Picture"
+              className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <PictureInPicture2 className="w-4 h-4" />
+            </button>
 
             <button
               type="button"

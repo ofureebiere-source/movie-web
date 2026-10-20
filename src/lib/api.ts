@@ -214,20 +214,73 @@ function buildUrl(path: string, params: Record<string, unknown> = {}): string {
   return `${base}${query ? `?${query}` : ''}`;
 }
 
+/**
+ * The headers a browser sends on its own, spelled out.
+ *
+ * The aggregator sits behind Cloudflare, which answers a request that does not
+ * look like it came from a page with an empty body or an HTML interstitial
+ * rather than an error status. A same-origin `fetch` from the app already
+ * carries most of these, but naming them makes the request unambiguous and
+ * keeps the resolution path a plain client call — no server proxy to be
+ * challenged in the first place.
+ */
+const CLIENT_HEADERS: Record<string, string> = {
+  accept: 'application/json, text/plain, */*',
+  'accept-language': 'en-US,en;q=0.9',
+};
+
+/** True when a response body is a Cloudflare challenge rather than the catalogue. */
+function looksBlocked(contentType: string): boolean {
+  return !contentType || !contentType.includes('json');
+}
+
 async function readJson<T>(url: string, path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    headers: { accept: 'application/json', ...(init?.headers || {}) },
-    ...init,
-  });
-  const contentType = res.headers.get('content-type') ?? '';
+  // The call is always a client fetch: `cors` mode, credentials omitted, so no
+  // cookie or server context travels with it and Cloudflare has nothing to
+  // challenge. The aggregator does intermittently reset the connection or
+  // answer with a challenge instead of JSON, so both a thrown network error and
+  // a blocked response are retried a couple of times with a small backoff —
+  // the failure is per-request rather than sticky.
+  const request = (): Promise<Response> =>
+    fetch(url, {
+      mode: 'cors',
+      credentials: 'omit',
+      ...init,
+      headers: { ...CLIENT_HEADERS, ...(init?.headers || {}) },
+    });
+
+  let res: Response | null = null;
+  let contentType = '';
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      res = await request();
+      contentType = res.headers.get('content-type') ?? '';
+      lastError = null;
+      if (!looksBlocked(contentType) && res.status < 500) break;
+    } catch (error) {
+      lastError = error;
+      res = null;
+    }
+    if (attempt < 2) await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+  }
+  if (!res) {
+    throw new CatalogApiError(
+      lastError instanceof Error ? lastError.message : 'Catalogue request failed',
+      0,
+      path
+    );
+  }
+
   if (!res.ok) {
     throw new CatalogApiError(`Catalogue responded ${res.status}`, res.status, path);
   }
-  // The backend answers some unknown paths with an HTML interstitial; naming it
-  // here saves whoever reads the next failure report from re-deriving this.
-  if (contentType && !contentType.includes('json')) {
+  // The backend answers some unknown paths with an HTML interstitial, and
+  // Cloudflare answers a challenge the same way; naming it here saves whoever
+  // reads the next failure report from re-deriving this.
+  if (looksBlocked(contentType)) {
     throw new CatalogApiError(
-      `Catalogue returned non-JSON (${res.status}, ${contentType})`,
+      `Catalogue returned non-JSON (${res.status}, ${contentType || 'no content-type'})`,
       res.status,
       path
     );

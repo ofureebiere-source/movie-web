@@ -56,15 +56,18 @@ export default function EmbedPage() {
     queryFn: async () => {
       // Prefer a stream the host warmed while the trailer played. It is the same
       // resolve this query would make, just already done, so playback starts
-      // without waiting on the aggregator. Only used on the first attempt: a
+      // without waiting on the aggregator. The host pre-resolves every provider
+      // in its bar, so this also covers an explicit `provider`: switching server
+      // is a lookup here, not a fresh request. Only used on the first attempt: a
       // server hop or a retry must genuinely re-resolve.
       const warmed = readWarmedStream(
         mediaType,
         mediaKey,
         mediaType === 'movie' ? undefined : seasonNumber,
-        mediaType === 'movie' ? undefined : episodeNumber
+        mediaType === 'movie' ? undefined : episodeNumber,
+        provider
       );
-      if (warmed?.sources?.length && !provider && resolveNonce === '0') return warmed;
+      if (warmed?.sources?.length && resolveNonce === '0') return warmed;
 
       const ask = () =>
         getStream(mediaKey, mediaType, {
