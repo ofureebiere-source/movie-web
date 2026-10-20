@@ -251,36 +251,7 @@ export function DetailHero({
 
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-8 sm:pb-12 z-30">
         <div className="flex flex-col-reverse md:flex-row items-start gap-6 sm:gap-8 lg:gap-10">
-          {/* The poster is a small companion to the backdrop rather than the
-              hero's main panel: top-left, 2:3, sitting over the artwork so the
-              wide backdrop carries the visual weight. The reference top-aligns
-              it with the copy (`items-start`), which is what keeps it level with
-              the badge row and title instead of hanging below the action row. */}
-          <div
-            ref={posterSlotRef}
-            className="w-24 sm:w-28 md:w-32 aspect-[2/3] rounded-lg overflow-hidden bg-zinc-900 border border-white/15 shadow-2xl shrink-0 mx-auto md:mx-0 relative"
-          >
-            {detail.poster && !posterErrored ? (
-              <>
-                <img
-                  ref={posterImgRef}
-                  src={detail.poster}
-                  alt={detail.title}
-                  onLoad={() => setPosterLoaded(true)}
-                  onError={() => setPosterErrored(true)}
-                  className={`w-full h-full object-cover transition-opacity duration-300 ${posterLoaded ? 'opacity-100' : 'opacity-0'}`}
-                />
-                {!posterLoaded && <div className="absolute inset-0 bg-zinc-900 animate-pulse" />}
-              </>
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-zinc-600 bg-zinc-900">
-                <ImageOff className="w-6 h-6 mb-1 opacity-50" />
-                <span className="text-[10px] font-mono text-zinc-500 line-clamp-2">{detail.title}</span>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 space-y-4 text-left w-full">
+          <div className="flex-1 space-y-4 text-left w-full min-w-0">
             <div
               className={`space-y-4 transition-opacity duration-300 ${
                 trailerOpen ? 'opacity-0' : 'opacity-100'
@@ -347,11 +318,16 @@ export function DetailHero({
             )}
             </div>
 
-            {/* The action row never fades: Watch Movie and Add to My List stay
-                available while the trailer plays, which is the whole point of
-                morphing the trailer into the backdrop instead of covering the
-                hero with a dialog. */}
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2 w-full">
+            {/* The action row is the resting home of the buttons. While the
+                trailer plays it hides (still occupying its space, so nothing
+                reflows) because the same actions reappear as icons in the
+                top-right rail; when the trailer ends the row fades back in
+                exactly where it was. */}
+            <div
+              className={`flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2 w-full md:min-w-[11rem] transition-opacity duration-300 ${
+                trailerOpen ? 'invisible opacity-0' : 'visible opacity-100'
+              }`}
+            >
               <div className="relative inline-flex flex-col gap-1 group/unreleased w-full xs:w-auto">
                 {isReleased ? (
                   <Link
@@ -435,6 +411,80 @@ export function DetailHero({
                 >
                   <Video className="w-4 h-4" />
                   <span>{trailerOpen ? 'Playing Trailer…' : 'Watch Trailer'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right rail: the poster sits in the top-right corner, and while the
+              trailer plays the primary actions collapse to icon-only buttons
+              that stack directly beneath it — again hard against the top-right
+              corner. The rail is `items-end` so every child is right-aligned.
+              It is `self-end` on the stacked (mobile) layout to pin it right,
+              and `md:self-stretch` so in the row layout it spans the hero's
+              full height and "top" always means the corner regardless of how
+              tall the copy column gets. */}
+          <div className="flex shrink-0 flex-col items-end gap-3 self-end md:self-stretch">
+            <div
+              ref={posterSlotRef}
+              data-testid="detail-poster-slot"
+              className="w-28 sm:w-32 md:w-40 lg:w-48 aspect-[2/3] rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 shadow-2xl relative"
+            >
+              {detail.poster && !posterErrored ? (
+                <>
+                  <img
+                    ref={posterImgRef}
+                    src={detail.poster}
+                    alt={detail.title}
+                    onLoad={() => setPosterLoaded(true)}
+                    onError={() => setPosterErrored(true)}
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${posterLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  />
+                  {!posterLoaded && <div className="absolute inset-0 bg-zinc-900 animate-pulse" />}
+                </>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center text-zinc-600 bg-zinc-900">
+                  <ImageOff className="w-6 h-6 mb-1 opacity-50" />
+                  <span className="text-[10px] font-mono text-zinc-500 line-clamp-2">{detail.title}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Icon-only action cluster, held directly beneath the poster. It
+                stays mounted so it can fade in and out, but when closed it
+                contributes no height and no hover targets, so the rail's height
+                is driven purely by the poster and the buttons always sit
+                exactly under it. */}
+            <div
+              data-testid="trailer-action-cluster"
+              aria-hidden={!trailerOpen}
+              className={`flex flex-wrap justify-end gap-2 transition-opacity duration-300 ease-out ${
+                trailerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none invisible'
+              }`}
+            >
+              {isReleased && (
+                <Link
+                  to={playUrl}
+                  aria-label={playLabel}
+                  title={playLabel}
+                  className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white hover:bg-zinc-200 text-black shadow-lg transition-all active:scale-95"
+                >
+                  <Play className="w-4 h-4 fill-black" />
+                </Link>
+              )}
+              {onToggleWatchlist && (
+                <button
+                  type="button"
+                  onClick={onToggleWatchlist}
+                  aria-label={isSaved ? `Remove ${detail.title} from My List` : `Add ${detail.title} to My List`}
+                  title={isSaved ? 'In My List' : 'Add to My List'}
+                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all active:scale-95 ${
+                    isSaved
+                      ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30'
+                      : 'bg-zinc-900/90 hover:bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
+                  }`}
+                >
+                  <Star className={`w-4 h-4 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
                 </button>
               )}
             </div>

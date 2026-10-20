@@ -34,12 +34,26 @@ the companion app) must not change how the dark site looks or behaves.
 
 The trailer renders **inside the backdrop panel**, morphing from the poster's
 rect into the backdrop's own area. It must not become a modal or a separate
-dialog: there is deliberately **no close button and no scrim**, because Watch
-Movie / Add to My List stay live underneath while it plays and only Watch
-Trailer greys out. Closing is video-driven — the YouTube embed is loaded with
-`enablejsapi=1` and the panel closes itself on `onStateChange` state 0 (ended).
-Escape remains the keyboard-only escape hatch. Do not reintroduce a modal
-overlay or an on-screen cancel affordance.
+dialog: there is deliberately **no close button and no scrim**. Closing is
+video-driven — the YouTube embed is loaded with `enablejsapi=1` and the panel
+closes itself on `onStateChange` state 0 (ended). Escape remains the
+keyboard-only escape hatch. Do not reintroduce a modal overlay or an on-screen
+cancel affordance.
+
+The hero's primary actions have two homes, and the swap is the point:
+
+- **At rest** they are the labelled row at the bottom-left of the copy
+  (`Watch Movie` / `Add to My List` / `Watch Trailer`).
+- **While the trailer plays** that row hides (`invisible opacity-0`, so it keeps
+  its space and nothing reflows) and the same actions reappear as icon-only
+  circular buttons in the right rail, stacked directly under the poster in the
+  top-right corner. They carry `aria-label`/`title` because the text is gone.
+
+The right rail is `items-end` + `md:self-stretch`: the poster is pinned to the
+top-right corner, and because the rail spans the hero's height the buttons sit
+under the poster rather than drifting to the hero's vertical centre. The poster
+stays visible the whole time — it is the anchor the icons hang from. When the
+trailer ends the row fades back in exactly where it was.
 
 ## Install banner
 
