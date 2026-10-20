@@ -36,7 +36,10 @@ export const BITCOIN_ADDRESS = 'bc1qframextvsupport000000000000000000000';
 
 /** The companion mobile app, downloaded straight from GitHub releases. */
 export const APP_RELEASES_URL = 'https://github.com/King-Fisher000/netflix-pro/releases';
-export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/android-apk-fix/android-sdk-setup-tools/app-debug.apk`;
+export const APP_RELEASE_TAG = 'android-latest';
+export const APP_VERSION = '1.2.3';
+/** The release asset is named `netflix-pro-<version>.apk`; keep in sync with the workflow. */
+export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro-${APP_VERSION}.apk`;
 
 /** Support address shown in the footer / profile. */
 export const SUPPORT_EMAIL = 'support@framextv.xyz';

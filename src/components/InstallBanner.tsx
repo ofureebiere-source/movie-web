@@ -16,7 +16,6 @@ import { APP_DOWNLOAD_URL, APP_RELEASES_URL } from '@/lib/brand';
  */
 
 const DISMISS_KEY = 'framextv_pwa_dismissed';
-const APP_NAME = 'Netflix-pro';
 
 export default function InstallBanner() {
   const [dismissed, setDismissed] = useState(true);
@@ -49,7 +48,9 @@ export default function InstallBanner() {
         <Download className="w-4 h-4" />
       </div>
       <div className="space-y-0.5 flex-1 min-w-0">
-        <p className="text-xs font-bold text-white truncate">Install {APP_NAME}</p>
+        <p className="text-xs font-bold text-white truncate">
+          Install Netflix<span className="text-rose-500">-pro</span>
+        </p>
         <p className="text-[10px] text-zinc-400 truncate">Add to Home screen for quick cinematic access</p>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
@@ -64,7 +65,7 @@ export default function InstallBanner() {
           href={APP_RELEASES_URL}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`All ${APP_NAME} releases on GitHub`}
+          aria-label="All Netflix-pro releases on GitHub"
           title="All releases on GitHub"
           className="p-1 text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
         >
