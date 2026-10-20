@@ -2,7 +2,6 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { Link } from 'react-router-dom';
 import { AlertTriangle, ArrowLeft, Play, RotateCcw, Server, X } from 'lucide-react';
 import { formatTime } from '@/lib/watchProgress';
-import type { PlayerView } from '@/lib/viewOrientation';
 
 /**
  * The player frame, and the `postMessage` bridge around it.
@@ -82,9 +81,6 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
-  // The player reports its orientation over the postMessage bridge; the frame's
-  // box follows it, because an iframe cannot be sized by its content.
-  const [frameView, setFrameView] = useState<PlayerView>('landscape');
   const [showResume, setShowResume] = useState(resumedTime > 15);
   const [tipDismissed, setTipDismissed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -143,10 +139,6 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
         const { enabled } = data as { enabled?: boolean };
         if (typeof enabled === 'boolean') onAutoplayChange?.(enabled);
       }
-      if (data.event === 'frameXTV:view') {
-        const { view } = data as { view?: string };
-        if (view === 'portrait' || view === 'landscape') setFrameView(view);
-      }
       // The embedded player reports a dead end only after it has itself tried
       // every source it holds. A host that owns more servers (the provider bar)
       // takes over here rather than letting the frame show an error.
@@ -202,15 +194,7 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
         </aside>
       )}
 
-      {/* The frame's document fills this box, so the box has to take the shape
-          the player asks for: the player reports its orientation over the
-          postMessage bridge and this box follows it. Landscape is unchanged
-          from before the toggle existed. */}
-      <div
-        className={`relative w-full bg-black sm:rounded-2xl overflow-hidden border-y sm:border border-zinc-850 shadow-2xl ${
-          frameView === 'portrait' ? 'h-[80vh]' : 'aspect-video'
-        }`}
-      >
+      <div className="relative w-full aspect-video bg-black sm:rounded-2xl overflow-hidden border-y sm:border border-zinc-850 shadow-2xl">
         {!ready && !failed && (
           <div className="absolute inset-0 z-10 bg-zinc-950 flex flex-col items-center justify-center p-6 select-none animate-fade-in">
             {posterUrl && (

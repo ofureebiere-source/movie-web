@@ -12,7 +12,6 @@ import {
   SkipBack,
   SkipForward,
   SlidersHorizontal,
-  Smartphone,
   Subtitles,
   Upload,
   Volume2,
@@ -38,7 +37,6 @@ import {
   type SubtitleTextColor,
 } from '@/lib/playerPreferences';
 import { applyAudioProcessing, EQ_BANDS, EQ_DEFAULT, EQ_PRESETS, resumeAudio } from '@/lib/audioEngine';
-import { VIEW_ASPECT_CLASS, nextView, type PlayerView } from '@/lib/viewOrientation';
 import { createCachingFragmentLoader, prefetchPlaylist } from '@/lib/segmentCache';
 import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/subtitles';
 import SeekBar from '@/components/SeekBar';
@@ -156,6 +154,19 @@ export default function Player({
   const fileInput = useRef<HTMLInputElement | null>(null);
   const seekAfterReload = useRef(0);
   const failoverCount = useRef(0);
+  // Stall recovery. `stallLast` is the playhead at the previous watchdog tick
+  // and `stallTicks` counts consecutive ticks it has not moved; `resumePoll`
+  // holds the pending buffer-resume timer, and `hlsInstance` lets the watchdog
+  // reach the live hls.js instance to recover without a server switch.
+  const stallLast = useRef(0);
+  const stallTicks = useRef(0);
+  const resumePoll = useRef<number | null>(null);
+  const hlsInstance = useRef<{ recoverMediaError: () => void; startLoad: () => void } | null>(null);
+  // hls.js recovery budget, reset whenever the stream proves healthy (manifest
+  // parsed / fragment loaded). Ported from the reference: a transient network
+  // blip is retried in place before the viewer is moved to another server.
+  const hlsNetworkRetry = useRef(0);
+  const hlsMediaRetry = useRef(0);
   // Tap-to-seek gesture state: how many taps the current gesture has seen and
   // on which side, plus the timers that reset it and clear the indicator.
   const tapRef = useRef<{ last: number; side: 'left' | 'right' | null; count: number }>({
@@ -193,11 +204,6 @@ export default function Player({
 
   const [prefs, setPrefs] = useState(() => readSubtitlePreferences());
   const [aspect, setAspect] = useState<AspectRatio>(() => readAspectRatio());
-  // Orientation is independent of the aspect-ratio preference above: that one
-  // letterboxes the picture inside a fixed landscape box, this one changes the
-  // box itself. The player is a feature film, so it opens landscape (16:9); the
-  // toggle flips to 9:16. Not persisted — landscape is the default on reload.
-  const [view, setView] = useState<PlayerView>('landscape');
   const [boost, setBoost] = useState<AudioBoost>(() => readAudioBoost());
   const [autoplayNext, setAutoplayNext] = useState(() => readAutoplayNext());
   const [playbackRate, setPlaybackRate] = useState(initialSpeed);
@@ -315,6 +321,36 @@ export default function Player({
     return () => video.removeEventListener('play', resume);
   }, [src]);
 
+  // --- buffering recovery --------------------------------------------------
+
+  // Resume from inside the buffer once enough is ahead. The reference polls
+  // every 100 ms and waits for 0.5 s of forward buffer, but it only watches the
+  // element it was handed. Ours also jumps the sub-second hole that sits
+  // *behind* the playhead — the case a seek or a provider hop leaves behind —
+  // because that is the one that makes the spinner hang forever.
+  const resumeFromBuffer = useCallback((video: HTMLVideoElement, need = 0.5) => {
+    if (resumePoll.current !== null) window.clearTimeout(resumePoll.current);
+    const tick = () => {
+      if (videoRef.current !== video) return;
+      for (let i = 0; i < video.buffered.length; i += 1) {
+        const start = video.buffered.start(i);
+        const end = video.buffered.end(i);
+        // Straddling the playhead: nudge across a hole no more than half a
+        // second wide, then wait for the forward buffer to fill.
+        if (video.currentTime < start && start - video.currentTime <= 0.5) {
+          video.currentTime = start + 0.02;
+        }
+        if (video.currentTime >= start && video.currentTime <= end && end - video.currentTime >= need) {
+          setBuffering(false);
+          void video.play().catch(() => undefined);
+          return;
+        }
+      }
+      resumePoll.current = window.setTimeout(tick, 100);
+    };
+    tick();
+  }, []);
+
   // --- source wiring -------------------------------------------------------
 
   // A fresh source list means a fresh start: a new title, or the viewer picked
@@ -375,27 +411,56 @@ export default function Player({
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: false,
-          // The reference caps forward buffering at 30 s, which is what made
-          // seeking feel network-bound: anything further ahead had to be
-          // fetched on demand. These push the target out to a few minutes so
-          // scrubbing within the buffered region is served from memory.
-          maxBufferLength: 300,
-          maxMaxBufferLength: 600,
-          // In-memory back buffer, in seconds. The old value (90) is what made
-          // a rewind feel network-bound: past 90 s hls.js evicted the fragment
-          // and re-fetched it. Widened here, and anything older still is served
-          // from Cache Storage by the fragment loader, so neither direction of
-          // seek depends on the network after the prefetcher has run.
-          backBufferLength: 600,
-          maxBufferSize: 240 * 1000 * 1000,
+          // Buffer sizing follows the "netflix" profile: a minute of forward
+          // buffer with a two-minute ceiling, and two minutes retained behind
+          // the playhead. It is a deliberate middle ground — the reference's
+          // 30 s forward / 30 s back cap is what made every seek feel
+          // network-bound, while our old 300 s / 600 s targets let a single
+          // title balloon to hundreds of megabytes of MSE memory. Anything
+          // older than the back buffer is still served from Cache Storage by
+          // the fragment loader below, so neither direction of seek has to hit
+          // the network after the prefetcher has run.
+          maxBufferLength: 60,
+          maxMaxBufferLength: 120,
+          backBufferLength: 120,
+          maxBufferSize: 60 * 1000 * 1000,
           startFragPrefetch: true,
           maxBufferHole: 0.5,
           highBufferWatchdogPeriod: 3,
+          // Ported from the reference's player config: start on the first
+          // level, sit out the small gaps a provider leaves at a segment
+          // boundary, and keep the ABR estimates conservative so a momentary
+          // dip does not trigger a needless downshift.
+          startLevel: -1,
+          nudgeOffset: 0.1,
+          nudgeMaxRetry: 5,
+          abrEwmaFastLive: 2,
+          abrEwmaSlowLive: 6,
+          abrBandWidthFactor: 0.9,
+          abrBandWidthUpFactor: 0.7,
+          fragLoadingMaxRetry: 8,
+          fragLoadingRetryDelay: 800,
+          fragLoadingMaxRetryTimeout: 12000,
           fLoader: CachingLoader,
         });
+        hlsInstance.current = hls;
         hls.loadSource(src);
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, restore);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          restore();
+          // The manifest is in: if playback was waiting for buffer, poll until
+          // there is enough ahead and resume, rather than leaving the spinner
+          // up. Resets the recovery budget — the stream is demonstrably alive.
+          hlsNetworkRetry.current = 0;
+          hlsMediaRetry.current = 0;
+          if (autoPlay) resumeFromBuffer(video);
+        });
+        // A fragment that made it through resets the recovery budget, so a
+        // single blip early in the stream does not exhaust the retries.
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          hlsNetworkRetry.current = 0;
+          hlsMediaRetry.current = 0;
+        });
         // Once a level's playlist is loaded, mirror the whole thing into Cache
         // Storage in the background. This is what makes a scrub forward into an
         // unwatched region, and any later rewind past the memory buffer, local
@@ -412,14 +477,30 @@ export default function Player({
           });
         });
         hls.on(Hls.Events.ERROR, (_event, data) => {
-          // A fatal hls.js error is the same situation as the element firing
-          // `error`: the provider answered but its stream is unusable, so hop
-          // to the next source instead of showing the viewer a dead end.
-          if (data.fatal && !autoFailover()) {
+          if (!data.fatal) return;
+          // Fatal errors are tiered, ported from the reference: a network blip
+          // is retried in place, a media error is recovered on the existing
+          // instance, and only an exhausted budget moves the viewer to another
+          // server. This is what stops a one-second hiccup from costing the
+          // whole stream.
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR && hlsNetworkRetry.current < 2) {
+            hlsNetworkRetry.current += 1;
+            window.setTimeout(() => hls.startLoad(), 1000);
+            return;
+          }
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR && hlsMediaRetry.current < 2) {
+            hlsMediaRetry.current += 1;
+            hls.recoverMediaError();
+            return;
+          }
+          if (!autoFailover()) {
             setError(`Playback error: ${data.details || 'unknown'}`);
           }
         });
-        destroy = () => hls.destroy();
+        destroy = () => {
+          hlsInstance.current = null;
+          hls.destroy();
+        };
       });
       return () => {
         cancelled = true;
@@ -431,7 +512,7 @@ export default function Player({
     video.src = src;
     video.addEventListener('loadeddata', restore, { once: true });
     return undefined;
-  }, [src, sourceType, autoPlay]);
+  }, [src, sourceType, autoPlay, resumeFromBuffer]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -561,6 +642,7 @@ export default function Player({
     () => () => {
       if (tapResetTimer.current) window.clearTimeout(tapResetTimer.current);
       if (indicatorTimer.current) window.clearTimeout(indicatorTimer.current);
+      if (resumePoll.current !== null) window.clearTimeout(resumePoll.current);
     },
     []
   );
@@ -625,6 +707,36 @@ export default function Player({
     return true;
   }, [onSelectSource, sources.length, activeSourceIndex]);
 
+  // A stall is not the same as a slow segment. When the playhead has not moved
+  // for ten seconds the network is not coming back on its own, so this nudges
+  // the buffer, then asks hls.js to recover the media pipeline, and only then
+  // hands off to the source failover. The reference's watchdog stops at the
+  // nudge; ours escalates because a stalled viewer is already lost.
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const video = videoRef.current;
+      if (!video || video.paused || buffering) {
+        stallTicks.current = 0;
+        return;
+      }
+      if (Math.abs(video.currentTime - stallLast.current) < 0.01) {
+        stallTicks.current += 1;
+        if (stallTicks.current === 2) {
+          // 5 s: the decoder is behind the buffer, so step forward off the hole.
+          if (video.buffered.length > 0) video.currentTime += 0.05;
+        } else if (stallTicks.current >= 4) {
+          stallTicks.current = 0;
+          if (hlsInstance.current) hlsInstance.current.recoverMediaError();
+          else autoFailover();
+        }
+      } else {
+        stallTicks.current = 0;
+        stallLast.current = video.currentTime;
+      }
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [buffering, autoFailover]);
+
   // --- keyboard shortcuts --------------------------------------------------
 
   useEffect(() => {
@@ -675,16 +787,6 @@ export default function Player({
       window.parent.postMessage({ event: 'frameXTV:ready' }, '*');
     }
   }, []);
-
-  // The frame's box is owned by the host, and an iframe cannot report its own
-  // size, so the orientation travels over the bridge. Emitted on mount and on
-  // every flip; the host resizes the box, which is what gives the portrait box
-  // height to bind to.
-  useEffect(() => {
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage({ event: 'frameXTV:view', view }, '*');
-    }
-  }, [view]);
 
   // Tell a host page when playback has genuinely failed — every source tried
   // and none worked — so an embedding watch page can hop servers instead of
@@ -840,11 +942,7 @@ export default function Player({
       data-testid="video-player"
       onMouseMove={showControls}
       onMouseLeave={() => playing && menuRef.current === 'none' && setControlsVisible(false)}
-      className={`media-surface relative bg-black overflow-hidden ${
-        view === 'portrait'
-          ? `h-full max-w-full mx-auto ${VIEW_ASPECT_CLASS.portrait}`
-          : `w-full ${ASPECT_CLASS[aspect] || VIEW_ASPECT_CLASS.landscape}`
-      } group`}
+      className={`media-surface relative w-full bg-black overflow-hidden ${ASPECT_CLASS[aspect] || 'aspect-video'} group`}
     >
       <video
         ref={videoRef}
@@ -867,11 +965,42 @@ export default function Player({
           setPlaying(false);
           setControlsVisible(true);
         }}
-        onWaiting={() => setBuffering(true)}
+        onWaiting={() => {
+          setBuffering(true);
+          const video = videoRef.current;
+          if (!video) return;
+          // The reference's waiting handler: when playback stops against the
+          // edge of a buffered range, step across a small hole so the decoder
+          // is never left parked just short of a segment boundary. We then hand
+          // off to the resume poll, which waits for real forward buffer.
+          for (let i = 0; i < video.buffered.length; i += 1) {
+            const start = video.buffered.start(i);
+            const end = video.buffered.end(i);
+            if (video.currentTime < start && start - video.currentTime <= 0.5) {
+              video.currentTime = start + 0.02;
+              break;
+            }
+            if (
+              video.currentTime >= start &&
+              video.currentTime <= end &&
+              end - video.currentTime < 0.05 &&
+              i + 1 < video.buffered.length
+            ) {
+              video.currentTime = video.buffered.start(i + 1) + 0.02;
+              break;
+            }
+          }
+          resumeFromBuffer(video);
+        }}
         onPlaying={() => {
           setBuffering(false);
           setHasStarted(true);
           setAnalyzing(false);
+          // Buffer is flowing again, so stop polling for it.
+          if (resumePoll.current !== null) {
+            window.clearTimeout(resumePoll.current);
+            resumePoll.current = null;
+          }
           // The current source is genuinely playing, so the failover budget is
           // restored and any "switching servers" notice is dismissed.
           failoverCount.current = 0;
@@ -1702,17 +1831,6 @@ export default function Player({
                 </div>
               )}
             </div>
-
-            <button
-              type="button"
-              data-testid="player-view-toggle"
-              onClick={() => setView(nextView(view))}
-              aria-label={view === 'landscape' ? 'Switch to portrait view' : 'Switch to landscape view'}
-              title={view === 'landscape' ? 'Portrait' : 'Landscape'}
-              className="p-2 rounded-lg text-white hover:bg-white/10 transition-colors cursor-pointer"
-            >
-              {view === 'landscape' ? <Smartphone className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-            </button>
 
             <button
               type="button"
