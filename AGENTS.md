@@ -155,6 +155,28 @@ treat the iframe's `load` event as readiness: a dead stream still fires `load`
 for its error page, which previously masked every failure and suppressed
 failover.
 
+### Our own gateway (`src/lib/netweb.ts`)
+
+The upstream CDNs 403 a bare browser request, so the player and the Download
+button resolve through the **Net-web** gateway instead and keep the
+aggregator's own sources as the fallback. An unreachable gateway degrades to
+the old behaviour, not a black screen.
+
+- The base URL is overridable (`?netweb=` query, then `localStorage`, then the
+  default); `?netweb=local` opts out entirely, which is what the tests use.
+- `EmbedPage` must **wait for the gateway before mounting `Player`**. Mounting
+  as soon as the aggregator answered hands the player the fallback URL and
+  silently undoes the preference; mounting with no `src` at all trips Player's
+  "all servers exhausted" fallback and swaps in the backup iframe for a title
+  the gateway was about to serve. The resolve is time-boxed (12 s) so a dead
+  gateway costs a bounded pause rather than a hang.
+- `Player`'s `downloadSource` is the **upstream** stream, not the `/proxy` URL
+  the player loads: `/v1/download` fetches the segments itself to remux them.
+  A plain anchor navigation saves the file — there is no wallet check, no
+  holder perk and no client-side downloader in the path.
+- The disabled Download row's reason comes from the gateway's own state, not
+  `getDownloadInfo`, which only understands direct files and calls an HLS
+  playlist "in private preview".
 
 ## Provider pre-resolution and Cloudflare
 
