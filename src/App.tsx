@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import ErrorBoundary from '@/components/ErrorBoundary';
+import { HolderProvider } from '@/hooks/HolderContext';
 import HomePage from '@/pages/HomePage';
 import MoviesPage from '@/pages/MoviesPage';
 import TVPage from '@/pages/TVPage';
@@ -46,8 +48,10 @@ export default function App() {
   useTheme();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <HolderProvider>
+          <BrowserRouter>
         <Routes>
           {/* Bare player, outside the site chrome. */}
           <Route path="/embed/anime/*" element={<EmbedPage />} />
@@ -89,7 +93,9 @@ export default function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+          </BrowserRouter>
+        </HolderProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

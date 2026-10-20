@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Check, ChevronDown, Download, Server } from 'lucide-react';
+import { Check, ChevronDown, Download, Loader2, Server } from 'lucide-react';
 import type { FxProvider } from '@/lib/api';
+import type { ProviderHealth, StreamHistoryEntry } from '@/hooks/useProviderHealth';
 
 /**
  * The provider bar above the player.
@@ -13,8 +14,28 @@ import type { FxProvider } from '@/lib/api';
  *
  * The rows carry the annotations the reference's server menu carries: a
  * quality badge read from the provider's own tagline, the capability flags its
- * id implies, and a status line.
+ * id implies, and a live status — Connected, Checking, Available or
+ * Unavailable — derived from the health hook and the session's stream history.
  */
+
+/** Provider id → the canonical id the health/history keys use. */
+function normalizeProvider(provider?: string): string {
+  if (!provider) return '';
+  const id = provider.toLowerCase().trim();
+  if (id === 'backup' || id === 'vidbolt' || id === 'vidup_backup' || id.includes('backup') || id.includes('vidbolt')) {
+    return 'backup';
+  }
+  return id;
+}
+
+const STATE_ORDER: Record<string, number> = {
+  active: 0,
+  connecting: 1,
+  available: 2,
+  checking: 3,
+  unknown: 4,
+  unavailable: 5,
+};
 
 const CAPABILITY_FLAGS: Array<{ match: RegExp; label: string; className: string }> = [
   {
@@ -47,17 +68,30 @@ function qualityOf(provider: FxProvider): keyof typeof QUALITY_CLASS | null {
   return null;
 }
 
-function statusOf(provider: FxProvider): { label: string; className: string } | null {
-  switch (provider.status) {
-    case 'available':
-      return { label: 'Available', className: 'text-emerald-400' };
-    case 'checking':
-      return { label: 'Checking…', className: 'text-amber-400' };
-    case 'unavailable':
-      return { label: 'Unavailable', className: 'text-zinc-600' };
-    default:
-      return null;
+function statusOf(
+  provider: FxProvider,
+  opts: {
+    isActive: boolean;
+    isConnecting: boolean;
+    health?: ProviderHealth;
+    history: StreamHistoryEntry[];
   }
+): { label: string; className: string; state: string; spinning?: boolean } {
+  if (opts.isActive) return { label: 'Connected', className: 'text-emerald-400', state: 'active' };
+  if (opts.isConnecting) return { label: 'Connecting', className: 'text-blue-400', state: 'connecting', spinning: true };
+  if (normalizeProvider(provider.id) === 'backup') {
+    return { label: 'Available', className: 'text-emerald-400', state: 'available' };
+  }
+  if (opts.health === 'checking') return { label: 'Checking…', className: 'text-amber-400', state: 'checking' };
+  if (opts.health === 'unavailable') return { label: 'Unavailable', className: 'text-zinc-600', state: 'unavailable' };
+  if (opts.health === 'available') return { label: 'Available', className: 'text-emerald-400', state: 'available' };
+  const known = opts.history.find((entry) => normalizeProvider(entry.provider) === normalizeProvider(provider.id));
+  if (known) {
+    return known.success
+      ? { label: 'Available', className: 'text-emerald-400', state: 'available' }
+      : { label: 'Unavailable', className: 'text-zinc-600', state: 'unavailable' };
+  }
+  return { label: 'Unknown', className: 'text-zinc-500', state: 'unknown' };
 }
 
 export default function ProviderBar({
@@ -65,17 +99,31 @@ export default function ProviderBar({
   activeProvider,
   onSelect,
   loading = false,
+  providerStatus = {},
+  streamHistory = [],
+  connecting = false,
 }: {
   providers: FxProvider[];
   activeProvider?: string;
   onSelect: (provider: string | undefined) => void;
   loading?: boolean;
+  providerStatus?: Record<string, ProviderHealth>;
+  streamHistory?: StreamHistoryEntry[];
+  connecting?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   const active = providers.find((entry) => entry.id === activeProvider);
   const label = active ? active.name : 'Auto (best available)';
   const activeQuality = active ? qualityOf(active) : null;
+
+  // Active first, then connecting, available, checking, and unavailable last —
+  // the reference's ordering, so the best server is always at the top.
+  const ordered = [...providers].sort((a, b) => {
+    const sa = statusOf(a, { isActive: a.id === activeProvider, isConnecting: false, health: providerStatus[a.id], history: streamHistory });
+    const sb = statusOf(b, { isActive: b.id === activeProvider, isConnecting: false, health: providerStatus[b.id], history: streamHistory });
+    return (STATE_ORDER[sa.state] ?? 4) - (STATE_ORDER[sb.state] ?? 4);
+  });
 
   return (
     <div
@@ -138,25 +186,34 @@ export default function ProviderBar({
               {!activeProvider && <Check className="w-3 h-3 shrink-0" />}
             </button>
 
-            {providers.map((entry) => {
+            {ordered.map((entry) => {
               const selected = activeProvider === entry.id;
               const quality = qualityOf(entry);
-              const status = statusOf(entry);
+              const status = statusOf(entry, {
+                isActive: selected,
+                isConnecting: selected && connecting,
+                health: providerStatus[entry.id],
+                history: streamHistory,
+              });
               const flags = CAPABILITY_FLAGS.filter((flag) => flag.match.test(entry.id));
+              const unavailable = status.state === 'unavailable';
               return (
                 <button
                   key={entry.id}
                   type="button"
                   role="option"
                   aria-selected={selected}
+                  disabled={unavailable}
                   onClick={() => {
                     onSelect(entry.id);
                     setOpen(false);
                   }}
-                  className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] transition-colors cursor-pointer flex items-center justify-between gap-2 border ${
-                    selected
-                      ? 'bg-zinc-900 border-blue-500/50 text-white'
-                      : 'border-transparent text-zinc-300 hover:bg-zinc-900/60'
+                  className={`w-full text-left px-2.5 py-2 rounded-lg text-[11px] transition-colors flex items-center justify-between gap-2 border ${
+                    unavailable
+                      ? 'border-transparent text-zinc-600 opacity-50 cursor-not-allowed'
+                      : selected
+                        ? 'bg-zinc-900 border-blue-500/50 text-white cursor-pointer'
+                        : 'border-transparent text-zinc-300 hover:bg-zinc-900/60 cursor-pointer'
                   }`}
                 >
                   <span className="flex items-center gap-2 min-w-0">
@@ -179,14 +236,12 @@ export default function ProviderBar({
                     ))}
                   </span>
                   <span className="flex items-center gap-1.5 shrink-0">
-                    {selected ? (
-                      <>
-                        <span className="text-[10px] text-emerald-400">Connected</span>
-                        <Check className="w-3 h-3 text-emerald-400" />
-                      </>
-                    ) : (
-                      status && <span className={`text-[10px] ${status.className}`}>{status.label}</span>
-                    )}
+                    <span className={`text-[10px] ${status.className}`}>{status.label}</span>
+                    {status.spinning ? (
+                      <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
+                    ) : selected ? (
+                      <Check className="w-3 h-3 text-emerald-400" />
+                    ) : null}
                   </span>
                 </button>
               );

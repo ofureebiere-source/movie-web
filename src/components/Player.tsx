@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   AudioLines,
+  Cast,
   Check,
+  Download,
   Maximize,
   Pause,
   PictureInPicture2,
@@ -14,12 +16,15 @@ import {
   SkipForward,
   SlidersHorizontal,
   Subtitles,
+  Tv,
   Upload,
   Volume2,
   VolumeX,
+  X,
+  Zap,
 } from 'lucide-react';
 import {
-  AUDIO_BOOSTS,
+  AUDIO_BOOST_PRESETS,
   readAspectRatio,
   readAudioBoost,
   readAutoplayNext,
@@ -30,6 +35,7 @@ import {
   saveAutoplayNext,
   saveEqualizer,
   saveSubtitlePreferences,
+  getDownloadInfo,
   type AspectRatio,
   type AudioBoost,
   type SubtitleBgOpacity,
@@ -40,6 +46,10 @@ import {
 import { applyAudioProcessing, EQ_BANDS, EQ_DEFAULT, EQ_PRESETS, resumeAudio } from '@/lib/audioEngine';
 import { createCachingFragmentLoader, prefetchPlaylist } from '@/lib/segmentCache';
 import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/subtitles';
+import { useCast } from '@/hooks/useCast';
+import { useHolder } from '@/hooks/HolderContext';
+import TokenGateModal, { type TokenGateMode } from '@/components/TokenGateModal';
+import { vidboltEmbedUrl, isBackupProvider } from '@/lib/vidbolt';
 import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
 import type { FxProvider, FxStreamSource, FxSubtitle } from '@/lib/api';
@@ -120,9 +130,18 @@ export interface PlayerProps {
   startMuted?: boolean;
   /** `speed=1.25`: initial playback rate. */
   initialSpeed?: number;
+  /** Title identifiers, used to build the Vidbolt backup-player URL. */
+  mediaType?: 'movie' | 'tv' | 'anime';
+  tmdbId?: string;
+  season?: number;
+  episode?: number;
+  anilistId?: string;
+  malId?: string;
+  /** Whether the fallback player should auto-advance to the next episode. */
+  autoNext?: boolean;
 }
 
-type Menu = 'none' | 'settings' | 'subs' | 'eq' | 'servers';
+type Menu = 'none' | 'settings' | 'subs' | 'eq' | 'servers' | 'cast';
 
 export default function Player({
   src,
@@ -146,6 +165,13 @@ export default function Player({
   hideControls = false,
   startMuted = false,
   initialSpeed = 1,
+  mediaType = 'movie',
+  tmdbId,
+  season = 1,
+  episode = 1,
+  anilistId,
+  malId,
+  autoNext = true,
 }: PlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const shellRef = useRef<HTMLDivElement | null>(null);
@@ -222,6 +248,45 @@ export default function Player({
   // A transient "switching servers" notice, shown while an automatic failover
   // is in flight so the hop is visible without looking like an error.
   const [failoverNotice, setFailoverNotice] = useState<string | null>(null);
+
+  // --- casting, backup player, holder perks --------------------------------
+
+  const { holderStatus, connect: connectWallet } = useHolder();
+  const [tokenGate, setTokenGate] = useState<TokenGateMode | null>(null);
+  // The fallback iframe is engaged either by an explicit `backup` provider or
+  // automatically once every native server has been walked without a source.
+  const [useVidbolt, setUseVidbolt] = useState(() => isBackupProvider(activeProvider));
+  useEffect(() => {
+    if (isBackupProvider(activeProvider)) setUseVidbolt(true);
+    else if (activeProvider) setUseVidbolt(false);
+  }, [activeProvider]);
+
+  const vidboltUrl = useMemo(
+    () => vidboltEmbedUrl({ mediaType, tmdbId, season, episode, anilistId, malId, autoPlay, startTime, autoNext }),
+    [mediaType, tmdbId, season, episode, anilistId, malId, autoPlay, startTime, autoNext]
+  );
+
+  const downloadInfo = getDownloadInfo(src ? { url: src, type: sourceType } : null);
+
+  const cast = useCast(videoRef, {
+    onRemoteTimeUpdate: (time, duration) => {
+      setCurrent(time);
+      if (duration) setDuration(duration);
+      onProgress?.(time, duration);
+    },
+    onRemotePlayStateChange: (playing) => setPlaying(playing),
+    onRemoteVolumeChange: (level, isMuted) => {
+      setVolume(level);
+      setMuted(isMuted);
+    },
+    onCastDisconnected: (time) => {
+      const video = videoRef.current;
+      if (video && time > 0) {
+        video.currentTime = time;
+        seekAfterReload.current = time;
+      }
+    },
+  });
 
   const activeTrack = trackIndex !== null ? subtitles[trackIndex] : undefined;
 
@@ -689,6 +754,102 @@ export default function Player({
     else void shell.requestFullscreen?.();
   }, []);
 
+  // --- cast, download, boost ----------------------------------------------
+
+  /** Send the current stream (or the fallback) to a Cast device. */
+  const handleCast = useCallback(() => {
+    if (cast.isCasting) {
+      void cast.stopCasting();
+      return;
+    }
+    const video = videoRef.current;
+    if (useVidbolt || !src) {
+      // The fallback iframe cannot be mirrored; the reference opens the picker
+      // so the viewer can still route the tab's audio/video where supported.
+      cast.triggerAirPlay();
+      return;
+    }
+    void cast.triggerChromecast({
+      source: { url: src, type: sourceType },
+      playableUrl: src,
+      mediaTitle: title,
+      mediaCategory: mediaType === 'tv' ? 'TV Series' : mediaType === 'anime' ? 'Anime' : 'Movie',
+      posterUrl: poster,
+      subtitles,
+      activeSubtitleIdx: trackIndex,
+      currentTime: video?.currentTime ?? startTime,
+      autoPlay: true,
+    });
+  }, [
+    cast,
+    useVidbolt,
+    src,
+    sourceType,
+    title,
+    mediaType,
+    poster,
+    subtitles,
+    trackIndex,
+    startTime,
+  ]);
+
+  /** Open the token gate when the perk is locked, else run the action. */
+  const gateOr = useCallback(
+    (allowed: boolean, mode: TokenGateMode, action: () => void) => {
+      if (!allowed) {
+        setTokenGate(mode);
+        return;
+      }
+      action();
+    },
+    []
+  );
+
+  const handleDownload = useCallback(() => {
+    gateOr(holderStatus.canDownload, 'download', () => {
+      if (!downloadInfo.canDownload || !downloadInfo.downloadUrl) return;
+      const anchor = document.createElement('a');
+      anchor.href = downloadInfo.downloadUrl;
+      anchor.download = (title || 'video').replace(/[^\w.-]+/g, '_');
+      anchor.rel = 'noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    });
+  }, [gateOr, holderStatus.canDownload, downloadInfo, title]);
+
+  const handleSelectAudioBoost = useCallback(
+    (preset: AudioBoost) => {
+      const entry = AUDIO_BOOST_PRESETS.find((item) => item.id === preset);
+      if (entry?.gated) {
+        gateOr(holderStatus.canBoostAudio, 'audio_boost', () => {
+          setBoost(preset);
+          saveAudioBoost(preset);
+        });
+        return;
+      }
+      setBoost(preset);
+      saveAudioBoost(preset);
+    },
+    [gateOr, holderStatus.canBoostAudio]
+  );
+
+  // Engage the fallback player automatically when no native source is left.
+  useEffect(() => {
+    if (useVidbolt) return;
+    if (sources.length > 0 || src) return;
+    if (vidboltUrl) {
+      console.info('⚡ All native servers exhausted without sources. Auto-activating backup fallback iframe.');
+      setUseVidbolt(true);
+    }
+  }, [useVidbolt, sources.length, src, vidboltUrl]);
+
+  // Push the local subtitle choice to the receiver while casting.
+  useEffect(() => {
+    if (!cast.isCasting) return;
+    cast.setRemoteActiveSubtitle(trackIndex);
+  }, [cast, trackIndex]);
+
   const selectSource = useCallback(
     (index: number) => {
       const video = videoRef.current;
@@ -939,6 +1100,38 @@ export default function Player({
     }
     setMenu('none');
   };
+
+  // The backup player replaces the whole surface: when every native server is
+  // out, the reference hands off to the Vidbolt iframe rather than a dead frame.
+  // It is checked before the no-source guard because in backup mode there is no
+  // native `src` at all.
+  if (useVidbolt && vidboltUrl) {
+    return (
+      <div
+        data-testid="video-player"
+        className={`media-surface relative w-full bg-black overflow-hidden ${ASPECT_CLASS[aspect] || 'aspect-video'} group`}
+      >
+        <iframe
+          src={vidboltUrl}
+          title={title || 'Backup player'}
+          className="w-full h-full border-0 bg-black"
+          allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+          allowFullScreen
+          referrerPolicy="no-referrer"
+        />
+        {!hideControls && (
+          <button
+            type="button"
+            onClick={() => setUseVidbolt(false)}
+            aria-label="Back to native players"
+            className="absolute top-3 right-3 z-10 px-2.5 py-1.5 rounded-lg bg-zinc-950/80 border border-white/10 text-zinc-300 hover:text-white text-[11px] font-medium backdrop-blur transition-colors cursor-pointer"
+          >
+            Native player
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (!src) {
     return (
@@ -1710,23 +1903,36 @@ export default function Player({
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Audio boost</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Audio boost</p>
+                      {!holderStatus.canBoostAudio && (
+                        <span className="px-1.5 py-0.5 text-[9px] font-mono text-purple-300 bg-purple-500/10 border border-purple-500/30 rounded font-semibold">
+                          &gt;150% Gated
+                        </span>
+                      )}
+                    </div>
                     <div className="flex flex-wrap gap-1">
-                      {AUDIO_BOOSTS.map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            setBoost(option);
-                            saveAudioBoost(option);
-                          }}
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
-                            boost === option ? 'bg-white text-black font-bold' : 'bg-zinc-900 text-zinc-400 hover:text-white'
-                          }`}
-                        >
-                          {option === 'dialogue' ? 'dialogue' : option === 'off' ? 'off' : `${option}%`}
-                        </button>
-                      ))}
+                      {AUDIO_BOOST_PRESETS.map((preset) => {
+                        const locked = preset.gated && !holderStatus.canBoostAudio;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            title={preset.boostText}
+                            onClick={() => handleSelectAudioBoost(preset.id)}
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer inline-flex items-center gap-1 ${
+                              boost === preset.id
+                                ? 'bg-white text-black font-bold'
+                                : locked
+                                  ? 'bg-zinc-900 text-zinc-600'
+                                  : 'bg-zinc-900 text-zinc-400 hover:text-white'
+                            }`}
+                          >
+                            {preset.id === 'dialogue' ? 'dialogue' : preset.id === 'off' ? 'off' : `${preset.id}%`}
+                            {locked && <span aria-hidden="true">🔒</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                   <div className="space-y-1">
@@ -1845,9 +2051,81 @@ export default function Player({
                       className="accent-rose-500 cursor-pointer"
                     />
                   </label>
+
+                  {/* Download: a holder perk. Locked wallets open the token
+                      gate; unlocked wallets save the direct media file. */}
+                  <button
+                    type="button"
+                    data-testid="player-download"
+                    onClick={handleDownload}
+                    title={
+                      !holderStatus.canDownload
+                        ? 'Holder Perk: connect Phantom holding $XTV to download'
+                        : downloadInfo.canDownload
+                          ? 'Download direct media file'
+                          : downloadInfo.reason
+                    }
+                    className={`w-full flex items-center justify-between gap-2 p-1.5 rounded-lg transition-colors text-left cursor-pointer ${
+                      holderStatus.canDownload && downloadInfo.canDownload
+                        ? 'text-zinc-300 hover:bg-zinc-900'
+                        : holderStatus.canDownload
+                          ? 'text-zinc-500 opacity-60'
+                          : 'text-zinc-300 hover:bg-zinc-900'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      {holderStatus.canDownload ? (
+                        <Download className="w-3.5 h-3.5" />
+                      ) : (
+                        <Zap className="w-3.5 h-3.5 text-purple-400" />
+                      )}
+                      <span className="text-[11px]">Download</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] font-mono">
+                      {holderStatus.canDownload ? (
+                        downloadInfo.canDownload ? (
+                          <span className="text-emerald-400 font-bold">MP4 Available</span>
+                        ) : (
+                          <span className="text-zinc-500">{downloadInfo.sourceType.toUpperCase()}</span>
+                        )
+                      ) : (
+                        <span className="text-purple-300 font-semibold">Holder Perk</span>
+                      )}
+                    </span>
+                  </button>
                 </div>
               )}
             </div>
+
+            {/* Cast to a TV. Shown whenever the Cast framework or AirPlay is
+                present; the label flips to a disconnect once connected. */}
+            {(cast.isCastAvailable || cast.isAirPlayAvailable) && (
+              <button
+                type="button"
+                onClick={handleCast}
+                aria-label={cast.isCasting ? `Disconnect Cast (${cast.castDeviceName})` : 'Cast to TV / Chromecast'}
+                title={cast.isCasting ? `Disconnect Cast (${cast.castDeviceName})` : 'Cast to TV / Chromecast'}
+                className={`p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer ${
+                  cast.isCasting ? 'text-rose-500' : 'text-white'
+                }`}
+              >
+                <Cast className="w-4 h-4" />
+              </button>
+            )}
+
+            {cast.isAirPlayAvailable && (
+              <button
+                type="button"
+                onClick={cast.triggerAirPlay}
+                aria-label="AirPlay"
+                title="AirPlay"
+                className={`p-2 rounded-lg hover:bg-white/10 transition-colors cursor-pointer hidden sm:flex ${
+                  cast.isAirPlayActive ? 'text-rose-500' : 'text-white'
+                }`}
+              >
+                <Tv className="w-4 h-4" />
+              </button>
+            )}
 
             <button
               type="button"
@@ -1870,6 +2148,74 @@ export default function Player({
           </div>
         </div>
       </div>
+
+      {/* While casting, the picture is on the TV; this overlay names the device
+          and carries the remote controls the reference exposes. */}
+      {cast.isCasting && !hideControls && (
+        <div
+          role="region"
+          aria-label="Casting to"
+          className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/85 backdrop-blur-sm text-center px-4"
+        >
+          <Cast className="w-8 h-8 text-rose-500" />
+          <p className="text-sm text-white font-semibold">
+            Casting to <span className="text-rose-400">{cast.castDeviceName || 'Chromecast TV'}</span>
+          </p>
+          <p className="text-[11px] text-zinc-400">Playback is on your TV. Use the controls below.</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={cast.remotePlayOrPause}
+              aria-label={playing ? 'Pause on TV' : 'Play on TV'}
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            >
+              {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+            </button>
+            <button
+              type="button"
+              onClick={() => cast.remoteSeek(Math.max(0, current - 10))}
+              aria-label="Back 10 seconds on TV"
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => cast.remoteSeek(current + 10)}
+              aria-label="Forward 10 seconds on TV"
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            >
+              <SkipForward className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => cast.remoteSetVolume(Math.max(0, volume - 0.1))}
+              aria-label="Volume down on TV"
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            >
+              <VolumeX className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => cast.remoteSetVolume(Math.min(1, volume + 0.1))}
+              aria-label="Volume up on TV"
+              className="p-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors cursor-pointer"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => void cast.stopCasting()}
+              aria-label="Disconnect Cast"
+              className="p-2.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {tokenGate && <TokenGateModal mode={tokenGate} onClose={() => setTokenGate(null)} />}
     </div>
   );
 }

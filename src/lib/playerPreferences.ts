@@ -44,6 +44,62 @@ export type AspectRatio = (typeof ASPECTS)[number];
 const AUDIO_BOOSTS = ['off', '150', '200', '300', 'dialogue'] as const;
 export type AudioBoost = (typeof AUDIO_BOOSTS)[number];
 
+/**
+ * The boost options, ported from the reference's preset table. `gated` marks
+ * the presets that require the `$XTV` holder perk; `off` and `150` are always
+ * available.
+ */
+export interface AudioBoostPreset {
+  id: AudioBoost;
+  label: string;
+  boostText: string;
+  badge?: string;
+  desc: string;
+  gated: boolean;
+}
+
+export const AUDIO_BOOST_PRESETS: AudioBoostPreset[] = [
+  {
+    id: 'off',
+    label: 'Off',
+    boostText: '100% (Normal)',
+    desc: 'Standard volume without extra amplification',
+    gated: false,
+  },
+  {
+    id: '150',
+    label: '150%',
+    boostText: '150% Boost (+3.5 dB)',
+    badge: '150%',
+    desc: 'Mild boost for quiet dialogue or low-volume scenes',
+    gated: false,
+  },
+  {
+    id: '200',
+    label: '200%',
+    boostText: '200% Boost (+6 dB)',
+    badge: '200%',
+    desc: 'High amplification with digital clipping limiter',
+    gated: true,
+  },
+  {
+    id: '300',
+    label: '300%',
+    boostText: '300% Boost (+9.5 dB)',
+    badge: '300%',
+    desc: 'Maximum volume boost with distortion prevention',
+    gated: true,
+  },
+  {
+    id: 'dialogue',
+    label: 'Dialogue Clarity',
+    boostText: 'Dialogue Boost (+6 dB)',
+    badge: 'Voice',
+    desc: 'Boosts vocal speech frequencies and balances loud sounds',
+    gated: true,
+  },
+];
+
 function store(): Storage | null {
   try {
     if (typeof window !== 'undefined' && window.localStorage) return window.localStorage;

@@ -20,6 +20,7 @@ import ProviderBar from '@/components/ProviderBar';
 import ShortcutsModal from '@/components/ShortcutsModal';
 import WatchHeader from '@/components/WatchHeader';
 import { useAnimeDetail, useDetails, useProviders, useSeason } from '@/hooks/useApiQueries';
+import { useProviderHealth } from '@/hooks/useProviderHealth';
 import { SITE_NAME } from '@/lib/brand';
 import { mediaId } from '@/lib/id';
 import { isNotFoundPath } from '@/lib/notFound';
@@ -166,9 +167,21 @@ export default function WatchPage() {
   const [resolveNonce, setResolveNonce] = useState(0);
   const triedProviders = useRef<Set<string>>(new Set());
 
+  // Per-provider health and the session's stream history, so the bar can show
+  // Connected / Checking / Available / Unavailable instead of a static list.
+  const { providerStatus, streamHistory, recordStreamResult } = useProviderHealth(
+    mediaKey,
+    mediaType,
+    providers,
+    { season: seasonNumber, episode: episodeNumber, activeProvider }
+  );
+
   const handlePlayerFailure = useCallback(() => {
     const tried = triedProviders.current;
-    if (activeProvider) tried.add(activeProvider);
+    if (activeProvider) {
+      tried.add(activeProvider);
+      recordStreamResult(activeProvider, false);
+    }
     // Prefer a provider the viewer has not been on yet this session.
     const next = providers.find((entry) => !tried.has(entry.id) && entry.id !== activeProvider);
     if (!next) {
@@ -180,7 +193,7 @@ export default function WatchPage() {
     setFailoverNotice(`Switching to ${next.name}…`);
     setActiveProvider(next.id);
     setResolveNonce((value) => value + 1);
-  }, [activeProvider, providers]);
+  }, [activeProvider, providers, recordStreamResult]);
 
   const promptStarted = useRef(false);
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -769,6 +782,8 @@ export default function WatchPage() {
             activeProvider={activeProvider}
             onSelect={setActiveProvider}
             loading={providersQuery.isLoading}
+            providerStatus={providerStatus}
+            streamHistory={streamHistory}
           />
 
           <PlayerEmbed
@@ -793,7 +808,9 @@ export default function WatchPage() {
             }}
             onPlayerReady={() => {
               // A provider answered, so clear the hop notice and re-arm the
-              // failover budget for whatever comes next.
+              // failover budget for whatever comes next. Recording the success
+              // keeps the bar's status honest for the rest of the session.
+              recordStreamResult(activeProvider, true);
               setFailoverNotice(null);
               setExhausted(false);
             }}

@@ -12,6 +12,14 @@
  *    served from disk too. This is the "buffer once, then stay local" contract:
  *    the only traffic after startup is the prefetcher finishing the file.
  *
+ * The whole cache is **transparent and self-expiring**: the viewer never asks
+ * for a download and nothing is kept permanently. Each entry is stamped with
+ * the time it was written and is treated as a miss once it is older than
+ * `ENTRY_TTL_MS` (24 hours), at which point it is deleted and refetched. A
+ * sweep runs on startup and on an interval so a device that was left alone
+ * overnight comes back clean. This is what makes seeking and rewinding during a
+ * session instant without ever accumulating a permanent copy of the film.
+ *
  * Playlists are deliberately left alone: a media playlist is a sliding window
  * on a live stream and must stay fresh, while a segment's bytes never change.
  *
@@ -24,6 +32,15 @@ const CACHE_NAME = 'netflix-pro-segments-v1';
 
 /** Roughly four hours of 4 s segments; a whole film fits without eviction. */
 const MAX_ENTRIES = 4000;
+
+/** How long a cached segment stays usable. After this it is a miss again. */
+const ENTRY_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Stamped onto every stored response so its age can be read back. */
+const CACHED_AT_HEADER = 'x-np-cached-at';
+
+/** How often the background sweep runs while a tab is open. */
+const SWEEP_INTERVAL_MS = 30 * 60 * 1000;
 
 /** How many segments the background prefetcher fetches at once. */
 const PREFETCH_CONCURRENCY = 4;
@@ -76,11 +93,34 @@ function cacheAvailable(): boolean {
   return typeof caches !== 'undefined' && typeof caches.open === 'function';
 }
 
+/** The write time stamped on a stored response, or 0 when it carries none. */
+function cachedAt(response: Response): number {
+  const raw = response.headers.get(CACHED_AT_HEADER);
+  const value = raw ? Number(raw) : 0;
+  return Number.isFinite(value) ? value : 0;
+}
+
+/** True once a stored response is past its 24-hour life. */
+function isExpired(response: Response): boolean {
+  const at = cachedAt(response);
+  if (at <= 0) return true;
+  return Date.now() - at > ENTRY_TTL_MS;
+}
+
+/**
+ * Read a segment from disk. An entry past its TTL counts as a miss and is
+ * deleted on the spot, so an expired segment is refetched rather than replayed
+ * and the cache cannot silently hold a stale copy forever.
+ */
 async function readFromCache(url: string): Promise<ArrayBuffer | null> {
   try {
     const cache = await caches.open(CACHE_NAME);
     const hit = await cache.match(url);
     if (!hit) return null;
+    if (isExpired(hit)) {
+      await cache.delete(url);
+      return null;
+    }
     return await hit.arrayBuffer();
   } catch {
     return null;
@@ -92,7 +132,12 @@ async function writeToCache(url: string, data: ArrayBuffer): Promise<void> {
     const cache = await caches.open(CACHE_NAME);
     await cache.put(
       url,
-      new Response(data, { headers: { 'content-type': 'application/octet-stream' } })
+      new Response(data, {
+        headers: {
+          'content-type': 'application/octet-stream',
+          [CACHED_AT_HEADER]: String(Date.now()),
+        },
+      })
     );
     const keys = await cache.keys();
     const excess = keys.length - MAX_ENTRIES;
@@ -115,6 +160,47 @@ export async function cachedSegmentCount(): Promise<number> {
   }
 }
 
+/**
+ * Delete every entry past its 24-hour life. Called once on startup and then on
+ * an interval; the per-read check in `readFromCache` covers anything the sweep
+ * has not reached yet.
+ */
+export async function sweepExpiredSegments(): Promise<number> {
+  if (!cacheAvailable()) return 0;
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    const keys = await cache.keys();
+    let removed = 0;
+    for (const request of keys) {
+      const hit = await cache.match(request);
+      if (!hit || isExpired(hit)) {
+        await cache.delete(request);
+        removed += 1;
+      }
+    }
+    return removed;
+  } catch {
+    return 0;
+  }
+}
+
+let sweepInstalled = false;
+
+/**
+ * Start the background expiry sweep: once now, then every 30 minutes, and again
+ * whenever the tab becomes visible after being hidden. Idempotent, so calling
+ * it from more than one entry point is harmless.
+ */
+export function installSegmentCacheSweep(): void {
+  if (sweepInstalled || !cacheAvailable()) return;
+  sweepInstalled = true;
+  void sweepExpiredSegments();
+  window.setInterval(() => void sweepExpiredSegments(), SWEEP_INTERVAL_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void sweepExpiredSegments();
+  });
+}
+
 /** Drop everything cached. */
 export async function clearSegmentCache(): Promise<void> {
   if (!cacheAvailable()) return;
@@ -128,7 +214,13 @@ export async function clearSegmentCache(): Promise<void> {
 async function hasCached(url: string): Promise<boolean> {
   try {
     const cache = await caches.open(CACHE_NAME);
-    return Boolean(await cache.match(url));
+    const hit = await cache.match(url);
+    if (!hit) return false;
+    if (isExpired(hit)) {
+      await cache.delete(url);
+      return false;
+    }
+    return true;
   } catch {
     return false;
   }

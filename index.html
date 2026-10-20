@@ -11,6 +11,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- The Cast sender framework. Loading it lets the player offer a
+         "Cast to TV" button; if it never loads, the button simply does not
+         appear and nothing else changes. -->
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1" async></script>
     <title>Netflix-pro</title>
     <meta name="description" content="Decrypted HD streaming for movies, TV series, and anime." />
   </head>

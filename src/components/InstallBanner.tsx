@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Download, Github, X } from 'lucide-react';
-import { APP_RELEASES_URL } from '@/lib/brand';
+import { APP_RELEASES_URL, SITE_LEAD, SITE_SUFFIX } from '@/lib/brand';
 import { resolveAppDownload, type AppDownload } from '@/lib/appRelease';
 
 /**
  * The install banner.
  *
  * frameXTV.xyz's banner prompts the browser's PWA install flow and stores its
- * dismissal in `framextv_pwa_dismissed`. This product ships a companion
- * mobile app instead, so the same chrome — same card, same copy shape, same
- * `pwa-install-banner` test id, same session-scoped dismissal key — now points
- * at the netflix-pro app and downloads the APK straight from GitHub releases.
+ * dismissal in `framextv_pwa_dismissed`. This product ships a companion mobile
+ * app instead, so the same chrome — same card, same copy shape, same
+ * `pwa-install-banner` test id, same session-scoped dismissal key — now links
+ * straight at the Netflix-pro app and downloads the APK from GitHub releases.
  *
  * The download target is resolved from the release API rather than hardcoded:
  * the asset name embeds the version, so a static link 404s as soon as the
@@ -61,9 +61,10 @@ export default function InstallBanner() {
       </div>
       <div className="space-y-0.5 flex-1 min-w-0">
         <p className="text-xs font-bold text-white truncate">
-          Install Netflix<span className="text-rose-500">-pro</span>
+          Install {SITE_LEAD}
+          <span className="text-rose-500">{SITE_SUFFIX}</span>
         </p>
-        <p className="text-[10px] text-zinc-400 truncate">Add to Home screen for quick cinematic access</p>
+        <p className="text-[10px] text-zinc-400 truncate">Get the Netflix-pro app for quick cinematic access</p>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <a
@@ -95,3 +96,4 @@ export default function InstallBanner() {
     </div>
   );
 }
+

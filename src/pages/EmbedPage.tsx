@@ -6,6 +6,7 @@ import { getStream, type FxStream, type MediaType } from '@/lib/api';
 import { mediaId } from '@/lib/id';
 import { saveProgress } from '@/lib/watchProgress';
 import { readWarmedStream } from '@/lib/streamWarm';
+import { isBackupProvider } from '@/lib/vidbolt';
 import { SITE_NAME } from '@/lib/brand';
 
 /**
@@ -51,6 +52,10 @@ export default function EmbedPage() {
     document.body.style.background = '#000';
   }, []);
 
+  // A `backup` provider is served by the Vidbolt iframe, not the aggregator, so
+  // there is nothing to resolve — the Player builds the iframe URL itself.
+  const backupMode = isBackupProvider(provider);
+
   const stream = useQuery<FxStream | null>({
     queryKey: ['embed-stream', mediaType, mediaKey, seasonNumber, episodeNumber, provider ?? 'auto', resolveNonce],
     queryFn: async () => {
@@ -86,7 +91,7 @@ export default function EmbedPage() {
       }
       return body;
     },
-    enabled: Boolean(mediaKey),
+    enabled: Boolean(mediaKey) && !backupMode,
     // A resolution that yielded no source is worthless to cache: holding it for
     // ten minutes is what made a title hard to re-resolve after a flaky server.
     // Only a resolution that actually produced a source is worth remembering.
@@ -98,7 +103,7 @@ export default function EmbedPage() {
 
   const sources = stream.data?.sources ?? [];
   const activeSource = sources[0];
-  const noSource = Boolean(mediaKey) && !stream.isLoading && !activeSource;
+  const noSource = Boolean(mediaKey) && !backupMode && !stream.isLoading && !activeSource;
 
   // A resolution with zero sources is a dead end for this server. Report it to
   // the host straight away rather than waiting out the frame watchdog, so the
@@ -119,7 +124,7 @@ export default function EmbedPage() {
     );
   }
 
-  if (stream.isLoading) {
+  if (stream.isLoading && !backupMode) {
     return (
       <div className="w-full h-screen bg-black flex items-center justify-center">
         <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -127,7 +132,7 @@ export default function EmbedPage() {
     );
   }
 
-  if (!activeSource) {
+  if (!activeSource && !backupMode) {
     return (
       <div className="w-full h-screen bg-black flex items-center justify-center text-xs font-mono text-zinc-500">
         No playable source for this title.
@@ -138,8 +143,8 @@ export default function EmbedPage() {
   return (
     <div className="w-full h-screen bg-black overflow-hidden">
       <Player
-        src={activeSource.url}
-        sourceType={activeSource.type}
+        src={activeSource?.url}
+        sourceType={activeSource?.type}
         poster={customPoster}
         title={
           customTitle ??
@@ -155,6 +160,13 @@ export default function EmbedPage() {
         startMuted={startMuted}
         initialSpeed={initialSpeed}
         hideControls={hideControls}
+        mediaType={mediaType}
+        tmdbId={mediaType === 'anime' ? undefined : mediaKey}
+        season={seasonNumber}
+        episode={episodeNumber}
+        anilistId={mediaType === 'anime' ? mediaKey : undefined}
+        malId={params.get('mal') || undefined}
+        activeProvider={provider}
         onProgress={(seconds, duration) =>
           saveProgress({
             mediaType,
