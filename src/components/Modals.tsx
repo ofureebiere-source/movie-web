@@ -1,190 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowRight, Check, Copy, ExternalLink, Info, X } from 'lucide-react';
+import { Check, Copy, ExternalLink, Info, X } from 'lucide-react';
 import { BitcoinIcon, DiscordIcon, PumpIcon } from '@/components/BrandIcons';
 import {
   BITCOIN_ADDRESS,
-  BADGE,
   DISCORD_URL,
-  SITE_MIDDLE,
-  SITE_LEAD,
-  SITE_TAIL,
+  SITE_NAME,
   SOLANA_ADDRESS,
   TOKEN_CA,
   TOKEN_URL,
   X_HANDLE,
   X_URL,
 } from '@/lib/brand';
-
-/**
- * The first-visit welcome modal.
- *
- * Ported from the reference: shown while `framextv_welcome_seen` is unset,
- * dismissable by the close button, the backdrop or Escape, and re-openable by
- * dispatching `framextv:open_welcome_modal`. `framextv_welcome_seen` is
- * written on close.
- *
- * The "Support" row opens the donation modal through
- * `framextv:open_donation_modal`, exactly as upstream, so the two are
- * decoupled and either can be triggered from anywhere.
- */
-const SEEN_KEY = 'framextv_welcome_seen';
-
-export default function WelcomeModal() {
-  const [open, setOpen] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return localStorage.getItem(SEEN_KEY) !== 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  useEffect(() => {
-    const onOpen = () => setOpen(true);
-    window.addEventListener('framextv:open_welcome_modal', onOpen);
-    return () => window.removeEventListener('framextv:open_welcome_modal', onOpen);
-  }, []);
-
-  const close = useCallback(() => {
-    try {
-      localStorage.setItem(SEEN_KEY, 'true');
-    } catch {
-      /* storage disabled */
-    }
-    setOpen(false);
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') close();
-    };
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = previous;
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [open, close]);
-
-  if (!open) return null;
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="welcome-modal-title"
-      data-testid="welcome-modal"
-      onClick={close}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md transition-opacity duration-200 animate-fade-in"
-    >
-      <div
-        className="relative w-full max-w-sm bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl p-5 sm:p-6 text-center overflow-hidden transition-all duration-200"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={close}
-          aria-label="Close welcome modal"
-          className="absolute top-3 right-3 p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
-        <div className="mx-auto w-11 h-11 rounded-xl bg-white text-black font-black font-mono text-base flex items-center justify-center shadow border border-zinc-200 mb-3">
-          {BADGE}
-        </div>
-
-        <h2 id="welcome-modal-title" className="text-xl font-bold text-white tracking-tight">
-          Welcome to{' '}
-          <span className="font-mono">
-            {SITE_LEAD}
-            <span className="text-zinc-400">{SITE_MIDDLE}</span>
-            {SITE_TAIL}
-          </span>
-        </h2>
-        <p className="text-xs sm:text-sm font-medium text-zinc-300 mt-1">Thanks for choosing our platform!</p>
-        <p className="text-xs text-zinc-400 leading-relaxed mt-2 max-w-xs mx-auto">
-          Decrypted HD streaming for movies, TV series, and anime with zero friction.
-        </p>
-
-        <div className="mt-5 space-y-2">
-          <button
-            type="button"
-            data-testid="welcome-continue-btn"
-            onClick={close}
-            className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-200 active:bg-zinc-300 text-black font-semibold text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow transition-all cursor-pointer group active:scale-[0.99]"
-          >
-            <span>Continue to site</span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-          </button>
-
-          <button
-            type="button"
-            data-testid="welcome-support-btn"
-            onClick={() => {
-              close();
-              window.dispatchEvent(new Event('framextv:open_donation_modal'));
-            }}
-            className="w-full py-2 px-3 rounded-lg text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            title={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL}`}
-          >
-            <PumpIcon className="w-3.5 h-3.5 text-[#14F195]" />
-            <span>
-              Support {SITE_LEAD}
-              {SITE_MIDDLE}
-              {SITE_TAIL}
-            </span>
-          </button>
-
-          <div className="pt-1.5">
-            <div className="grid grid-cols-2 gap-2">
-              <a
-                href={X_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="welcome-x-btn"
-                onClick={close}
-                className="py-2 px-2.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
-                title={`Follow ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} on X (${X_HANDLE})`}
-              >
-                <XIconSmall />
-                <span>{X_HANDLE}</span>
-                <ExternalLink className="w-3 h-3 text-zinc-500" />
-              </a>
-              <a
-                href={DISCORD_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="welcome-discord-btn"
-                onClick={close}
-                className="py-2 px-2.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 text-zinc-300 hover:text-white text-xs font-medium flex items-center justify-center gap-1.5 transition-colors"
-                title="Join our Discord community"
-              >
-                <DiscordIcon className="w-3.5 h-3.5" />
-                <span>Discord</span>
-                <ExternalLink className="w-3 h-3 text-zinc-500" />
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <p className="text-[11px] text-zinc-500 italic mt-4 font-sans tracking-tight">
-          Dedicated to the love of my life, Aashi
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function XIconSmall() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
 
 /**
  * The crypto donation modal.
@@ -269,9 +95,7 @@ export function DonationModal() {
         </div>
 
         <h2 id="donation-modal-title" className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-3">
-          Support {SITE_LEAD}
-          {SITE_MIDDLE}
-          {SITE_TAIL}
+          Support {SITE_NAME}
         </h2>
         <p className="text-xs text-zinc-400 mt-1 max-w-xs leading-relaxed">
           Help fund high-speed VPS proxy servers and ad-free streaming via crypto donations.

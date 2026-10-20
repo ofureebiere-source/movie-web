@@ -152,6 +152,16 @@ export default function Player({
   const fileInput = useRef<HTMLInputElement | null>(null);
   const seekAfterReload = useRef(0);
   const failoverCount = useRef(0);
+  // Tap-to-seek gesture state: how many taps the current gesture has seen and
+  // on which side, plus the timers that reset it and clear the indicator.
+  const tapRef = useRef<{ last: number; side: 'left' | 'right' | null; count: number }>({
+    last: 0,
+    side: null,
+    count: 0,
+  });
+  const tapResetTimer = useRef<number | null>(null);
+  const indicatorTimer = useRef<number | null>(null);
+  const bufferingSince = useRef<number | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(startMuted);
@@ -178,6 +188,8 @@ export default function Player({
   const [uploaded, setUploaded] = useState<{ label: string; cues: ParsedCue[] } | null>(null);
   const [subSync, setSubSync] = useState(0);
   const [subError, setSubError] = useState<string | null>(null);
+  const [seekIndicator, setSeekIndicator] = useState<string | null>(null);
+  const [bufferElapsed, setBufferElapsed] = useState(0);
 
   const activeTrack = trackIndex !== null ? subtitles[trackIndex] : undefined;
 
@@ -383,6 +395,70 @@ export default function Player({
     if (!video) return;
     video.currentTime = Math.max(0, Math.min(video.duration || 0, video.currentTime + delta));
   }, []);
+
+  // --- tap to seek ---------------------------------------------------------
+
+  // Double-tapping a side of the video seeks by 10 s. Tapping again *before*
+  // the gesture resets stacks another 10 s and extends the same gesture, so a
+  // quick run of taps lands at 20 s, 30 s, 40 s — the YouTube behaviour the
+  // reference approximates with a single fixed 10 s hop. The window is the
+  // same 320 ms the reference uses.
+  const showSeekIndicator = useCallback((delta: number) => {
+    setSeekIndicator(delta < 0 ? `◀◀ ${Math.abs(delta)}s` : `${delta}s ▶▶`);
+    if (indicatorTimer.current) window.clearTimeout(indicatorTimer.current);
+    indicatorTimer.current = window.setTimeout(() => setSeekIndicator(null), 700);
+  }, []);
+
+  const handleTap = useCallback(
+    (side: 'left' | 'right', event: React.SyntheticEvent) => {
+      event.stopPropagation();
+      const now = Date.now();
+      const withinWindow = tapRef.current.side === side && now - tapRef.current.last < 320;
+      const count = withinWindow ? tapRef.current.count + 1 : 1;
+
+      tapRef.current = { last: now, side, count };
+      if (tapResetTimer.current) window.clearTimeout(tapResetTimer.current);
+      tapResetTimer.current = window.setTimeout(() => {
+        tapRef.current = { last: 0, side: null, count: 0 };
+      }, 320);
+
+      // A single tap only arms the gesture; the first seek happens on the
+      // second tap, matching YouTube (and the reference).
+      if (count >= 2) {
+        const delta = (side === 'left' ? -10 : 10) * (count - 1);
+        seekBy(delta);
+        showSeekIndicator(delta);
+      }
+      showControls();
+    },
+    [seekBy, showControls, showSeekIndicator]
+  );
+
+  useEffect(
+    () => () => {
+      if (tapResetTimer.current) window.clearTimeout(tapResetTimer.current);
+      if (indicatorTimer.current) window.clearTimeout(indicatorTimer.current);
+    },
+    []
+  );
+
+  // Buffering can last long enough that a bare spinner reads as "stuck". Once
+  // it passes a few seconds, surface how long it has been going and what is
+  // happening, so a slow provider is distinguishable from a hung player.
+  useEffect(() => {
+    if (!buffering) {
+      bufferingSince.current = null;
+      setBufferElapsed(0);
+      return;
+    }
+    if (bufferingSince.current === null) bufferingSince.current = Date.now();
+    const timer = window.setInterval(() => {
+      if (bufferingSince.current !== null) {
+        setBufferElapsed(Math.floor((Date.now() - bufferingSince.current) / 1000));
+      }
+    }, 500);
+    return () => window.clearInterval(timer);
+  }, [buffering]);
 
   const toggleFullscreen = useCallback(() => {
     const shell = shellRef.current;
@@ -607,6 +683,11 @@ export default function Player({
         crossOrigin="anonymous"
         className="w-full h-full object-contain bg-black"
         onClick={togglePlay}
+        onDoubleClick={() => {
+          // Native double-click-to-fullscreen is off for the video surface so
+          // it does not fight the double-tap-to-seek zones layered over it.
+          toggleFullscreen();
+        }}
         onPlay={() => {
           setPlaying(true);
           showControls();
@@ -640,6 +721,65 @@ export default function Player({
         onError={() => setError('This stream could not be played. Try another server.')}
       />
 
+      {/* Double-tap-to-seek zones. The outer thirds seek; the middle third is
+          left transparent to the video so a single tap still toggles play and
+          a double-click still goes fullscreen. Inset vertically so the zones
+          never sit over the control bar or the title. */}
+      {!hideControls && (
+        <div className="absolute inset-y-16 inset-x-0 flex z-20 pointer-events-none">
+          <div
+            className="w-1/3 h-full pointer-events-auto cursor-pointer"
+            onTouchEnd={(event) => handleTap('left', event)}
+            onDoubleClick={(event) => handleTap('left', event)}
+          />
+          <div className="w-1/3 h-full pointer-events-none" />
+          <div
+            className="w-1/3 h-full pointer-events-auto cursor-pointer"
+            onTouchEnd={(event) => handleTap('right', event)}
+            onDoubleClick={(event) => handleTap('right', event)}
+          />
+        </div>
+      )}
+
+      {seekIndicator && (
+        <div
+          role="status"
+          aria-live="polite"
+          data-testid="seek-indicator"
+          className={`absolute top-1/2 -translate-y-1/2 ${
+            seekIndicator.startsWith('◀') ? 'left-4 sm:left-16' : 'right-4 sm:right-16'
+          } z-30 flex items-center justify-center p-2.5 sm:p-4 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-white font-mono font-bold text-xs sm:text-base animate-fade-in pointer-events-none shadow-2xl`}
+        >
+          {seekIndicator}
+        </div>
+      )}
+
+      {/* Center play/pause affordance, shown with the rest of the chrome. */}
+      {!hideControls && !error && !buffering && (
+        <div
+          className={`absolute inset-0 flex items-center justify-center z-20 transition-opacity duration-200 pointer-events-none ${
+            controlsVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+        >
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              togglePlay();
+            }}
+            aria-label={playing ? 'Pause Stream' : 'Play Stream'}
+            title={playing ? 'Pause Stream' : 'Play Stream'}
+            className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-black/40 hover:bg-black/60 text-white flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-105 active:scale-95 border border-white/20 hover:border-white/40 backdrop-blur-md cursor-pointer pointer-events-auto"
+          >
+            {playing ? (
+              <Pause className="w-6 h-6 sm:w-8 sm:h-8 fill-white" />
+            ) : (
+              <Play className="w-6 h-6 sm:w-8 sm:h-8 fill-white" />
+            )}
+          </button>
+        </div>
+      )}
+
       {activeCue && subtitlesOn && (
         <div
           data-testid="subtitle-cue"
@@ -664,8 +804,16 @@ export default function Player({
       )}
 
       {buffering && !error && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none bg-black/20">
           <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+          {bufferElapsed >= 3 && (
+            <div className="text-center space-y-0.5 px-4 animate-fade-in">
+              <p className="text-xs font-semibold text-zinc-200 tracking-wide">Buffering stream…</p>
+              <p className="text-[11px] font-mono text-zinc-400">
+                {bufferElapsed}s elapsed — try another server if this stalls
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -721,6 +869,9 @@ export default function Player({
         className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-200 ${
           controlsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
         } ${hideControls ? 'hidden' : ''}`}
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => event.stopPropagation()}
+        onTouchEnd={(event) => event.stopPropagation()}
       >
         <div className="px-2 sm:px-3 pt-6">
           <SeekBar

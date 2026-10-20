@@ -3,11 +3,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Bookmark, Check, Clock, Code2, Copy, Film, Home, Search, Sparkles, Tv } from 'lucide-react';
 import { DiscordIcon, PumpIcon, XIcon } from '@/components/BrandIcons';
 import {
-  BADGE,
   DISCORD_URL,
-  SITE_LEAD,
-  SITE_MIDDLE,
-  SITE_TAIL,
+  SITE_NAME,
   TOKEN_CA,
   TOKEN_SHORT,
   TOKEN_URL,
@@ -15,12 +12,13 @@ import {
   X_URL,
 } from '@/lib/brand';
 import MobileNav from './MobileNav';
+import Wordmark from './Wordmark';
 
 /**
  * The sticky top bar.
  *
- * Ported 1:1 from frameXTV.xyz's header: a 14-unit bar, a square `fX` badge +
- * three-tone wordmark on the left, the five primary destinations in the middle
+ * Based on frameXTV.xyz's header: a 14-unit bar, our `Netflix-pro` wordmark on
+ * the left (no badge tile), the five primary destinations in the middle
  * (hidden below `sm`), then Search / My List / History / X / Discord / the
  * $XTV token chip on the right. The mobile variant is the fixed bottom nav.
  *
@@ -96,16 +94,7 @@ export default function Header() {
               to="/"
               className="flex items-center space-x-2 text-left focus-visible:ring-2 focus-visible:ring-zinc-400/50 rounded-md cursor-pointer group"
             >
-              <div className="w-7 h-7 rounded bg-white text-black flex items-center justify-center font-bold font-mono text-xs tracking-tighter shadow-sm border border-zinc-200 transition-transform group-hover:scale-105 shrink-0">
-                {BADGE}
-              </div>
-              <div className="flex items-baseline space-x-1.5 whitespace-nowrap">
-                <span className="font-extrabold tracking-tight text-white text-base sm:text-lg">
-                  {SITE_LEAD}
-                  <span className="text-zinc-400">{SITE_MIDDLE}</span>
-                  {SITE_TAIL}
-                </span>
-              </div>
+              <Wordmark className="text-base sm:text-lg transition-transform group-hover:scale-[1.02]" />
             </Link>
           </div>
 
@@ -201,8 +190,8 @@ export default function Header() {
               type="button"
               onClick={() => window.dispatchEvent(new Event('framextv:open_donation_modal'))}
               className="sm:hidden p-1.5 rounded-lg bg-zinc-950/80 hover:bg-zinc-900 border border-[#14F195]/30 hover:border-[#14F195]/60 text-[#14F195] transition-all text-xs shrink-0 flex items-center justify-center cursor-pointer active:scale-95"
-              title={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto (Solana / BTC)`}
-              aria-label={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto`}
+              title={`Support ${SITE_NAME} with Crypto (Solana / BTC)`}
+              aria-label={`Support ${SITE_NAME} with Crypto`}
             >
               <PumpIcon className="w-3.5 h-3.5" />
             </button>
@@ -210,7 +199,7 @@ export default function Header() {
             <div
               className="hidden sm:flex items-center shrink-0 border border-zinc-700/80 rounded-md overflow-hidden text-xs font-mono select-none shadow-sm"
               role="group"
-              aria-label={`${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} Token Contract Address`}
+              aria-label={`${SITE_NAME} Token Contract Address`}
             >
               <a
                 href={TOKEN_URL}
@@ -225,8 +214,8 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => window.dispatchEvent(new Event('framextv:open_donation_modal'))}
-                title={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto (Click to open donation modal)`}
-                aria-label={`Support ${SITE_LEAD}${SITE_MIDDLE}${SITE_TAIL} with Crypto`}
+                title={`Support ${SITE_NAME} with Crypto (Click to open donation modal)`}
+                aria-label={`Support ${SITE_NAME} with Crypto`}
                 className="bg-black hover:bg-zinc-900 active:bg-zinc-800 text-zinc-200 px-2 sm:px-2.5 py-1 sm:py-1.5 border-x border-zinc-700/80 transition-colors cursor-pointer tracking-wider font-semibold flex items-center gap-1"
               >
                 <span>{TOKEN_SHORT}</span>

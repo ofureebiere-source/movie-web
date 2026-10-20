@@ -1,24 +1,26 @@
 /**
  * The site's own name, in one place.
  *
- * The wordmark is the reference's: a square `fX` badge next to `frame` + a
- * muted `X` + `TV`. The token, social and support links are the reference's
- * too, so the chrome reads identically.
+ * The wordmark is our own: `Netflix` in white with a `-pro` suffix in red.
+ * There is no badge glyph — the reference's square `fX` tile is gone, so the
+ * name stands on its own in the header and footer.
  *
- * Two things are deliberately ours and do not exist upstream:
+ * The companion mobile app is ours and does not exist upstream:
  *
- *   APP_*        the companion mobile app this site ships, served straight
- *                from the netflix-pro GitHub releases.
- *   SUPPORT_EMAIL
+ *   APP_*        the mobile app this site ships, served straight from the
+ *                netflix-pro GitHub releases.
  */
 
-export const SITE_NAME = 'frameXTV';
-export const SITE_LEAD = 'frame';
-export const SITE_MIDDLE = 'X';
-export const SITE_TAIL = 'TV';
+export const SITE_NAME = 'Netflix-pro';
+/** `Netflix` — rendered in white. */
+export const SITE_LEAD = 'Netflix';
+/** `-pro` — rendered in red. Empty `SITE_MIDDLE`/`SITE_TAIL` keep older call sites inert. */
+export const SITE_SUFFIX = '-pro';
+export const SITE_MIDDLE = '';
+export const SITE_TAIL = '';
 
-/** The square badge glyph in the header, footer and welcome modal. */
-export const BADGE = 'fX';
+/** Retained as an empty string: the badge tile was removed from the chrome. */
+export const BADGE = '';
 
 export const TAGLINE = 'Decrypted Stream Discovery Platform';
 

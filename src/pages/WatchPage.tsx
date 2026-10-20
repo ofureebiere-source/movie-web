@@ -16,9 +16,10 @@ import EpisodeNav from '@/components/EpisodeNav';
 import MediaCard from '@/components/MediaCard';
 import NextEpisodePrompt from '@/components/NextEpisodePrompt';
 import PlayerEmbed, { type PlayerEmbedHandle } from '@/components/PlayerEmbed';
+import ProviderBar from '@/components/ProviderBar';
 import ShortcutsModal from '@/components/ShortcutsModal';
 import WatchHeader from '@/components/WatchHeader';
-import { useAnimeDetail, useDetails, useSeason } from '@/hooks/useApiQueries';
+import { useAnimeDetail, useDetails, useProviders, useSeason } from '@/hooks/useApiQueries';
 import { SITE_NAME } from '@/lib/brand';
 import { mediaId } from '@/lib/id';
 import { isNotFoundPath } from '@/lib/notFound';
@@ -109,6 +110,9 @@ export default function WatchPage() {
   const episodesQuery = useSeason(tmdbId, seasonNumber, mediaType === 'tv' && Boolean(tmdbId) && !notFound);
   const episodes = episodesQuery.data ?? [];
 
+  const providersQuery = useProviders();
+  const providers = providersQuery.data ?? [];
+
   // --- state ---------------------------------------------------------------
 
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -122,6 +126,7 @@ export default function WatchPage() {
     }
   });
   const [autoplayEnabled, setAutoplayEnabled] = useState(() => readAutoplayNext());
+  const [activeProvider, setActiveProvider] = useState<string | undefined>(undefined);
   const [promptVisible, setPromptVisible] = useState(false);
   const [countdown, setCountdown] = useState(AUTOPLAY_COUNTDOWN);
 
@@ -465,14 +470,15 @@ export default function WatchPage() {
 
   const embedUrl = useMemo(() => {
     const startParam = resumeTime > 15 ? `&t=${Math.floor(resumeTime)}` : '';
+    const providerParam = activeProvider ? `&provider=${encodeURIComponent(activeProvider)}` : '';
     if (mediaType === 'anime') {
       const titleParam = detail?.title ? `&title=${encodeURIComponent(detail.title)}` : '';
-      return `/embed/anime?id=${anilistId}&type=anime&season=1&episode=${episodeNumber}&sub_type=sub&autoplay=1&origin=internal${titleParam}${startParam}`;
+      return `/embed/anime?id=${anilistId}&type=anime&season=1&episode=${episodeNumber}&sub_type=sub&autoplay=1&origin=internal${providerParam}${titleParam}${startParam}`;
     }
     return isTv
-      ? `/embed/${tmdbId}/${seasonNumber}/${episodeNumber}?autoplay=1&origin=internal${startParam}`
-      : `/embed/${tmdbId}?autoplay=1&origin=internal${startParam}`;
-  }, [mediaType, isTv, tmdbId, anilistId, seasonNumber, episodeNumber, resumeTime, detail?.title]);
+      ? `/embed/${tmdbId}/${seasonNumber}/${episodeNumber}?autoplay=1&origin=internal${providerParam}${startParam}`
+      : `/embed/${tmdbId}?autoplay=1&origin=internal${providerParam}${startParam}`;
+  }, [mediaType, isTv, tmdbId, anilistId, seasonNumber, episodeNumber, resumeTime, detail?.title, activeProvider]);
 
   const selectEpisode = useCallback(
     (targetSeason: number, targetEpisode: number) => {
@@ -699,10 +705,17 @@ export default function WatchPage() {
 
       <main className="w-full pt-1 pb-6 sm:pt-3 sm:pb-8 space-y-5 sm:space-y-6 flex-1 flex flex-col items-center">
         <div
-          className={`w-full transition-all duration-300 ${
+          className={`w-full space-y-2 sm:space-y-3 transition-all duration-300 ${
             theaterMode ? 'max-w-[98vw] px-0 sm:px-2' : 'max-w-6xl px-0 sm:px-4 lg:px-6'
           }`}
         >
+          <ProviderBar
+            providers={providers}
+            activeProvider={activeProvider}
+            onSelect={setActiveProvider}
+            loading={providersQuery.isLoading}
+          />
+
           <PlayerEmbed
             ref={playerRef}
             embedUrl={embedUrl}
