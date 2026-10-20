@@ -191,6 +191,10 @@ export function DetailHero({
   const [posterLoaded, setPosterLoaded] = useState(false);
   const [posterErrored, setPosterErrored] = useState(false);
   const [trailerOpen, setTrailerOpen] = useState(false);
+  // How many times the viewer has sat through the trailer. Once it passes two
+  // replays the rail's play button slides out a "Watch Now" label, on the
+  // theory that someone re-watching the trailer twice wants the film.
+  const [trailerPlays, setTrailerPlays] = useState(0);
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const posterSlotRef = useRef<HTMLDivElement | null>(null);
   const posterImgRef = useRef<HTMLImageElement | null>(null);
@@ -208,6 +212,13 @@ export function DetailHero({
   const trailer = pickTrailer(videos);
   const runtimeLabel = formatRuntime(detail.runtime);
   const typeLabel = detail.type === 'anime' ? 'Anime' : detail.type === 'tv' ? 'TV Series' : 'Movie';
+  // Two full plays, then the third asks them to just watch the thing.
+  const showWatchNowLabel = trailerPlays > 2;
+
+  const openTrailer = () => {
+    setTrailerPlays((plays) => plays + 1);
+    setTrailerOpen(true);
+  };
 
   return (
     <div className="media-surface relative w-full overflow-hidden bg-black text-white">
@@ -400,7 +411,7 @@ export function DetailHero({
                 <button
                   type="button"
                   data-testid="detail-trailer-btn"
-                  onClick={() => setTrailerOpen((open) => !open)}
+                  onClick={openTrailer}
                   aria-pressed={trailerOpen}
                   disabled={trailerOpen}
                   className={`inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all self-stretch xs:self-start w-full xs:w-auto ${
@@ -450,26 +461,45 @@ export function DetailHero({
               )}
             </div>
 
-            {/* Icon-only action cluster, held directly beneath the poster. It
-                stays mounted so it can fade in and out, but when closed it
-                contributes no height and no hover targets, so the rail's height
-                is driven purely by the poster and the buttons always sit
-                exactly under it. */}
+            {/* Icon-only action cluster, held directly beneath the poster. The
+                two actions stack vertically inside a frosted (glassmorphism)
+                pill. It stays mounted so it can fade in and out, but when
+                closed it contributes no height and no hover targets, so the
+                rail's height is driven purely by the poster and the buttons
+                always sit exactly under it. */}
             <div
               data-testid="trailer-action-cluster"
               aria-hidden={!trailerOpen}
-              className={`flex flex-wrap justify-end gap-2 transition-opacity duration-300 ease-out ${
+              className={`inline-flex flex-col items-center gap-1.5 rounded-full border border-white/15 bg-white/10 p-1.5 backdrop-blur-md shadow-2xl transition-opacity duration-300 ease-out ${
                 trailerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none invisible'
               }`}
             >
               {isReleased && (
+                // The play button owns the sliding label, so it is the one that
+                // has to clip its own overflow.
                 <Link
                   to={playUrl}
                   aria-label={playLabel}
                   title={playLabel}
-                  className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white hover:bg-zinc-200 text-black shadow-lg transition-all active:scale-95"
+                  className="group/railplay relative inline-flex items-center justify-center h-10 min-w-10 px-3 rounded-full bg-white hover:bg-zinc-200 text-black shadow-lg transition-all active:scale-95 overflow-hidden"
                 >
-                  <Play className="w-4 h-4 fill-black" />
+                  <Play className="w-4 h-4 fill-black shrink-0 relative z-10" />
+                  {/* Slides out from behind the icon once the trailer has been
+                      replayed past twice. Width and margin both animate from
+                      zero, so the collapsed state leaves no stray gap. The pulse
+                      is a box-shadow ring, which the button's `overflow-hidden`
+                      would clip if the ring were on the button instead. */}
+                  <span
+                    data-testid="watch-now-label"
+                    aria-hidden={!showWatchNowLabel}
+                    className={`inline-flex items-center whitespace-nowrap rounded-full text-[11px] font-bold leading-none text-black transition-all duration-300 ease-out ${
+                      showWatchNowLabel
+                        ? 'ml-1.5 max-w-[7rem] px-1 py-0.5 opacity-100 animate-watch-now-pulse'
+                        : 'ml-0 max-w-0 px-0 opacity-0'
+                    }`}
+                  >
+                    {playLabel}
+                  </span>
                 </Link>
               )}
               {onToggleWatchlist && (
@@ -481,7 +511,7 @@ export function DetailHero({
                   className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all active:scale-95 ${
                     isSaved
                       ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30'
-                      : 'bg-zinc-900/90 hover:bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
+                      : 'bg-white/5 hover:bg-white/15 border-white/15 text-zinc-200 hover:text-white'
                   }`}
                 >
                   <Star className={`w-4 h-4 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />

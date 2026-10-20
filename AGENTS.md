@@ -49,6 +49,23 @@ The hero's primary actions have two homes, and the swap is the point:
   circular buttons in the right rail, stacked directly under the poster in the
   top-right corner. They carry `aria-label`/`title` because the text is gone.
 
+The rail's action cluster is a **vertical glassmorphism pill** — the two icons
+stack in a column inside a frosted capsule (`rounded-full border-white/15
+bg-white/10 backdrop-blur-md p-1.5`, `flex-col items-center gap-1.5`). Keep the
+frost, the vertical order (play above star) and the icon-only default: the pill
+is meant to read as a floating control, not a toolbar. The cluster is centred,
+and the play button is the wider child, so the star sits mid-pill and the play
+button's right edge lands flush with the poster's.
+
+Once the viewer has played the trailer past twice, the play button **slides out
+a `Watch Now` label** (`trailerPlays > 2`). It animates `max-width` + `margin`
+from zero rather than to `auto`, so the slide has something to interpolate and
+the collapsed state leaves no stray gap; the button sizes with `min-w-10 px-3`
+so it can grow. The pulse is on the label text itself
+(`.animate-watch-now-pulse`, opacity + scale) and not a box-shadow ring — the
+label sits on the button's white fill, where a white ring would be invisible.
+`prefers-reduced-motion` disables the pulse.
+
 The right rail is `items-end` + `md:self-stretch`: the poster is pinned to the
 top-right corner, and because the rail spans the hero's height the buttons sit
 under the poster rather than drifting to the hero's vertical centre. The poster

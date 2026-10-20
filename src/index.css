@@ -391,9 +391,30 @@ body {
   animation: scale-up 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* The "Watch Now" label that slides out of the play button once the trailer has
+   been replayed a couple of times. The pulse animates the text itself rather
+   than a box-shadow ring: the label sits on the button's white fill, where a
+   white ring would be invisible. */
+@keyframes watch-now-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.06);
+  }
+}
+
+.animate-watch-now-pulse {
+  animation: watch-now-pulse 1.6s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in,
-  .animate-scale-up {
+  .animate-scale-up,
+  .animate-watch-now-pulse {
     animation: none;
   }
 }
