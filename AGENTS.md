@@ -42,6 +42,27 @@ app, downloading the APK straight from GitHub releases
 (`APP_DOWNLOAD_URL` in `src/lib/brand.ts`). Never route the download through
 another host.
 
+## Person profiles
+
+frameXTV.xyz has **no** person page and its backend has **no** person endpoint:
+every `/api/person*` path falls through to the root banner, and
+`/api/details?type=person` ignores the type. So there is nothing to port — the
+profile page at `/person/:tmdbId` is an addition. It is assembled from keyless,
+CORS-permissive sources in `src/lib/people.ts`:
+
+- **Wikidata** — identity and filmography. A cast member's TMDB person id
+  (`P4985`) resolves to the entity; credited works (`P161`) carry TMDB ids
+  (`P4947`), so filmography rows link into our own detail pages.
+- **Wikipedia REST** — the biography prose.
+- **TVMaze** — a portrait fallback when Commons has no image.
+
+TMDB itself is not usable: the only reachable key is the one behind
+`api.framextv.tech/api/proxy`, and it is dead (`Invalid API key`). Do not
+reintroduce a TMDB dependency without a working key.
+
+Sorting goes through `SortSelect`, shared with `DiscoveryFilterBar`, so the
+filmography and the browse grids cannot drift apart.
+
 ## Verification
 
 Browser checks live in `/tmp/verify.cjs` and `/tmp/verify2.cjs` (Playwright +
