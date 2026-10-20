@@ -39,18 +39,24 @@ import type { FxCastMember, FxDetail, FxItem, FxVideo } from '@/lib/api';
  * player animates from the artwork's on-screen rect to the panel's. That is
  * what makes the morph track the real layout instead of a hard-coded start size.
  *
- * Closing is driven by the video, not by the viewer: when the trailer ends the
- * panel returns to the backdrop on its own (see `onClose`'s use in the parent).
+ * Closing is driven by the video, not by the viewer: the trailer auto-replays
+ * itself twice and, when it finishes with those replays spent, the panel returns
+ * to the backdrop on its own and the rail's play button slides out "Watch Now"
+ * (see the parent's `onTrailerFinish`).
  */
 export function TrailerInline({
   video,
-  onClose,
+  onFinish,
+  replayNonce,
   slotRef,
   posterRef,
   title,
 }: {
   video: FxVideo;
-  onClose: () => void;
+  /** The trailer reached its end. The parent owns the replay/exhaust decision. */
+  onFinish: () => void;
+  /** Bumped by the parent to restart the same trailer from the top. */
+  replayNonce: number;
   slotRef: React.RefObject<HTMLDivElement | null>;
   posterRef: React.RefObject<HTMLImageElement | null>;
   title?: string;
@@ -64,20 +70,16 @@ export function TrailerInline({
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  // Escape is the one way out besides the trailer ending, kept for keyboard
-  // users; there is deliberately no on-screen close affordance.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  // Escape is handled by the parent, which has to cancel any pending
+  // auto-replay at the same time; there is still deliberately no on-screen close
+  // affordance.
 
-  // Closing is driven by the video, not the viewer. With `enablejsapi=1` the
-  // embed answers `{"event":"listening"}` with player state changes, so the
-  // panel can return to the backdrop the moment the trailer finishes (state 0)
-  // without any on-screen control.
+  // The trailer's end is reported to the parent, which decides whether to
+  // replay. With `enablejsapi=1` the embed answers `{"event":"listening"}` with
+  // player state changes, so state 0 (ended) is the signal. `onFinish` is held
+  // in a ref so a rebuilt handler never double-fires on a re-render.
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (!frameRef.current || event.source !== frameRef.current.contentWindow) return;
@@ -87,11 +89,11 @@ export function TrailerInline({
       } catch {
         return;
       }
-      if (payload && payload.event === 'onStateChange' && payload.info === 0) onClose();
+      if (payload && payload.event === 'onStateChange' && payload.info === 0) onFinishRef.current();
     };
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [onClose]);
+  }, []);
 
   // Transform the panel from the artwork's rect to the panel's own, then release
   // it. Kept in a layout effect so the start transform is applied before the
@@ -139,7 +141,11 @@ export function TrailerInline({
       aria-label={title ? `${title} trailer` : 'Media trailer'}
       className={`absolute inset-0 z-20 overflow-hidden bg-black ${entered ? 'opacity-100' : 'opacity-0'}`}
     >
+      {/* Keyed on the replay nonce so a replay is a genuine remount: the embed
+          must start from 0:00, and re-setting src on the same element is not a
+          reliable restart. */}
       <iframe
+        key={replayNonce}
         ref={frameRef}
         src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
         title={video.name || `${title || 'Title'} Official Trailer`}
@@ -191,10 +197,13 @@ export function DetailHero({
   const [posterLoaded, setPosterLoaded] = useState(false);
   const [posterErrored, setPosterErrored] = useState(false);
   const [trailerOpen, setTrailerOpen] = useState(false);
-  // How many times the viewer has sat through the trailer. Once it passes two
-  // replays the rail's play button slides out a "Watch Now" label, on the
-  // theory that someone re-watching the trailer twice wants the film.
-  const [trailerPlays, setTrailerPlays] = useState(0);
+  // The trailer auto-replays twice. `replays` counts how many of those two have
+  // been spent and `replayNonce` is bumped to remount the embed for each one.
+  // When it finishes with both spent we stop looping, close the panel, and
+  // leave the rail's pill on screen with its "Watch Now" label out.
+  const [replays, setReplays] = useState(0);
+  const [replayNonce, setReplayNonce] = useState(0);
+  const [watchNowReady, setWatchNowReady] = useState(false);
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const posterSlotRef = useRef<HTMLDivElement | null>(null);
   const posterImgRef = useRef<HTMLImageElement | null>(null);
@@ -212,13 +221,47 @@ export function DetailHero({
   const trailer = pickTrailer(videos);
   const runtimeLabel = formatRuntime(detail.runtime);
   const typeLabel = detail.type === 'anime' ? 'Anime' : detail.type === 'tv' ? 'TV Series' : 'Movie';
-  // Two full plays, then the third asks them to just watch the thing.
-  const showWatchNowLabel = trailerPlays > 2;
+  // Closing is driven by the video, not the viewer: the trailer auto-replays
+  // itself twice and, when it finishes with those replays spent, the panel
+  // returns to the backdrop on its own and the rail's pill stays on screen with
+  // its "Watch Now" label out (see the parent's `onTrailerFinish`).
+  const showWatchNowLabel = watchNowReady;
+  // The pill has two reasons to be on screen: the trailer is playing, or it has
+  // run its course and is asking the viewer to watch the film instead.
+  const showRailActions = trailerOpen || watchNowReady;
 
   const openTrailer = () => {
-    setTrailerPlays((plays) => plays + 1);
+    setReplays(0);
+    setReplayNonce((nonce) => nonce + 1);
     setTrailerOpen(true);
   };
+
+  // The trailer reached its end. Spend an auto-replay if any are left and
+  // remount the embed for it; otherwise this was the third play, so stop looping,
+  // close the panel, and surface the label out on the rail.
+  const onTrailerFinish = () => {
+    if (replays < 2) {
+      setReplays((count) => count + 1);
+      setReplayNonce((nonce) => nonce + 1);
+      return;
+    }
+    setTrailerOpen(false);
+    setWatchNowReady(true);
+  };
+
+  // Escape is a hard stop at any point in the three plays. It clears the flag so
+  // the label cannot appear from a course the viewer abandoned.
+  useEffect(() => {
+    if (!trailerOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setTrailerOpen(false);
+      setReplays(0);
+      setWatchNowReady(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [trailerOpen]);
 
   return (
     <div className="media-surface relative w-full overflow-hidden bg-black text-white">
@@ -256,7 +299,8 @@ export function DetailHero({
           title={detail.title}
           slotRef={backdropSlotRef}
           posterRef={posterImgRef}
-          onClose={() => setTrailerOpen(false)}
+          replayNonce={replayNonce}
+          onFinish={onTrailerFinish}
         />
       )}
 
@@ -333,13 +377,21 @@ export function DetailHero({
                 trailer plays it hides (still occupying its space, so nothing
                 reflows) because the same actions reappear as icons in the
                 top-right rail; when the trailer ends the row fades back in
-                exactly where it was. */}
+                exactly where it was. Once the trailer has run its three-play
+                course the rail's pill keeps the play and save actions, so the
+                row drops its own copies to avoid showing the same control twice
+                — Watch Trailer stays put so the trailer can still be replayed. */}
             <div
               className={`flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2 w-full md:min-w-[11rem] transition-opacity duration-300 ${
                 trailerOpen ? 'invisible opacity-0' : 'visible opacity-100'
               }`}
             >
-              <div className="relative inline-flex flex-col gap-1 group/unreleased w-full xs:w-auto">
+              <div
+                aria-hidden={showWatchNowLabel}
+                className={`relative inline-flex flex-col gap-1 group/unreleased w-full xs:w-auto transition-opacity duration-300 ${
+                  showWatchNowLabel ? 'invisible opacity-0' : 'visible opacity-100'
+                }`}
+              >
                 {isReleased ? (
                   <Link
                     to={playUrl}
@@ -396,6 +448,8 @@ export function DetailHero({
                   data-testid="detail-watchlist-btn"
                   onClick={onToggleWatchlist}
                   className={`inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all active:scale-[0.98] cursor-pointer self-stretch xs:self-start w-full xs:w-auto ${
+                    showWatchNowLabel ? 'invisible opacity-0' : 'visible opacity-100'
+                  } ${
                     isSaved
                       ? 'bg-rose-500/15 border-rose-500/30 text-rose-400 hover:bg-rose-500/25'
                       : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white'
@@ -469,9 +523,9 @@ export function DetailHero({
                 always sit exactly under it. */}
             <div
               data-testid="trailer-action-cluster"
-              aria-hidden={!trailerOpen}
-              className={`inline-flex flex-col items-center gap-1.5 rounded-full border border-white/15 bg-white/10 p-1.5 backdrop-blur-md shadow-2xl transition-opacity duration-300 ease-out ${
-                trailerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none invisible'
+              aria-hidden={!showRailActions}
+              className={`inline-flex flex-col items-center gap-1 rounded-full border border-white/15 bg-white/10 p-1 backdrop-blur-md shadow-2xl transition-opacity duration-300 ease-out ${
+                showRailActions ? 'opacity-100' : 'opacity-0 pointer-events-none invisible'
               }`}
             >
               {isReleased && (
@@ -481,24 +535,22 @@ export function DetailHero({
                   to={playUrl}
                   aria-label={playLabel}
                   title={playLabel}
-                  className="group/railplay relative inline-flex items-center justify-center h-10 min-w-10 px-3 rounded-full bg-white hover:bg-zinc-200 text-black shadow-lg transition-all active:scale-95 overflow-hidden"
+                  className="group/railplay relative inline-flex items-center justify-center h-8 min-w-8 px-2.5 rounded-full bg-white hover:bg-zinc-200 text-black shadow-lg transition-all active:scale-95 overflow-hidden"
                 >
-                  <Play className="w-4 h-4 fill-black shrink-0 relative z-10" />
-                  {/* Slides out from behind the icon once the trailer has been
-                      replayed past twice. Width and margin both animate from
-                      zero, so the collapsed state leaves no stray gap. The pulse
-                      is a box-shadow ring, which the button's `overflow-hidden`
-                      would clip if the ring were on the button instead. */}
+                  <Play className="w-3.5 h-3.5 fill-black shrink-0 relative z-10" />
+                  {/* Slides out from behind the icon once the trailer has run
+                      its three-play course. Width and margin both animate from
+                      zero, so the collapsed state leaves no stray gap. */}
                   <span
                     data-testid="watch-now-label"
                     aria-hidden={!showWatchNowLabel}
-                    className={`inline-flex items-center whitespace-nowrap rounded-full text-[11px] font-bold leading-none text-black transition-all duration-300 ease-out ${
+                    className={`inline-flex items-center whitespace-nowrap rounded-full text-[10px] font-bold leading-none text-black transition-all duration-300 ease-out ${
                       showWatchNowLabel
-                        ? 'ml-1.5 max-w-[7rem] px-1 py-0.5 opacity-100 animate-watch-now-pulse'
+                        ? 'ml-1 max-w-[7rem] px-1 py-0.5 opacity-100 animate-watch-now-pulse'
                         : 'ml-0 max-w-0 px-0 opacity-0'
                     }`}
                   >
-                    {playLabel}
+                    Watch Now
                   </span>
                 </Link>
               )}
@@ -508,13 +560,13 @@ export function DetailHero({
                   onClick={onToggleWatchlist}
                   aria-label={isSaved ? `Remove ${detail.title} from My List` : `Add ${detail.title} to My List`}
                   title={isSaved ? 'In My List' : 'Add to My List'}
-                  className={`inline-flex items-center justify-center w-10 h-10 rounded-full border transition-all active:scale-95 ${
+                  className={`inline-flex items-center justify-center h-8 w-8 rounded-full border transition-all active:scale-95 ${
                     isSaved
                       ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 hover:bg-rose-500/30'
                       : 'bg-white/5 hover:bg-white/15 border-white/15 text-zinc-200 hover:text-white'
                   }`}
                 >
-                  <Star className={`w-4 h-4 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
+                  <Star className={`w-3.5 h-3.5 ${isSaved ? 'fill-rose-400 text-rose-400' : ''}`} />
                 </button>
               )}
             </div>
