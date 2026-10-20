@@ -236,6 +236,51 @@ export async function prefetchPlaylist(playlistUrl: string, signal?: AbortSignal
 }
 
 /**
+ * Warm a whole stream from an already-resolved source, before anything plays.
+ *
+ * Used while the viewer is watching the trailer: the movie's stream is resolved
+ * in the background and every fragment is pulled into Cache Storage, so when
+ * "Watch Now" is pressed the watch page's own resolver finds the same segments
+ * already local and playback starts with no meaningful network wait.
+ *
+ * Two details matter. The resolved source URL can be a master playlist pointing
+ * at renditions, so a master is followed to its first rendition. And a source
+ * URL that already names a media playlist (as our providers hand back) is
+ * walked directly. Both cases go through `prefetchFragments`, which skips
+ * anything already cached, so a redundant call costs nothing.
+ */
+export async function prefetchStreamSource(
+  source: { url?: string; type?: string },
+  signal?: AbortSignal
+): Promise<() => void> {
+  if (!cacheAvailable() || !source?.url) return () => {};
+  try {
+    const response = await fetch(source.url, { credentials: 'omit' });
+    if (!response.ok) return () => {};
+    const text = await response.text();
+
+    const isMaster = /#EXT-X-STREAM-INF/.test(text);
+    if (isMaster) {
+      const rendition = text
+        .split('\n')
+        .map((line) => line.trim())
+        .find((line) => line && !line.startsWith('#'));
+      if (!rendition) return () => {};
+      try {
+        const renditionUrl = new URL(rendition, source.url).toString();
+        return await prefetchPlaylist(renditionUrl, signal);
+      } catch {
+        return () => {};
+      }
+    }
+
+    return prefetchFragments(fragmentUrlsFromPlaylist(text, source.url), signal);
+  } catch {
+    return () => {};
+  }
+}
+
+/**
  * Build an hls.js `fLoader` that serves repeat segment requests from disk.
  *
  * Only plain GETs for whole segments are cached. Anything with a byte range,

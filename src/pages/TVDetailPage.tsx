@@ -3,7 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Calendar, Clock, ImageOff, Play, Star } from 'lucide-react';
 import { CastSection, DetailHero, DetailSkeleton, DetailsError, RecommendationsSection } from '@/components/DetailShared';
 import SeasonSelector from '@/components/SeasonSelector';
-import { useDetails, useSeason } from '@/hooks/useApiQueries';
+import { useDetails, useSeason, useWarmStream } from '@/hooks/useApiQueries';
 import { extractId, isUnavailable, mediaId } from '@/lib/id';
 import { getReleaseState } from '@/lib/releaseState';
 import { formatRemaining, formatTime, getLatestForTitle } from '@/lib/watchProgress';
@@ -193,6 +193,15 @@ export default function TVDetailPage() {
 
   const isSaved = useIsInMyList('tv', clean);
 
+  // Warm the episode the play button will launch: the resumed one when there is
+  // progress, otherwise the first of the selected season. Computed before the
+  // early returns so the hook order is stable.
+  const progress = getLatestForTitle('tv', clean);
+  const canResume = Boolean(progress && !progress.completed && progress.timestamp > 15);
+  const warmSeason = canResume ? progress!.season || 1 : activeSeason;
+  const warmEpisode = canResume ? progress!.episode || 1 : 1;
+  const warmStream = useWarmStream(clean, 'tv', warmSeason, warmEpisode);
+
   if (unavailable) return <NotFoundPage />;
   if (isLoading) return <DetailSkeleton />;
   if (isError || !detail || !clean) {
@@ -216,8 +225,6 @@ export default function TVDetailPage() {
     );
   };
 
-  const progress = getLatestForTitle('tv', clean);
-  const canResume = Boolean(progress && !progress.completed && progress.timestamp > 15);
   const playUrl = canResume
     ? `/watch/${clean}/${progress!.season || 1}/${progress!.episode || 1}`
     : `/watch/${clean}/${activeSeason}/1`;
@@ -237,6 +244,7 @@ export default function TVDetailPage() {
         playLabel={playLabel}
         resumeSubtitle={resumeSubtitle}
         isSaved={isSaved}
+        onWarmStream={warmStream}
         onToggleWatchlist={() =>
           toggleMyList({
             mediaType: 'tv',

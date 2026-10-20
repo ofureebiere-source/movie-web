@@ -217,6 +217,14 @@ export interface DetailHeroProps {
   resumeSubtitle?: string;
   isSaved?: boolean;
   onToggleWatchlist?: () => void;
+  /**
+   * Resolve and warm the title's stream in the background while the trailer is
+   * on screen. Called once per trailer open, after a short grace period so a
+   * viewer who immediately closes the trailer does not trigger a resolve they
+   * will never use. The detail page owns this because it alone knows the id,
+   * type and season/episode the watch page will ask for.
+   */
+  onWarmStream?: () => void;
 }
 
 export function DetailHero({
@@ -226,6 +234,7 @@ export function DetailHero({
   resumeSubtitle,
   isSaved = false,
   onToggleWatchlist,
+  onWarmStream,
 }: DetailHeroProps) {
   const [posterLoaded, setPosterLoaded] = useState(false);
   const [posterErrored, setPosterErrored] = useState(false);
@@ -284,6 +293,20 @@ export function DetailHero({
     setTrailerOpen(false);
     setWatchNowReady(true);
   };
+
+  // Resolve the film while the trailer holds the viewer's attention, so Watch
+  // Now is a local start rather than a fresh resolve. The effect is keyed on
+  // `trailerOpen` so it fires once per open, not once per replay, and the grace
+  // period means a viewer who bounces off the trailer never pays for a resolve
+  // they will not use. `onWarmStream` is held in a ref so a rebuilt callback
+  // cannot re-trigger the resolve mid-trailer.
+  const onWarmStreamRef = useRef(onWarmStream);
+  onWarmStreamRef.current = onWarmStream;
+  useEffect(() => {
+    if (!trailerOpen) return;
+    const timer = window.setTimeout(() => onWarmStreamRef.current?.(), 1500);
+    return () => window.clearTimeout(timer);
+  }, [trailerOpen]);
 
   // Escape is a hard stop at any point in the three plays. It clears the flag so
   // the label cannot appear from a course the viewer abandoned.

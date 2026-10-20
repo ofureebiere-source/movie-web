@@ -5,6 +5,7 @@ import Player from '@/components/Player';
 import { getStream, type FxStream, type MediaType } from '@/lib/api';
 import { mediaId } from '@/lib/id';
 import { saveProgress } from '@/lib/watchProgress';
+import { readWarmedStream } from '@/lib/streamWarm';
 import { SITE_NAME } from '@/lib/brand';
 
 /**
@@ -53,6 +54,18 @@ export default function EmbedPage() {
   const stream = useQuery<FxStream | null>({
     queryKey: ['embed-stream', mediaType, mediaKey, seasonNumber, episodeNumber, provider ?? 'auto', resolveNonce],
     queryFn: async () => {
+      // Prefer a stream the host warmed while the trailer played. It is the same
+      // resolve this query would make, just already done, so playback starts
+      // without waiting on the aggregator. Only used on the first attempt: a
+      // server hop or a retry must genuinely re-resolve.
+      const warmed = readWarmedStream(
+        mediaType,
+        mediaKey,
+        mediaType === 'movie' ? undefined : seasonNumber,
+        mediaType === 'movie' ? undefined : episodeNumber
+      );
+      if (warmed?.sources?.length && !provider && resolveNonce === '0') return warmed;
+
       const ask = () =>
         getStream(mediaKey, mediaType, {
           season: mediaType === 'movie' ? undefined : seasonNumber,

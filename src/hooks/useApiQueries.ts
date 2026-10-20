@@ -1,5 +1,7 @@
+import { useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAnimeDetail, searchAnime } from '@/lib/anilist';
+import { warmStream } from '@/lib/streamWarm';
 import {
   discover,
   discoverAnime,
@@ -230,6 +232,28 @@ export function useProviders() {
     queryFn: getProviders,
     staleTime: STALE.providers,
   });
+}
+
+/**
+ * Warm a title's stream while the trailer plays.
+ *
+ * The watch page renders the player in a same-origin iframe (`/embed/...`), and
+ * an iframe is a separate JS context with its own TanStack cache — so warming
+ * the host's cache alone would not save the embed anything. `warmStream` bridges
+ * that gap through Cache Storage and `sessionStorage`; this hook is just the
+ * component-facing wrapper so a detail page can hand it to `DetailHero`.
+ */
+export function useWarmStream(
+  id: string | undefined,
+  type: MediaType,
+  season?: number,
+  episode?: number
+) {
+  const clean = (id || '').trim();
+  return useCallback(() => {
+    if (!clean) return;
+    void warmStream(clean, type, { season, episode });
+  }, [clean, type, season, episode]);
 }
 
 /** Per-title metadata (title/year/poster). */

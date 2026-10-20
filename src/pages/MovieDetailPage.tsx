@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CastSection, DetailHero, DetailSkeleton, DetailsError, RecommendationsSection } from '@/components/DetailShared';
-import { useDetails } from '@/hooks/useApiQueries';
+import { useDetails, useWarmStream } from '@/hooks/useApiQueries';
 import { extractId, isUnavailable, mediaId } from '@/lib/id';
 import { formatRemaining, formatTime, getLatestForTitle } from '@/lib/watchProgress';
 import { useIsInMyList, toggleMyList } from '@/lib/watchlist';
@@ -40,6 +40,7 @@ export default function MovieDetailPage() {
   }, [detail?.title, detail?.year]);
 
   const isSaved = useIsInMyList('movie', clean);
+  const warmStream = useWarmStream(clean, 'movie');
 
   if (unavailable) return <NotFoundPage />;
   if (isLoading) return <DetailSkeleton />;
@@ -72,6 +73,7 @@ export default function MovieDetailPage() {
         playLabel={playLabel}
         resumeSubtitle={resumeSubtitle}
         isSaved={isSaved}
+        onWarmStream={warmStream}
         onToggleWatchlist={() =>
           toggleMyList({
             mediaType: 'movie',
