@@ -154,3 +154,25 @@ Again", so a retry cannot be served from the query cache. `PlayerEmbed` does not
 treat the iframe's `load` event as readiness: a dead stream still fires `load`
 for its error page, which previously masked every failure and suppressed
 failover.
+
+
+## Provider pre-resolution and Cloudflare
+
+`warmStream` resolves a title **once per provider**, not once per title. Each
+result is stashed in `sessionStorage` under
+`framextv_warm_stream:<type>:<id>[:<s>:<e>]:<provider|auto>`, and `EmbedPage`
+reads that key on its first attempt (a server hop or a retry always re-resolves,
+via `&r=`). Warming fires in three places — detail page on mount, detail page on
+trailer open, and the watch page on mount — so a cold link or refresh resolves
+in the background while the embed boots. Each provider resolves inside its own
+`try`, so one slow or refusing server cannot cancel the batch. Only the auto
+resolution warms the segment cache; pre-resolving every provider's segments
+would be a large amount of traffic for servers the viewer probably never picks.
+
+The catalogue sits behind Cloudflare, which intermittently resets the
+connection (`curl` reports `http=000`) or answers with a challenge instead of
+JSON. `api.ts` therefore sends browser-shaped headers (`accept`,
+`accept-language`) with `mode: 'cors'` and `credentials: 'omit'`, and retries a
+thrown network error, a non-JSON body, or a 5xx up to three times with backoff.
+Do not move these calls behind a server proxy: a plain client fetch is exactly
+what avoids the challenge.
