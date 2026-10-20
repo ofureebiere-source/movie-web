@@ -32,8 +32,14 @@ the companion app) must not change how the dark site looks or behaves.
 
 ## Trailer
 
-The trailer renders **inline**, morphing into the poster slot; closing it
-restores the poster. Do not reintroduce a modal/overlay.
+The trailer renders **inside the backdrop panel**, morphing from the poster's
+rect into the backdrop's own area. It must not become a modal or a separate
+dialog: there is deliberately **no close button and no scrim**, because Watch
+Movie / Add to My List stay live underneath while it plays and only Watch
+Trailer greys out. Closing is video-driven — the YouTube embed is loaded with
+`enablejsapi=1` and the panel closes itself on `onStateChange` state 0 (ended).
+Escape remains the keyboard-only escape hatch. Do not reintroduce a modal
+overlay or an on-screen cancel affordance.
 
 ## Install banner
 
@@ -95,3 +101,25 @@ everything it holds; `PlayerEmbed` forwards it through `onFailure`, and
 `WatchPage` owns the failover budget (`triedProviders`) so it can hop through
 the provider bar and show the error overlay only once every provider has been
 tried. Do not let the frame show its own error before the host has had a turn.
+
+## Stream resolution
+
+Upstream answers `/api/stream` from a pool of flaky providers: the *same*
+request can return `sources: []` once and five sources a moment later. Two
+rules follow, and both were bugs before:
+
+- **Never cache an empty resolution.** `EmbedPage`'s query uses a functional
+  `staleTime` (0 when `sources` is empty, 10 min when it is not). Caching the
+  empty body for ten minutes is what made titles "hard to re-resolve" — a
+  reload hit the poisoned cache instead of asking again. The query function
+  also re-asks up to twice with a short backoff before giving up.
+- **A no-source body is a dead end for this server, not for the title.** The
+  embed posts `frameXTV:error` immediately on an empty resolution so the host
+  hops providers right away instead of waiting out the frame watchdog.
+
+Retries must be *new* requests. `WatchPage` keeps a `resolveNonce` that rides in
+the embed URL as `&r=`, bumped on every failover hop and on the overlay's "Try
+Again", so a retry cannot be served from the query cache. `PlayerEmbed` does not
+treat the iframe's `load` event as readiness: a dead stream still fires `load`
+for its error page, which previously masked every failure and suppressed
+failover.

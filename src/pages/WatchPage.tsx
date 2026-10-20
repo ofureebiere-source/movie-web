@@ -136,6 +136,9 @@ export default function WatchPage() {
   // whole provider list has been walked.
   const [failoverNotice, setFailoverNotice] = useState<string | null>(null);
   const [exhausted, setExhausted] = useState(false);
+  // Rides in the embed URL so every hop or retry forces a fresh stream request
+  // instead of reusing a cached empty resolution.
+  const [resolveNonce, setResolveNonce] = useState(0);
   const triedProviders = useRef<Set<string>>(new Set());
 
   const handlePlayerFailure = useCallback(() => {
@@ -151,6 +154,7 @@ export default function WatchPage() {
     tried.add(next.id);
     setFailoverNotice(`Switching to ${next.name}…`);
     setActiveProvider(next.id);
+    setResolveNonce((value) => value + 1);
   }, [activeProvider, providers]);
 
   const promptStarted = useRef(false);
@@ -494,14 +498,17 @@ export default function WatchPage() {
   const embedUrl = useMemo(() => {
     const startParam = resumeTime > 15 ? `&t=${Math.floor(resumeTime)}` : '';
     const providerParam = activeProvider ? `&provider=${encodeURIComponent(activeProvider)}` : '';
+    // A resolve nonce makes every retry a new embed URL, so it is a new stream
+    // request rather than a cache hit on the empty resolution that failed.
+    const nonceParam = resolveNonce > 0 ? `&r=${resolveNonce}` : '';
     if (mediaType === 'anime') {
       const titleParam = detail?.title ? `&title=${encodeURIComponent(detail.title)}` : '';
-      return `/embed/anime?id=${anilistId}&type=anime&season=1&episode=${episodeNumber}&sub_type=sub&autoplay=1&origin=internal${providerParam}${titleParam}${startParam}`;
+      return `/embed/anime?id=${anilistId}&type=anime&season=1&episode=${episodeNumber}&sub_type=sub&autoplay=1&origin=internal${providerParam}${titleParam}${startParam}${nonceParam}`;
     }
     return isTv
-      ? `/embed/${tmdbId}/${seasonNumber}/${episodeNumber}?autoplay=1&origin=internal${providerParam}${startParam}`
-      : `/embed/${tmdbId}?autoplay=1&origin=internal${providerParam}${startParam}`;
-  }, [mediaType, isTv, tmdbId, anilistId, seasonNumber, episodeNumber, resumeTime, detail?.title, activeProvider]);
+      ? `/embed/${tmdbId}/${seasonNumber}/${episodeNumber}?autoplay=1&origin=internal${providerParam}${startParam}${nonceParam}`
+      : `/embed/${tmdbId}?autoplay=1&origin=internal${providerParam}${startParam}${nonceParam}`;
+  }, [mediaType, isTv, tmdbId, anilistId, seasonNumber, episodeNumber, resumeTime, detail?.title, activeProvider, resolveNonce]);
 
   const selectEpisode = useCallback(
     (targetSeason: number, targetEpisode: number) => {
@@ -751,6 +758,14 @@ export default function WatchPage() {
             onFailure={handlePlayerFailure}
             failoverNotice={failoverNotice}
             showErrorOverlay={exhausted}
+            onRetry={() => {
+              // A manual retry is a brand-new attempt: re-arm the failover
+              // budget and force a fresh stream resolution.
+              triedProviders.current.clear();
+              setExhausted(false);
+              setFailoverNotice(null);
+              setResolveNonce((value) => value + 1);
+            }}
             onPlayerReady={() => {
               // A provider answered, so clear the hop notice and re-arm the
               // failover budget for whatever comes next.

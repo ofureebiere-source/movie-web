@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Player from '@/components/Player';
-import { getStream, type MediaType } from '@/lib/api';
+import { getStream, type FxStream, type MediaType } from '@/lib/api';
 import { mediaId } from '@/lib/id';
 import { saveProgress } from '@/lib/watchProgress';
 import { SITE_NAME } from '@/lib/brand';
@@ -40,27 +40,60 @@ export default function EmbedPage() {
   const provider = params.get('provider') || params.get('server') || undefined;
   const customTitle = params.get('title') || undefined;
   const customPoster = params.get('poster') || params.get('backdrop') || undefined;
+  // Bumped by the host when the viewer asks to try again. It rides in the URL so
+  // a retry is a genuinely new request instead of a cache hit on the empty
+  // resolution that made the title unplayable in the first place.
+  const resolveNonce = params.get('r') || '0';
 
   useEffect(() => {
     document.title = `${SITE_NAME} Embed`;
     document.body.style.background = '#000';
   }, []);
 
-  const stream = useQuery({
-    queryKey: ['embed-stream', mediaType, mediaKey, seasonNumber, episodeNumber, provider ?? 'auto'],
-    queryFn: () =>
-      getStream(mediaKey, mediaType, {
-        season: mediaType === 'movie' ? undefined : seasonNumber,
-        episode: mediaType === 'movie' ? undefined : episodeNumber,
-        provider,
-      }),
+  const stream = useQuery<FxStream | null>({
+    queryKey: ['embed-stream', mediaType, mediaKey, seasonNumber, episodeNumber, provider ?? 'auto', resolveNonce],
+    queryFn: async () => {
+      const ask = () =>
+        getStream(mediaKey, mediaType, {
+          season: mediaType === 'movie' ? undefined : seasonNumber,
+          episode: mediaType === 'movie' ? undefined : episodeNumber,
+          provider,
+        });
+      let body = await ask();
+      // A flaky provider can answer with an empty source list on the first ask
+      // and a good one moments later. Re-asking once here re-resolves the title
+      // immediately instead of making the viewer wait for the host to hop
+      // servers, which is what made re-resolving feel broken.
+      for (let attempt = 0; attempt < 2 && !body?.sources?.length; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)));
+        body = await ask();
+      }
+      return body;
+    },
     enabled: Boolean(mediaKey),
-    staleTime: 600_000,
+    // A resolution that yielded no source is worthless to cache: holding it for
+    // ten minutes is what made a title hard to re-resolve after a flaky server.
+    // Only a resolution that actually produced a source is worth remembering.
+    staleTime: (query: { state: { data?: FxStream | null } }) =>
+      query.state.data?.sources?.length ? 600_000 : 0,
+    gcTime: 900_000,
     retry: 2,
   });
 
   const sources = stream.data?.sources ?? [];
   const activeSource = sources[0];
+  const noSource = Boolean(mediaKey) && !stream.isLoading && !activeSource;
+
+  // A resolution with zero sources is a dead end for this server. Report it to
+  // the host straight away rather than waiting out the frame watchdog, so the
+  // watch page can hop to another provider without the viewer seeing a stall.
+  useEffect(() => {
+    if (!noSource) return;
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ event: 'frameXTV:error', message: 'No playable source for this title.' }, '*');
+    }
+  }, [noSource, resolveNonce]);
+
 
   if (!mediaKey) {
     return (

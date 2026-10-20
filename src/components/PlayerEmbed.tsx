@@ -43,10 +43,23 @@ export interface PlayerEmbedProps {
   failoverNotice?: string | null;
   /** True when the owner has exhausted every server and wants the overlay. */
   showErrorOverlay?: boolean;
+  /**
+   * Called when the viewer asks to try again. The owner re-arms its failover
+   * budget and forces a fresh stream resolution; the frame does not retry the
+   * same dead source on its own.
+   */
+  onRetry?: () => void;
 }
 
-/** How long to wait for `frameXTV:ready` before treating the frame as failed. */
-const READY_TIMEOUT_MS = 12000;
+/**
+ * How long to wait for `frameXTV:ready` before treating the frame as failed.
+ *
+ * `ready` is announced by the player document itself (on mount and on first
+ * play), not by the iframe's `load` event: an iframe pointed at a dead stream
+ * still fires `load` for its error page, so `load` proves nothing. This window
+ * is therefore the only backstop for a frame that never announces itself.
+ */
+const READY_TIMEOUT_MS = 15000;
 
 const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function PlayerEmbed(
   {
@@ -61,6 +74,7 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
     onFailure,
     failoverNotice = null,
     showErrorOverlay = false,
+    onRetry,
   },
   ref
 ) {
@@ -225,6 +239,10 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
               <button
                 type="button"
                 onClick={() => {
+                  if (onRetry) {
+                    onRetry();
+                    return;
+                  }
                   setFailed(false);
                   setReady(false);
                   reportedRef.current = false;
@@ -278,7 +296,6 @@ const PlayerEmbed = forwardRef<PlayerEmbedHandle, PlayerEmbedProps>(function Pla
           className="w-full h-full border-0 bg-black"
           allow="autoplay; fullscreen; picture-in-picture; encrypted-media; display-capture; presentation"
           allowFullScreen
-          onLoad={() => setReady(true)}
           onError={() => reportFailure('error')}
           key={`${embedUrl}-${reloadKey}`}
         />

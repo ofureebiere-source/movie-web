@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AlertTriangle,
   AudioLines,
   Check,
   Maximize,
@@ -174,6 +175,10 @@ export default function Player({
   // loading overlay: before the first frame the viewer sees the connect stages,
   // after it they only see the light buffering spinner.
   const [hasStarted, setHasStarted] = useState(false);
+  // The reference splits "the source answered" from "frames are flowing": once
+  // metadata has loaded but before the first frame it shows a second stage,
+  // "Analyzing stream & audio channels...". `analyzing` is that window.
+  const [analyzing, setAnalyzing] = useState(false);
   const [buffered, setBuffered] = useState<Array<[number, number]>>([]);
   const [error, setError] = useState<string | null>(null);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -319,6 +324,7 @@ export default function Player({
 
     setError(null);
     setHasStarted(false);
+    setAnalyzing(false);
     resumeApplied.current = false;
 
     const restore = () => {
@@ -815,6 +821,7 @@ export default function Player({
         onPlaying={() => {
           setBuffering(false);
           setHasStarted(true);
+          setAnalyzing(false);
           // The current source is genuinely playing, so the failover budget is
           // restored and any "switching servers" notice is dismissed.
           failoverCount.current = 0;
@@ -822,6 +829,7 @@ export default function Player({
         }}
         onLoadedMetadata={(event) => {
           const video = event.currentTarget;
+          setAnalyzing(true);
           setDuration(video.duration || 0);
           if (!resumeApplied.current && startTime > 15) {
             resumeApplied.current = true;
@@ -970,6 +978,20 @@ export default function Player({
         </div>
       )}
 
+      {/* Second stage, straight from the reference: the source has answered but
+          frames have not arrived yet, so the copy moves on to "Analyzing stream
+          & audio channels..." instead of repeating the connecting card. */}
+      {!hasStarted && analyzing && !error && !buffering && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm z-30 space-y-4 animate-fade-in p-4">
+          <div className="relative z-10 flex flex-col items-center space-y-3 p-4 sm:p-5 rounded-2xl bg-zinc-950/80 border border-white/[0.08] shadow-2xl backdrop-blur-xl max-w-xs sm:max-w-sm w-full text-center">
+            <div className="w-10 h-10 rounded-full border-2 border-rose-500/20 border-t-rose-500 animate-spin" />
+            <p className="text-xs font-mono font-bold uppercase tracking-wider text-white animate-pulse">
+              Analyzing stream &amp; audio channels...
+            </p>
+          </div>
+        </div>
+      )}
+
       {buffering && !error && hasStarted && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none bg-black/20">
           <div className="w-10 h-10 rounded-full border-2 border-white/20 border-t-white animate-spin" />
@@ -985,10 +1007,20 @@ export default function Player({
       )}
 
       {error && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
-          <div className="max-w-sm text-center space-y-3">
-            <p className="text-sm font-semibold text-white">{error}</p>
-            <div className="flex items-center justify-center gap-2">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md p-4 sm:p-6 text-center animate-fade-in"
+        >
+          <div className="flex flex-col items-center space-y-3 sm:space-y-4 p-5 sm:p-8 rounded-2xl bg-zinc-950/90 border border-zinc-800/90 shadow-2xl max-w-xs sm:max-w-md w-full">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-500 flex items-center justify-center shadow-inner">
+              <AlertTriangle className="w-6 h-6 sm:w-7 sm:h-7" aria-hidden="true" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm sm:text-lg font-bold text-white tracking-tight">Stream Not Found</h3>
+              <p className="text-[11px] sm:text-xs text-zinc-400 font-sans leading-relaxed">{error}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1 w-full justify-center">
               <button
                 type="button"
                 onClick={() => {
@@ -999,9 +1031,9 @@ export default function Player({
                     void video.play().catch(() => undefined);
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black text-xs font-bold"
+                className="flex items-center justify-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-black text-xs font-bold rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-md cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
+                <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
                 <span>Retry</span>
               </button>
               {sources.length > 1 && onSelectSource && (
@@ -1011,10 +1043,20 @@ export default function Player({
                     setError(null);
                     selectSource((activeSourceIndex + 1) % sources.length);
                   }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 text-white text-xs font-bold border border-zinc-700"
+                  className="flex items-center justify-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-black text-xs font-bold rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-md cursor-pointer"
                 >
-                  <SkipForward className="w-3.5 h-3.5" />
-                  <span>Try next server</span>
+                  <SkipForward className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Try Next Source</span>
+                </button>
+              )}
+              {onSelectProvider && providers.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setMenu('servers')}
+                  className="flex items-center justify-center space-x-2 px-3 py-1.5 sm:px-4 sm:py-2 bg-white text-black text-xs font-bold rounded-xl hover:bg-zinc-200 transition-all active:scale-95 shadow-md cursor-pointer"
+                >
+                  <Server className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Switch Server</span>
                 </button>
               )}
             </div>

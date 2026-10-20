@@ -10,7 +10,6 @@ import {
   Star,
   User,
   Video,
-  X,
 } from 'lucide-react';
 import MediaCard from './MediaCard';
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll';
@@ -28,17 +27,20 @@ import type { FxCastMember, FxDetail, FxItem, FxVideo } from '@/lib/api';
  */
 
 /**
- * The trailer player that morphs into the poster's own slot.
+ * The trailer player, morphed into the backdrop's own panel.
  *
- * Clicking Watch Trailer swaps the poster panel for this inline player — no
- * modal, no scrim, no fixed overlay. The panel keeps the poster's exact
- * position and 2:3 footprint, so the transition reads as the artwork turning
- * into the video rather than a dialog appearing over it.
+ * Clicking Watch Trailer does not open a dialog: the wide backdrop panel itself
+ * becomes the video, so the trailer plays in exactly the area the artwork
+ * occupied and nothing is layered over it — no scrim, no chrome, no close
+ * button. The poster and the Watch Movie / Add to My List row below stay
+ * visible throughout; only Watch Trailer greys out for the duration.
  *
- * `slotRef` is the poster panel itself, and `posterRef` the `<img>` inside it:
- * the player animates from the poster's on-screen rect to the panel's, which
- * is what makes the morph track the real layout (a narrower viewport stacks
- * the panel differently) instead of a hard-coded start size.
+ * `slotRef` is the backdrop panel and `posterRef` the `<img>` inside it, so the
+ * player animates from the artwork's on-screen rect to the panel's. That is
+ * what makes the morph track the real layout instead of a hard-coded start size.
+ *
+ * Closing is driven by the video, not by the viewer: when the trailer ends the
+ * panel returns to the backdrop on its own (see `onClose`'s use in the parent).
  */
 export function TrailerInline({
   video,
@@ -55,13 +57,15 @@ export function TrailerInline({
 }) {
   const [entered, setEntered] = useState(false);
   const panelRef = useRef<HTMLDivElement | null>(null);
-  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const frameRef = useRef<HTMLIFrameElement | null>(null);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => setEntered(true));
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  // Escape is the one way out besides the trailer ending, kept for keyboard
+  // users; there is deliberately no on-screen close affordance.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
@@ -70,7 +74,26 @@ export function TrailerInline({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Transform the panel from the poster's rect to the panel's own, then release
+  // Closing is driven by the video, not the viewer. With `enablejsapi=1` the
+  // embed answers `{"event":"listening"}` with player state changes, so the
+  // panel can return to the backdrop the moment the trailer finishes (state 0)
+  // without any on-screen control.
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      if (!frameRef.current || event.source !== frameRef.current.contentWindow) return;
+      let payload: { event?: string; info?: unknown } | null = null;
+      try {
+        payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+      } catch {
+        return;
+      }
+      if (payload && payload.event === 'onStateChange' && payload.info === 0) onClose();
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [onClose]);
+
+  // Transform the panel from the artwork's rect to the panel's own, then release
   // it. Kept in a layout effect so the start transform is applied before the
   // first paint — otherwise the panel would flash at full size first.
   useLayoutEffect(() => {
@@ -88,13 +111,11 @@ export function TrailerInline({
     panel.style.transformOrigin = 'top left';
     panel.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${scaleX}, ${scaleY})`;
     panel.style.opacity = '0.6';
-    panel.style.borderRadius = '0.75rem';
 
     const frame = requestAnimationFrame(() => {
-      panel.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease-out, border-radius 420ms ease-out';
+      panel.style.transition = 'transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms ease-out';
       panel.style.transform = 'translate(0, 0) scale(1, 1)';
       panel.style.opacity = '1';
-      panel.style.borderRadius = '0.75rem';
     });
     const done = window.setTimeout(() => {
       panel.style.transition = '';
@@ -108,10 +129,6 @@ export function TrailerInline({
     };
   }, [slotRef, posterRef]);
 
-  useEffect(() => {
-    closeRef.current?.focus();
-  }, []);
-
   if (!video.key) return null;
 
   return (
@@ -120,25 +137,16 @@ export function TrailerInline({
       data-testid="trailer-inline"
       role="region"
       aria-label={title ? `${title} trailer` : 'Media trailer'}
-      className={`absolute inset-0 z-20 rounded-xl overflow-hidden bg-black border border-white/10 shadow-2xl ${entered ? 'opacity-100' : 'opacity-0'}`}
+      className={`absolute inset-0 z-20 overflow-hidden bg-black ${entered ? 'opacity-100' : 'opacity-0'}`}
     >
       <iframe
-        src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1`}
+        ref={frameRef}
+        src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.key)}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`}
         title={video.name || `${title || 'Title'} Official Trailer`}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         className="w-full h-full border-0"
       />
-      <button
-        ref={closeRef}
-        type="button"
-        data-testid="trailer-inline-close"
-        onClick={onClose}
-        aria-label="Close trailer"
-        className="absolute top-2 right-2 z-30 p-1.5 min-w-[32px] min-h-[32px] flex items-center justify-center rounded-lg bg-black/70 hover:bg-black/90 text-white border border-white/15 transition-all active:scale-95 cursor-pointer focus:outline-none focus:ring-2 focus:ring-white"
-      >
-        <X className="w-4 h-4" />
-      </button>
     </div>
   );
 }
@@ -189,8 +197,6 @@ export function DetailHero({
   // The backdrop panel is the trailer's morph target: the wide artwork becomes
   // the video, while the poster keeps its own slot and stays on screen.
   const backdropSlotRef = useRef<HTMLDivElement | null>(null);
-  // The backdrop `<img>` inside that panel — the morph's starting rect.
-  const backdropImgRef = useRef<HTMLImageElement | null>(null);
 
   const { isReleased } = getReleaseState({
     mediaType: detail.type,
@@ -204,7 +210,7 @@ export function DetailHero({
   const typeLabel = detail.type === 'anime' ? 'Anime' : detail.type === 'tv' ? 'TV Series' : 'Movie';
 
   return (
-    <div className="media-surface relative w-full overflow-hidden bg-black text-white min-h-[380px] sm:min-h-[460px] lg:min-h-[520px] flex flex-col justify-end">
+    <div className="media-surface relative w-full overflow-hidden bg-black text-white">
       {/* The backdrop is the hero's fill, not a blurred wash. It spans the whole
           hero at 16:9 so the wide artwork reads edge to edge, and it doubles as
           the trailer's stage: Watch Trailer morphs this panel into the video,
@@ -216,7 +222,6 @@ export function DetailHero({
       >
         {detail.backdrop ? (
           <img
-            ref={backdropImgRef}
             src={detail.backdrop}
             alt=""
             aria-hidden="true"
@@ -231,27 +236,29 @@ export function DetailHero({
       </div>
 
       {/* The morphing trailer sits above the backdrop but below the copy, so the
-          text stays readable while the video plays. */}
+          text stays readable while the video plays. The morph starts at the
+          poster's rect and expands to the backdrop panel, so the artwork reads
+          as unfolding into the video inside the backdrop's own area. */}
       {trailerOpen && trailer && trailer.key && (
         <TrailerInline
           video={trailer}
           title={detail.title}
           slotRef={backdropSlotRef}
-          posterRef={backdropImgRef}
+          posterRef={posterImgRef}
           onClose={() => setTrailerOpen(false)}
         />
       )}
 
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-10 pb-8 sm:pb-12 z-30">
-        <div className="flex flex-col-reverse md:flex-row items-start md:items-end gap-6 sm:gap-8 lg:gap-10">
+        <div className="flex flex-col-reverse md:flex-row items-start gap-6 sm:gap-8 lg:gap-10">
           {/* The poster is a small companion to the backdrop rather than the
-              hero's main panel: bottom-left, 2:3, sitting over the artwork so
-              the wide backdrop carries the visual weight. It is a sibling of
-              the copy, not inside it, so it stays visible while the trailer
-              plays and only the text fades. */}
+              hero's main panel: top-left, 2:3, sitting over the artwork so the
+              wide backdrop carries the visual weight. The reference top-aligns
+              it with the copy (`items-start`), which is what keeps it level with
+              the badge row and title instead of hanging below the action row. */}
           <div
             ref={posterSlotRef}
-            className="w-24 sm:w-28 md:w-32 aspect-[2/3] rounded-lg overflow-hidden bg-zinc-900 border border-white/15 shadow-2xl shrink-0 relative"
+            className="w-24 sm:w-28 md:w-32 aspect-[2/3] rounded-lg overflow-hidden bg-zinc-900 border border-white/15 shadow-2xl shrink-0 mx-auto md:mx-0 relative"
           >
             {detail.poster && !posterErrored ? (
               <>
@@ -273,11 +280,12 @@ export function DetailHero({
             )}
           </div>
 
-          <div
-            className={`flex-1 space-y-4 text-left w-full transition-opacity duration-300 ${
-              trailerOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
-          >
+          <div className="flex-1 space-y-4 text-left w-full">
+            <div
+              className={`space-y-4 transition-opacity duration-300 ${
+                trailerOpen ? 'opacity-0' : 'opacity-100'
+              }`}
+            >
             <div className="flex flex-wrap items-center gap-2">
               <span className="px-2 py-0.5 rounded-full bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold tracking-wider text-zinc-300 uppercase">
                 {typeLabel}
@@ -337,7 +345,12 @@ export function DetailHero({
             {detail.overview && (
               <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl pt-1">{detail.overview}</p>
             )}
+            </div>
 
+            {/* The action row never fades: Watch Movie and Add to My List stay
+                available while the trailer plays, which is the whole point of
+                morphing the trailer into the backdrop instead of covering the
+                hero with a dialog. */}
             <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-2 w-full">
               <div className="relative inline-flex flex-col gap-1 group/unreleased w-full xs:w-auto">
                 {isReleased ? (
@@ -410,11 +423,18 @@ export function DetailHero({
               {trailer && (
                 <button
                   type="button"
-                  onClick={() => setTrailerOpen(true)}
-                  className="inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white text-xs sm:text-sm font-medium transition-all active:scale-[0.98] cursor-pointer self-stretch xs:self-start w-full xs:w-auto"
+                  data-testid="detail-trailer-btn"
+                  onClick={() => setTrailerOpen((open) => !open)}
+                  aria-pressed={trailerOpen}
+                  disabled={trailerOpen}
+                  className={`inline-flex items-center justify-center space-x-2 px-4 py-2.5 rounded-xl border text-xs sm:text-sm font-medium transition-all self-stretch xs:self-start w-full xs:w-auto ${
+                    trailerOpen
+                      ? 'bg-zinc-900/50 border-zinc-800/60 text-zinc-500 cursor-not-allowed'
+                      : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-300 hover:text-white active:scale-[0.98] cursor-pointer'
+                  }`}
                 >
                   <Video className="w-4 h-4" />
-                  <span>Watch Trailer</span>
+                  <span>{trailerOpen ? 'Playing Trailer…' : 'Watch Trailer'}</span>
                 </button>
               )}
             </div>
