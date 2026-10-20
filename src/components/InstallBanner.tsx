@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Download, Github, X } from 'lucide-react';
-import { APP_DOWNLOAD_URL, APP_RELEASES_URL } from '@/lib/brand';
+import { APP_RELEASES_URL } from '@/lib/brand';
+import { resolveAppDownload, type AppDownload } from '@/lib/appRelease';
 
 /**
  * The install banner.
@@ -11,14 +12,17 @@ import { APP_DOWNLOAD_URL, APP_RELEASES_URL } from '@/lib/brand';
  * `pwa-install-banner` test id, same session-scoped dismissal key — now points
  * at the netflix-pro app and downloads the APK straight from GitHub releases.
  *
- * The one addition is the GitHub icon, which opens the full releases list so
- * the direct-APK link is not the only way in.
+ * The download target is resolved from the release API rather than hardcoded:
+ * the asset name embeds the version, so a static link 404s as soon as the
+ * version is bumped. The GitHub icon opens the full releases list, so the
+ * direct-APK link is not the only way in.
  */
 
 const DISMISS_KEY = 'framextv_pwa_dismissed';
 
 export default function InstallBanner() {
   const [dismissed, setDismissed] = useState(true);
+  const [download, setDownload] = useState<AppDownload | null>(null);
 
   useEffect(() => {
     try {
@@ -26,6 +30,14 @@ export default function InstallBanner() {
     } catch {
       setDismissed(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void resolveAppDownload(controller.signal).then((resolved) => {
+      if (!controller.signal.aborted) setDownload(resolved);
+    });
+    return () => controller.abort();
   }, []);
 
   if (dismissed) return null;
@@ -55,7 +67,7 @@ export default function InstallBanner() {
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <a
-          href={APP_DOWNLOAD_URL}
+          href={download?.apkUrl ?? APP_RELEASES_URL}
           data-testid="install-banner-download"
           className="accent-active px-2.5 py-1 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-bold transition-colors cursor-pointer"
         >

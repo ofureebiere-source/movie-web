@@ -41,6 +41,8 @@ export const APP_RELEASES_URL = 'https://github.com/King-Fisher000/netflix-pro/r
 export const APP_RELEASE_TAG = 'android-latest';
 export const APP_VERSION = '1.2.3';
 /** The release asset is named `netflix-pro-<version>.apk`; keep in sync with the workflow. */
+// The banner resolves the live asset (src/lib/appRelease.ts); this stays as the
+// deterministic fallback the resolver itself uses.
 export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro-${APP_VERSION}.apk`;
 
 /** Support address shown in the footer / profile. */
