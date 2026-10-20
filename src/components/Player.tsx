@@ -193,6 +193,34 @@ export default function Player({
 
   const activeTrack = trackIndex !== null ? subtitles[trackIndex] : undefined;
 
+  // A provider switch returns a fresh subtitle list, and the old index then
+  // points into it — a different language, or past the end entirely. The menu
+  // labels a track "In-Stream", so the selection has to follow the list: match
+  // the same language if it is still offered, otherwise drop to Off. This is
+  // the bug where subtitles did not match the movie after changing servers.
+  const trackListKey = subtitles.map((track) => `${track.language || track.lang || ''}|${track.url}`).join(';');
+  const lastTrackListKey = useRef<string | null>(null);
+  useEffect(() => {
+    const previous = lastTrackListKey.current;
+    lastTrackListKey.current = trackListKey;
+    if (previous === null || previous === trackListKey) return;
+
+    setTrackIndex((index) => {
+      if (index === null) return null;
+      const wanted = subtitles[index];
+      if (!wanted) return null;
+      const language = (wanted.language || wanted.lang || '').toLowerCase();
+      if (!language) return null;
+      const match = subtitles.findIndex(
+        (entry) => (entry.language || entry.lang || '').toLowerCase() === language
+      );
+      return match >= 0 ? match : null;
+    });
+    // A track from the old server cannot be trusted to line up with the new
+    // stream, so the offset resets with it.
+    setSubSync(0);
+  }, [trackListKey, subtitles]);
+
   // Fetch and parse the selected track. `<track src>` cannot be used: the
   // hosts answer with SRT and no usable cross-origin track semantics, so the
   // browser renders nothing. Proxy + parse is the reference's approach.
@@ -972,7 +1000,7 @@ export default function Player({
                   <Server className="w-4 h-4" />
                 </button>
                 {menu === 'servers' && (
-                  <div className="absolute bottom-full right-0 mb-2 w-64 max-h-72 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
+                  <div className="absolute bottom-full right-0 mb-2 w-[min(16rem,calc(100vw-1.5rem))] max-h-[min(18rem,60vh)] overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
                     <button
                       type="button"
                       role="menuitemradio"
@@ -1047,7 +1075,7 @@ export default function Player({
                 <Subtitles className="w-4 h-4" />
               </button>
               {menu === 'subs' && (
-                <div className="absolute bottom-full right-0 mb-2 w-64 max-h-72 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
+                <div className="absolute bottom-full right-0 mb-2 w-[min(16rem,calc(100vw-1.5rem))] max-h-[min(18rem,60vh)] overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-1.5 shadow-2xl">
                   <button
                     type="button"
                     role="menuitemradio"
@@ -1165,7 +1193,7 @@ export default function Player({
                 <AudioLines className="w-4 h-4" />
               </button>
               {menu === 'eq' && (
-                <div className="absolute bottom-full right-0 mb-2 w-72 bg-zinc-950/98 border border-zinc-800 rounded-xl p-2.5 shadow-2xl space-y-2.5">
+                <div className="absolute bottom-full right-0 mb-2 w-[min(18rem,calc(100vw-1.5rem))] max-h-[70vh] overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-2.5 shadow-2xl space-y-2.5">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
                       <SlidersHorizontal className="w-3 h-3" /> Equaliser
@@ -1213,9 +1241,9 @@ export default function Player({
                     </button>
                   </div>
 
-                  <div className="flex items-end justify-between gap-1 h-28">
+                  <div className="flex items-end justify-between gap-0.5 sm:gap-1 h-24 sm:h-28">
                     {EQ_BANDS.map((frequency, index) => (
-                      <div key={frequency} className="flex flex-col items-center gap-1 flex-1">
+                      <div key={frequency} className="flex flex-col items-center gap-0.5 sm:gap-1 flex-1 min-w-0">
                         <span className="text-[9px] font-mono text-zinc-500 tabular-nums">
                           {eq.gains[index] > 0 ? `+${eq.gains[index]}` : eq.gains[index]}
                         </span>
@@ -1235,7 +1263,7 @@ export default function Player({
                             saveEqualizer(next);
                           }}
                           className="accent-rose-500 cursor-pointer disabled:opacity-40"
-                          style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '14px', height: '64px' }}
+                          style={{ writingMode: 'vertical-lr', direction: 'rtl', width: '12px', height: '56px' }}
                         />
                         <span className="text-[9px] font-mono text-zinc-600">
                           {frequency >= 1000 ? `${frequency / 1000}k` : frequency}
@@ -1279,7 +1307,7 @@ export default function Player({
                 <Settings className="w-4 h-4" />
               </button>
               {menu === 'settings' && (
-                <div className="absolute bottom-full right-0 mb-2 w-56 max-h-72 overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-2 shadow-2xl space-y-2.5">
+                <div className="absolute bottom-full right-0 mb-2 w-[min(14rem,calc(100vw-1.5rem))] max-h-[min(18rem,60vh)] overflow-y-auto bg-zinc-950/98 border border-zinc-800 rounded-xl p-2 shadow-2xl space-y-2.5">
                   <div className="space-y-1">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Aspect ratio</p>
                     <div className="flex flex-wrap gap-1">
