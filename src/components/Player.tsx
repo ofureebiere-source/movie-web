@@ -39,7 +39,7 @@ import {
 } from '@/lib/playerPreferences';
 import { applyAudioProcessing, EQ_BANDS, EQ_DEFAULT, EQ_PRESETS, resumeAudio } from '@/lib/audioEngine';
 import { VIEW_ASPECT_CLASS, nextView, type PlayerView } from '@/lib/viewOrientation';
-import { createCachingFragmentLoader } from '@/lib/segmentCache';
+import { createCachingFragmentLoader, prefetchPlaylist } from '@/lib/segmentCache';
 import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/subtitles';
 import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
@@ -344,10 +344,18 @@ export default function Player({
 
     const isHls = sourceType === 'hls' || /\.m3u8(\?|$)/i.test(src);
 
-    if (isHls && !video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Prefer hls.js for HLS whenever MSE is available, rather than deferring to
+    // the browser's native support. Chromium answers `canPlayType` for
+    // `application/vnd.apple.mpegurl` without really supporting it, so the old
+    // `&& !video.canPlayType(...)` guard took the native path there — which
+    // bypassed this module's caching loader and prefetcher entirely, leaving
+    // every seek network-bound. hls.js is supported on every browser we target
+    // (Safari included); the native path below remains for the rest.
+    if (isHls) {
       // hls.js is loaded lazily; only an HLS stream on a browser without
       // native support pays for it.
       let destroy: (() => void) | null = null;
+      let stopPrefetch: (() => void) | null = null;
       let cancelled = false;
       void import('hls.js').then(({ default: Hls }) => {
         if (cancelled) return;
@@ -373,7 +381,12 @@ export default function Player({
           // scrubbing within the buffered region is served from memory.
           maxBufferLength: 300,
           maxMaxBufferLength: 600,
-          backBufferLength: 90,
+          // In-memory back buffer, in seconds. The old value (90) is what made
+          // a rewind feel network-bound: past 90 s hls.js evicted the fragment
+          // and re-fetched it. Widened here, and anything older still is served
+          // from Cache Storage by the fragment loader, so neither direction of
+          // seek depends on the network after the prefetcher has run.
+          backBufferLength: 600,
           maxBufferSize: 240 * 1000 * 1000,
           startFragPrefetch: true,
           maxBufferHole: 0.5,
@@ -383,6 +396,21 @@ export default function Player({
         hls.loadSource(src);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, restore);
+        // Once a level's playlist is loaded, mirror the whole thing into Cache
+        // Storage in the background. This is what makes a scrub forward into an
+        // unwatched region, and any later rewind past the memory buffer, local
+        // rather than network-bound: after playback starts the only remaining
+        // traffic is this prefetcher finishing the file. Live playlists are
+        // skipped — they are a sliding window, so there is nothing to complete.
+        hls.on(Hls.Events.LEVEL_LOADED, (_event, data) => {
+          if (data.details.live || stopPrefetch) return;
+          const url = data.details.url;
+          if (!url) return;
+          void prefetchPlaylist(url).then((stop) => {
+            if (cancelled) stop();
+            else stopPrefetch = stop;
+          });
+        });
         hls.on(Hls.Events.ERROR, (_event, data) => {
           // A fatal hls.js error is the same situation as the element firing
           // `error`: the provider answered but its stream is unusable, so hop
@@ -395,6 +423,7 @@ export default function Player({
       });
       return () => {
         cancelled = true;
+        stopPrefetch?.();
         destroy?.();
       };
     }

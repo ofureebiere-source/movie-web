@@ -1,25 +1,32 @@
 /**
- * A Cache Storage-backed HLS fragment loader.
+ * A Cache Storage-backed HLS loader and background prefetcher.
  *
- * hls.js keeps its buffer in memory, so once a segment falls out of the back
- * buffer a seek back to it goes to the network again — and a fast-forward into
- * a region that was never buffered always does. The reference does nothing
- * about this (`maxBufferLength: 30`, `backBufferLength: 30`).
+ * hls.js keeps its buffer in memory and, even with an unbounded back buffer,
+ * loses everything on reload. This module makes a watched stream local:
  *
- * This loader puts every fetched media segment into the Cache Storage API
- * keyed by its URL. A later request for the same URL — a rewind, a re-watch,
- * or a scrub back into a region already played — is answered from disk with no
- * request at all. Playlists are deliberately left alone: a media playlist is a
- * sliding window and must stay fresh, while a segment's bytes never change.
+ *  - every fetched media segment is written to the Cache Storage API keyed by
+ *    URL, so a repeat request — a rewind past the memory buffer, a re-watch, a
+ *    reload — is answered from disk with no request at all;
+ *  - `prefetchFragments` walks the whole media playlist in the background at
+ *    watch time, so a scrub forward into a region that was never played is
+ *    served from disk too. This is the "buffer once, then stay local" contract:
+ *    the only traffic after startup is the prefetcher finishing the file.
  *
- * The cache is bounded by entry count and evicted oldest-first, so a long
- * session cannot grow it without limit.
+ * Playlists are deliberately left alone: a media playlist is a sliding window
+ * on a live stream and must stay fresh, while a segment's bytes never change.
+ *
+ * The cache is bounded by entry count and evicted oldest-first. The bound is
+ * sized to hold a full feature film so the prefetcher does not evict the start
+ * of the file it is still writing.
  */
 
 const CACHE_NAME = 'netflix-pro-segments-v1';
 
-/** Roughly an hour of 4-6 s segments; eviction is oldest-first. */
-const MAX_ENTRIES = 700;
+/** Roughly four hours of 4 s segments; a whole film fits without eviction. */
+const MAX_ENTRIES = 4000;
+
+/** How many segments the background prefetcher fetches at once. */
+const PREFETCH_CONCURRENCY = 4;
 
 /** Minimal shape of the hls.js loader contract we implement. */
 interface LoaderContext {
@@ -115,6 +122,116 @@ export async function clearSegmentCache(): Promise<void> {
     await caches.delete(CACHE_NAME);
   } catch {
     // Nothing to do.
+  }
+}
+
+async function hasCached(url: string): Promise<boolean> {
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    return Boolean(await cache.match(url));
+  } catch {
+    return false;
+  }
+}
+
+/** Fetch a URL and store it, unless it is already cached. */
+async function prefetchOne(url: string): Promise<void> {
+  if (await hasCached(url)) return;
+  try {
+    const response = await fetch(url, { credentials: 'omit' });
+    if (!response.ok) return;
+    const buffer = await response.arrayBuffer();
+    await writeToCache(url, buffer);
+  } catch {
+    // Prefetching is best-effort; a failed segment is fetched on demand later.
+  }
+}
+
+/**
+ * Warm the cache with the whole playlist in the background.
+ *
+ * Called once the manifest is parsed, this walks every fragment URL the
+ * playlist advertises and fetches them a few at a time, writing each to Cache
+ * Storage. After it finishes, seeking anywhere — forward or back — is served
+ * from disk. It is bounded by the playlist itself, runs below playback in
+ * priority, and stops when the caller aborts (component unmount, source change).
+ *
+ * Returns a function that cancels any outstanding work.
+ */
+export function prefetchFragments(urls: string[], signal?: AbortSignal): () => void {
+  if (!cacheAvailable() || urls.length === 0) return () => {};
+
+  let cancelled = false;
+  const queue = [...urls];
+
+  const worker = async () => {
+    while (!cancelled && queue.length > 0) {
+      if (signal?.aborted) return;
+      const url = queue.shift();
+      if (!url) return;
+      await prefetchOne(url);
+    }
+  };
+
+  const runners = Array.from({ length: PREFETCH_CONCURRENCY }, () => worker());
+  void Promise.all(runners);
+
+  return () => {
+    cancelled = true;
+  };
+}
+
+/**
+ * The fragment URLs of a parsed HLS media playlist, in order.
+ *
+ * A relative URI is resolved against the playlist's own URL. `#EXT-X-MAP`
+ * (initialization segments for fMP4) is included — it is needed just as much as
+ * the media and is fetched once, so caching it is a pure win.
+ */
+export function fragmentUrlsFromPlaylist(playlistText: string, playlistUrl: string): string[] {
+  const urls = new Set<string>();
+  const resolve = (uri: string) => {
+    try {
+      return new URL(uri, playlistUrl).toString();
+    } catch {
+      return null;
+    }
+  };
+  for (const rawLine of playlistText.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith('#')) {
+      const map = /^#EXT-X-MAP:.*URI="([^"]+)"/.exec(line);
+      if (map) {
+        const resolved = resolve(map[1]);
+        if (resolved) urls.add(resolved);
+      }
+      continue;
+    }
+    const resolved = resolve(line);
+    if (resolved) urls.add(resolved);
+  }
+  return [...urls];
+}
+
+/**
+ * Fetch and parse a media playlist, then prefetch all of its fragments.
+ *
+ * hls.js exposes the parsed playlist on its own events, but the walking above
+ * only needs the text, so this asks for it directly and leaves hls.js's request
+ * bookkeeping untouched (its loader is only wrapped for *fragments*, so this
+ * playlist GET is not cached — which is what we want, a media playlist must
+ * stay fresh).
+ */
+export async function prefetchPlaylist(playlistUrl: string, signal?: AbortSignal): Promise<() => void> {
+  if (!cacheAvailable()) return () => {};
+  try {
+    const response = await fetch(playlistUrl, { credentials: 'omit' });
+    if (!response.ok) return () => {};
+    const text = await response.text();
+    return prefetchFragments(fragmentUrlsFromPlaylist(text, playlistUrl), signal);
+  } catch {
+    return () => {};
   }
 }
 
