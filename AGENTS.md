@@ -124,6 +124,28 @@ time to find; do not reintroduce them.
   `onMouseLeave` both hid the chrome while a menu was open, so panels vanished
   mid-interaction. `menuRef` pins the controls while `menu !== 'none'`.
 
+## Segment cache (`src/lib/segmentCache.ts`)
+
+A Cache Storage-backed `fLoader` serves repeat fragment requests from disk, and
+`prefetchPlaylist` mirrors a whole media playlist in the background. Two traps
+made the cache completely inert while appearing wired up; both are easy to
+reintroduce.
+
+- **hls.js labels a fragment `media-fragment`, not `fragment`.** 1.7.3 sets
+  `LoaderContextType.MEDIA_FRAGMENT = 'media-fragment'`. Matching only
+  `'fragment'` passes every request through, so the prefetcher fills the cache
+  and playback refetches all of it. `CACHEABLE_TYPES` accepts both spellings.
+- **A whole-segment request carries `rangeStart: 0, rangeEnd: 0`.** hls.js
+  initialises both to `0` and only writes a real range for an AES-CTR partial
+  segment. A guard of `rangeStart === undefined` therefore never fires and
+  silently disables caching. Detect a range with `rangeEnd > rangeStart`
+  (`hasByteRange`), never with an `undefined` check.
+
+Verify with `/tmp/warm_verify2.py`: play once, reload, and count `.ts` requests
+under `/proxy`. A working cache shows cold > 0, warm 0, with the video still
+reaching `readyState 4`. Cache keys are the full `/proxy?url=...` URL, so they
+match the player's requests exactly — a key mismatch is not the failure mode.
+
 ## Server failover
 
 The watch page renders an `<iframe>` (`PlayerEmbed`) whose inner `Player` owns

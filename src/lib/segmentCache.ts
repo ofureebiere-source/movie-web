@@ -279,12 +279,20 @@ export function prefetchFragments(urls: string[], signal?: AbortSignal): () => v
  * A relative URI is resolved against the playlist's own URL. `#EXT-X-MAP`
  * (initialization segments for fMP4) is included — it is needed just as much as
  * the media and is fetched once, so caching it is a pure win.
+ *
+ * `#EXT-X-KEY` is included for the same reason. An AES-128 stream cannot
+ * produce a frame until it has fetched and applied its key, so warming the key
+ * alongside the segments is what removes the decryption wait from a warmed
+ * start. A `METHOD=NONE` tag carries no URI and a non-HTTP scheme (a
+ * `data:` key, or a DRM `skd://`) is left to hls.js, which is the only thing
+ * that can interpret it.
  */
 export function fragmentUrlsFromPlaylist(playlistText: string, playlistUrl: string): string[] {
   const urls = new Set<string>();
   const resolve = (uri: string) => {
     try {
-      return new URL(uri, playlistUrl).toString();
+      const resolved = new URL(uri, playlistUrl).toString();
+      return /^https?:/i.test(resolved) ? resolved : null;
     } catch {
       return null;
     }
@@ -296,6 +304,11 @@ export function fragmentUrlsFromPlaylist(playlistText: string, playlistUrl: stri
       const map = /^#EXT-X-MAP:.*URI="([^"]+)"/.exec(line);
       if (map) {
         const resolved = resolve(map[1]);
+        if (resolved) urls.add(resolved);
+      }
+      const key = /^#EXT-X-KEY:.*URI="([^"]+)"/.exec(line);
+      if (key) {
+        const resolved = resolve(key[1]);
         if (resolved) urls.add(resolved);
       }
       continue;
@@ -373,12 +386,35 @@ export async function prefetchStreamSource(
 }
 
 /**
- * Build an hls.js `fLoader` that serves repeat segment requests from disk.
+ * Build an hls.js loader that serves repeat requests from disk.
  *
- * Only plain GETs for whole segments are cached. Anything with a byte range,
- * any non-fragment request, and every environment without Cache Storage falls
- * through to hls.js's own loader untouched.
+ * hls.js labels a media fragment request with `media-fragment`, not `fragment`,
+ * so matching the wrong string made this loader pass every request through to
+ * the network: the prefetcher filled the cache and playback then refetched all
+ * of it. Both names are accepted so the check survives either spelling.
+ *
+ * Key requests (`key`) are cached too. An AES-128 stream fetches its key before
+ * it can decrypt anything, and that fetch sits directly on the critical path to
+ * the first frame — caching it is what makes a warmed start skip the decryption
+ * round trip instead of paying it again. Initialisation segments arrive as
+ * ordinary fragments and are covered by the same branch.
+ *
+ * Only plain GETs for whole segments are cached. hls.js fills `rangeStart`
+ * and `rangeEnd` with `0` for a whole-segment request and a real byte range
+ * only for an AES-CTR partial segment, so a range is detected by `rangeEnd`
+ * being positive — an `!== undefined` check never fires and silently disables
+ * the cache. Anything with a byte range, any other request type, and every
+ * environment without Cache Storage falls through to hls.js's own loader.
  */
+const CACHEABLE_TYPES = new Set(['fragment', 'media-fragment', 'key']);
+
+/** True when hls.js asked for part of a segment rather than all of it. */
+function hasByteRange(context: LoaderContext): boolean {
+  const start = context?.rangeStart ?? 0;
+  const end = context?.rangeEnd ?? 0;
+  return end > start;
+}
+
 export function createCachingFragmentLoader(Hls: HlsWithLoader) {
   const Base = Hls.DefaultConfig.loader;
 
@@ -387,10 +423,9 @@ export function createCachingFragmentLoader(Hls: HlsWithLoader) {
     load(context: LoaderContext, config: LoaderConfig, callbacks: LoaderCallbacks): void {
       const cacheable =
         cacheAvailable() &&
-        context?.type === 'fragment' &&
+        CACHEABLE_TYPES.has(context?.type ?? '') &&
         (!context.method || context.method === 'GET') &&
-        context.rangeStart === undefined &&
-        context.rangeEnd === undefined;
+        !hasByteRange(context);
 
       if (!cacheable) {
         super.load(context, config, callbacks);

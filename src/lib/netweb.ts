@@ -99,6 +99,15 @@ export interface NetwebSource {
   qualityHeight?: number;
   /** Short label for that resolution, e.g. `1080p`. */
   qualityLabel?: string;
+  /**
+   * The URL to save for this quality, when it differs from `url`.
+   *
+   * The gateway recovers resolutions from a multi-variant master playlist and
+   * gives each recovered quality its own rendition URL here. Playback keeps
+   * using `url` (the master) so it can adapt; a download uses this so the file
+   * is the quality the viewer chose.
+   */
+  downloadUrl?: string;
   /** Reported size in bytes; `0` when the extractor did not say. */
   size?: number;
   /** That size as a short label, e.g. `2.3 GB`; `''` when unknown. */
@@ -121,6 +130,7 @@ interface NetwebStreamResponse {
       quality?: string;
       qualityHeight?: number;
       qualityLabel?: string;
+      downloadUrl?: string;
       size?: number;
       sizeLabel?: string;
       provider?: string;
@@ -166,6 +176,7 @@ export async function resolveNetwebSources(
         quality: row.data?.quality,
         qualityHeight: row.data?.qualityHeight,
         qualityLabel: row.data?.qualityLabel,
+        downloadUrl: row.data?.downloadUrl,
         size: row.data?.size,
         sizeLabel: row.data?.sizeLabel,
         name: row.name,
@@ -213,7 +224,13 @@ export function proxiedUrl(source: { url: string; headers?: Record<string, strin
  * Both are optional: without them the save is the bare stream, as before.
  */
 export function downloadUrlFor(
-  source: { url: string; type?: string; headers?: Record<string, string> },
+  source: {
+    url: string;
+    /** The single-rendition URL to save, when it differs from `url`. */
+    downloadUrl?: string;
+    type?: string;
+    headers?: Record<string, string>;
+  },
   filename: string,
   opts: {
     referer?: string;
@@ -230,8 +247,12 @@ export function downloadUrlFor(
     };
   } = {}
 ): string {
-  if (!activeBase) return source.url;
-  const params = new URLSearchParams({ url: source.url, filename });
+  if (!activeBase) return source.downloadUrl || source.url;
+  // Save the rendition the viewer picked. A source recovered from a
+  // multi-variant master names that rendition in `downloadUrl`; everything else
+  // downloads its own `url`, so this is a no-op for ordinary sources.
+  const target = source.downloadUrl || source.url;
+  const params = new URLSearchParams({ url: target, filename });
   if (source.type) params.set('type', source.type);
   const headers = source.headers ?? {};
   const referer = opts.referer ?? headers.Referer ?? headers.referer;

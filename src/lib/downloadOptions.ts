@@ -24,6 +24,14 @@ export interface DownloadQuality {
   sizeLabel: string;
   /** The stream the gateway should remux for this quality. */
   url: string;
+  /**
+   * The single-rendition URL to save, when it differs from `url`.
+   *
+   * For a quality the gateway recovered from a multi-variant master playlist,
+   * this is that rendition's own playlist, so saving it produces the quality
+   * the viewer picked instead of whichever rendition the remuxer prefers.
+   */
+  downloadUrl?: string;
   type?: string;
   headers?: Record<string, string>;
 }
@@ -38,24 +46,30 @@ export interface DownloadQuality {
  * not told a 2 GB download is 700 MB because a worse mirror was listed first.
  *
  * A source list with no reported resolutions collapses to a single `Auto`
- * entry, so the picker never renders empty.
+ * entry, so the picker never renders empty. Several mirrors can each report no
+ * resolution, so those entries are de-duplicated by URL and given distinct
+ * keys: a picker keyed on a repeated `auto` would select the wrong row.
  */
 export function downloadQualities(sources: NetwebSource[]): DownloadQuality[] {
   const byHeight = new Map<number, DownloadQuality>();
   const unknown: DownloadQuality[] = [];
+  const unknownUrls = new Set<string>();
 
   for (const source of sources) {
     if (!source?.url) continue;
     const height = Number(source.qualityHeight) || 0;
     const size = Number(source.size) || 0;
     if (!height) {
+      if (unknownUrls.has(source.url)) continue;
+      unknownUrls.add(source.url);
       unknown.push({
-        key: 'auto',
+        key: unknown.length === 0 ? 'auto' : `auto-${unknown.length + 1}`,
         height: 0,
         label: source.qualityLabel || 'Auto',
         size,
         sizeLabel: source.sizeLabel || '',
         url: source.url,
+        downloadUrl: source.downloadUrl,
         type: source.type,
         headers: source.headers,
       });
@@ -70,6 +84,7 @@ export function downloadQualities(sources: NetwebSource[]): DownloadQuality[] {
         size,
         sizeLabel: source.sizeLabel || '',
         url: source.url,
+        downloadUrl: source.downloadUrl,
         type: source.type,
         headers: source.headers,
       });
