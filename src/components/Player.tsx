@@ -277,6 +277,13 @@ export default function Player({
   // is in flight so the hop is visible without looking like an error.
   const [failoverNotice, setFailoverNotice] = useState<string | null>(null);
 
+  // A download that the gateway refused. Shown as a notice rather than an
+  // error overlay: the stream is still playing, so only the save failed.
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
+  // True while the gateway is being asked to start the save. A cold gateway can
+  // take tens of seconds to answer, so the click has to look acknowledged.
+  const [downloadBusy, setDownloadBusy] = useState(false);
+
   // --- casting, backup player, holder perks --------------------------------
 
   const { holderStatus, connect: connectWallet } = useHolder();
@@ -1009,16 +1016,69 @@ export default function Player({
   /**
    * Save the stream. The gateway returns the file as an attachment, so a
    * navigation is the download; there is no gate in front of it.
+   *
+   * The gateway answers a failure with a JSON body and no attachment header, so
+   * a plain navigation would replace the page with `{"error": "…"}` — which is
+   * what a viewer saw when the remux was refused. The request is therefore made
+   * once as a probe first: a non-OK status becomes a notice, and only a stream
+   * that is actually being served is handed to the browser.
+   *
+   * The probe is aborted the moment its status is known, so it never buffers the
+   * file. The gateway has begun the remux by then, and the navigation that
+   * follows starts it again — a wasted start, but it is the only way to tell a
+   * refusal from a save without holding a multi-gigabyte body in memory.
    */
-  const handleDownload = useCallback(() => {
-    if (!saveUrl) return;
-    const anchor = document.createElement('a');
-    anchor.href = saveUrl;
-    anchor.rel = 'noreferrer';
-    document.body.appendChild(anchor);
-    anchor.click();
-    anchor.remove();
-  }, [saveUrl]);
+  const handleDownload = useCallback(async () => {
+    if (!saveUrl || downloadBusy) return;
+    setDownloadNotice(null);
+    setDownloadBusy(true);
+
+    const navigate = () => {
+      const anchor = document.createElement('a');
+      anchor.href = saveUrl;
+      anchor.rel = 'noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    };
+
+    // A cold gateway takes tens of seconds to answer, but a wedged one must not
+    // leave the button spinning forever. On expiry the save is navigated to
+    // anyway: the gateway has almost certainly started by then, and a refusal
+    // would have arrived well inside the window.
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 90000);
+
+    try {
+      const probe = await fetch(saveUrl, { method: 'GET', signal: controller.signal });
+      if (!probe.ok) {
+        // The gateway names the cause; fall back to the status alone.
+        const detail = await probe.text().catch(() => '');
+        let message = '';
+        try {
+          message = (JSON.parse(detail) as { error?: string })?.error ?? '';
+        } catch {
+          message = detail.trim();
+        }
+        setDownloadNotice(
+          message
+            ? `Download unavailable: ${message}`
+            : `Download unavailable (the server returned ${probe.status}).`
+        );
+        return;
+      }
+      // Headers only: stop reading before the body is buffered.
+      await probe.body?.cancel().catch(() => undefined);
+      navigate();
+    } catch {
+      // A timeout or a network-level failure cannot be inspected; navigate as
+      // before so the browser reports it rather than swallowing the save.
+      navigate();
+    } finally {
+      window.clearTimeout(timer);
+      setDownloadBusy(false);
+    }
+  }, [saveUrl, downloadBusy]);
 
   const handleSelectAudioBoost = useCallback(
     (preset: AudioBoost) => {
@@ -1527,6 +1587,26 @@ export default function Player({
               {index < all.length - 1 && <br />}
             </span>
           ))}
+        </div>
+      )}
+
+      {downloadNotice && !error && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          data-testid="player-download-notice"
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-40 max-w-[92%] inline-flex items-start gap-2 px-3 py-1.5 rounded-lg bg-red-950/85 backdrop-blur-md border border-red-500/30 text-[11px] font-mono text-red-100 shadow-2xl animate-fade-in"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 mt-px shrink-0 text-red-400" aria-hidden="true" />
+          <span className="min-w-0 break-words">{downloadNotice}</span>
+          <button
+            type="button"
+            onClick={() => setDownloadNotice(null)}
+            aria-label="Dismiss download message"
+            className="shrink-0 text-red-300 hover:text-white transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
+          </button>
         </div>
       )}
 
@@ -2268,20 +2348,24 @@ export default function Player({
                       type="button"
                       data-testid="player-download-button"
                       onClick={handleDownload}
-                      disabled={!saveUrl}
+                      disabled={!saveUrl || downloadBusy}
                       title={
                         saveUrl
                           ? `Download ${saveName}${hasEnglishSubs ? ' (with English subtitles)' : ''}`
                           : downloadBlockedReason
                       }
                       className={`flex items-center gap-2 shrink-0 rounded-lg px-2 py-1 transition-colors ${
-                        saveUrl
+                        saveUrl && !downloadBusy
                           ? 'text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer'
                           : 'text-zinc-500 opacity-60 cursor-not-allowed'
                       }`}
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      <span className="text-[11px]">Download</span>
+                      {downloadBusy ? (
+                        <span className="w-3.5 h-3.5 rounded-full border border-white/30 border-t-white animate-spin" />
+                      ) : (
+                        <Download className="w-3.5 h-3.5" />
+                      )}
+                      <span className="text-[11px]">{downloadBusy ? 'Preparing…' : 'Download'}</span>
                     </button>
 
                     {saveUrl ? (
@@ -2300,7 +2384,12 @@ export default function Player({
                                 type="button"
                                 data-testid={`player-download-quality-${entry.key}`}
                                 aria-pressed={selected}
-                                onClick={() => setQualityKey(entry.key)}
+                                onClick={() => {
+                                  setQualityKey(entry.key);
+                                  // The failure was about the previous quality's
+                                  // URL, so it does not describe this one.
+                                  setDownloadNotice(null);
+                                }}
                                 title={
                                   entry.sizeLabel
                                     ? `${entry.label} · ${entry.sizeLabel}`
