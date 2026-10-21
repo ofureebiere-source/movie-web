@@ -200,7 +200,10 @@ export default function TVDetailPage() {
   const canResume = Boolean(progress && !progress.completed && progress.timestamp > 15);
   const warmSeason = canResume ? progress!.season || 1 : activeSeason;
   const warmEpisode = canResume ? progress!.episode || 1 : 1;
-  const warmStream = useWarmStream(clean, 'tv', warmSeason, warmEpisode);
+  const warmStream = useWarmStream(clean, 'tv', warmSeason, warmEpisode, {
+    title: detail?.title,
+    year: detail?.year,
+  });
 
   if (unavailable) return <NotFoundPage />;
   if (isLoading) return <DetailSkeleton />;

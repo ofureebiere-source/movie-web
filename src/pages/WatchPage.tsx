@@ -536,17 +536,20 @@ export default function WatchPage() {
   const embedUrl = useMemo(() => {
     const startParam = resumeTime > 15 ? `&t=${Math.floor(resumeTime)}` : '';
     const providerParam = activeProvider ? `&provider=${encodeURIComponent(activeProvider)}` : '';
+    // The embed names the saved file from these, so the device's save dialog
+    // offers "Movie Name (2024) 1080p.mp4" rather than a generic video.mp4.
+    const titleParam = detail?.title ? `&title=${encodeURIComponent(detail.title)}` : '';
+    const yearParam = detail?.year ? `&year=${encodeURIComponent(String(detail.year))}` : '';
     // A resolve nonce makes every retry a new embed URL, so it is a new stream
     // request rather than a cache hit on the empty resolution that failed.
     const nonceParam = resolveNonce > 0 ? `&r=${resolveNonce}` : '';
     if (mediaType === 'anime') {
-      const titleParam = detail?.title ? `&title=${encodeURIComponent(detail.title)}` : '';
-      return `/embed/anime?id=${anilistId}&type=anime&season=1&episode=${episodeNumber}&sub_type=sub&autoplay=1&origin=internal${providerParam}${titleParam}${startParam}${nonceParam}`;
+      return `/embed/anime?id=${anilistId}&type=anime&season=1&episode=${episodeNumber}&sub_type=sub&autoplay=1&origin=internal${providerParam}${titleParam}${yearParam}${startParam}${nonceParam}`;
     }
     return isTv
-      ? `/embed/${tmdbId}/${seasonNumber}/${episodeNumber}?autoplay=1&origin=internal${providerParam}${startParam}${nonceParam}`
-      : `/embed/${tmdbId}?autoplay=1&origin=internal${providerParam}${startParam}${nonceParam}`;
-  }, [mediaType, isTv, tmdbId, anilistId, seasonNumber, episodeNumber, resumeTime, detail?.title, activeProvider, resolveNonce]);
+      ? `/embed/${tmdbId}/${seasonNumber}/${episodeNumber}?autoplay=1&origin=internal${providerParam}${titleParam}${yearParam}${startParam}${nonceParam}`
+      : `/embed/${tmdbId}?autoplay=1&origin=internal${providerParam}${titleParam}${yearParam}${startParam}${nonceParam}`;
+  }, [mediaType, isTv, tmdbId, anilistId, seasonNumber, episodeNumber, resumeTime, detail?.title, detail?.year, activeProvider, resolveNonce]);
 
   const selectEpisode = useCallback(
     (targetSeason: number, targetEpisode: number) => {

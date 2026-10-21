@@ -5,8 +5,9 @@ import Player from '@/components/Player';
 import { getStream, type FxStream, type MediaType } from '@/lib/api';
 import { mediaId } from '@/lib/id';
 import { isNetwebEnabled, proxiedUrl, resolveNetwebSources, type NetwebSource } from '@/lib/netweb';
+import { downloadQualities } from '@/lib/downloadOptions';
 import { saveProgress } from '@/lib/watchProgress';
-import { readWarmedStream } from '@/lib/streamWarm';
+import { readWarmedNetwebSources, readWarmedStream } from '@/lib/streamWarm';
 import { isBackupProvider } from '@/lib/vidbolt';
 import { SITE_NAME } from '@/lib/brand';
 
@@ -42,6 +43,7 @@ export default function EmbedPage() {
   const hideControls = params.get('controls') === '0';
   const provider = params.get('provider') || params.get('server') || undefined;
   const customTitle = params.get('title') || undefined;
+  const customYear = params.get('year') || undefined;
   const customPoster = params.get('poster') || params.get('backdrop') || undefined;
   // Bumped by the host when the viewer asks to try again. It rides in the URL so
   // a retry is a genuinely new request instead of a cache hit on the empty
@@ -113,11 +115,24 @@ export default function EmbedPage() {
   // behaviour rather than a black screen.
   const netweb = useQuery<NetwebSource[]>({
     queryKey: ['netweb-stream', mediaType, mediaKey, seasonNumber, episodeNumber],
-    queryFn: () =>
-      resolveNetwebSources(mediaKey, mediaType, {
+    queryFn: async () => {
+      // The detail page resolved the gateway while the viewer was reading the
+      // synopsis, so on the usual path this is a lookup rather than a request.
+      // A miss falls through to a real resolve, which is the cold path.
+      const warmed = readWarmedNetwebSources(
+        mediaType,
+        mediaKey,
+        mediaType === 'movie' ? undefined : seasonNumber,
+        mediaType === 'movie' ? undefined : episodeNumber
+      );
+      if (warmed && resolveNonce === '0') return warmed;
+      return resolveNetwebSources(mediaKey, mediaType, {
         season: mediaType === 'movie' ? undefined : seasonNumber,
         episode: mediaType === 'movie' ? undefined : episodeNumber,
-      }),
+        title: customTitle,
+        year: customYear,
+      });
+    },
     enabled: Boolean(mediaKey) && !backupMode && isNetwebEnabled(),
     staleTime: 600_000,
     gcTime: 900_000,
@@ -125,6 +140,10 @@ export default function EmbedPage() {
   });
 
   const netwebSource = netweb.data?.[0];
+  // Every quality the gateway resolved, for the Download row's picker. The
+  // player plays `netwebSource` (the first, best one) but the viewer can save
+  // any of them.
+  const downloadChoices = downloadQualities(netweb.data ?? []);
   // The gateway's stream wins when it answered: it is proxied, so the CDN sees
   // the headers it wants and an HLS playlist is rewritten to route its segments
   // through the gateway too. The aggregator's own source is the fallback and is
@@ -191,6 +210,8 @@ export default function EmbedPage() {
               ? { url: activeSource.url, type: activeSource.type }
               : undefined
         }
+        downloadQualities={downloadChoices}
+        year={params.get('year') || undefined}
         poster={customPoster}
         title={
           customTitle ??

@@ -49,6 +49,11 @@ import { useCast } from '@/hooks/useCast';
 import { useHolder } from '@/hooks/HolderContext';
 import TokenGateModal, { type TokenGateMode } from '@/components/TokenGateModal';
 import { downloadUrlFor, isNetwebEnabled } from '@/lib/netweb';
+import {
+  downloadFilename,
+  subtitleFilename,
+  type DownloadQuality,
+} from '@/lib/downloadOptions';
 import { vidboltEmbedUrl, isBackupProvider } from '@/lib/vidbolt';
 import SeekBar from '@/components/SeekBar';
 import { formatTime } from '@/lib/watchProgress';
@@ -116,6 +121,16 @@ export interface PlayerProps {
    * remuxes it. When absent the button falls back to `src`.
    */
   downloadSource?: { url: string; type?: string; headers?: Record<string, string> };
+  /**
+   * Every quality the gateway resolved, for the Download row's picker.
+   *
+   * The player only plays the first source, so without this the save would be
+   * locked to whatever quality happened to be first. When empty the row falls
+   * back to `downloadSource` alone.
+   */
+  downloadQualities?: DownloadQuality[];
+  /** Title year, so the saved file is named `Movie (2024) 1080p.mp4`. */
+  year?: string;
   poster?: string;
   title?: string;
   subtitles?: FxSubtitle[];
@@ -156,6 +171,8 @@ export default function Player({
   src,
   sourceType,
   downloadSource,
+  downloadQualities = [],
+  year,
   poster,
   title,
   subtitles = [],
@@ -279,6 +296,94 @@ export default function Player({
   const downloadInfo = getDownloadInfo(src ? { url: src, type: sourceType } : null);
 
   /**
+   * The qualities the viewer can save.
+   *
+   * The player plays one source, but the gateway resolved several — one per
+   * quality — and the picker offers all of them. When the caller supplies none
+   * (the aggregator path, or an embed with no gateway) the row falls back to
+   * the single source it does have.
+   */
+  const qualities = useMemo<DownloadQuality[]>(() => {
+    if (downloadQualities.length) return downloadQualities;
+    const source = downloadSource ?? (src ? { url: src, type: sourceType } : null);
+    if (!source?.url) return [];
+    return [
+      {
+        key: 'auto',
+        height: 0,
+        label: 'Auto',
+        size: 0,
+        sizeLabel: '',
+        url: source.url,
+        type: source.type,
+        headers: source.headers,
+      },
+    ];
+  }, [downloadQualities, downloadSource, src, sourceType]);
+
+  const [qualityKey, setQualityKey] = useState<string>('');
+
+  // Follow the list: the first entry is the best resolution, which is what the
+  // viewer expects to be preselected, and a re-resolve (new provider, new
+  // episode) replaces the list wholesale.
+  useEffect(() => {
+    if (!qualities.length) {
+      setQualityKey('');
+      return;
+    }
+    setQualityKey((current) =>
+      qualities.some((entry) => entry.key === current) ? current : qualities[0].key
+    );
+  }, [qualities]);
+
+  const selectedQuality =
+    qualities.find((entry) => entry.key === qualityKey) ?? qualities[0] ?? null;
+
+  /** Whether an English subtitle track is worth asking the gateway for. */
+  const hasEnglishSubs = useMemo(
+    () =>
+      subtitles.some((track) => {
+        const code = (track.lang || track.language || '').toLowerCase();
+        const label = (track.label || '').toLowerCase();
+        return code.startsWith('en') || code === 'eng' || label.includes('english');
+      }),
+    [subtitles]
+  );
+
+  /** Title identifiers, so the gateway can look the English track up itself. */
+  const downloadIdentifiers = useMemo(
+    () => ({
+      tmdbId: mediaType === 'anime' ? undefined : tmdbId,
+      mediaType: mediaType === 'tv' ? 'tv' : 'movie',
+      season: mediaType === 'tv' ? season : undefined,
+      episode: mediaType === 'tv' ? episode : undefined,
+      title: title || undefined,
+      year: year ? String(year) : undefined,
+    }),
+    [mediaType, tmdbId, season, episode, title, year]
+  );
+
+  /**
+   * The name the device's save dialog shows, e.g. `Movie Name (2024) 1080p.mp4`.
+   *
+   * Built from the title and the chosen quality rather than left to the
+   * gateway's default, so the dialog names the file the viewer picked instead
+   * of offering a generic `video.mp4`.
+   */
+  const saveName = useMemo(
+    () =>
+      downloadFilename({
+        title,
+        year,
+        season,
+        episode,
+        quality: selectedQuality?.label,
+        isTv: mediaType === 'tv',
+      }),
+    [title, year, season, episode, selectedQuality, mediaType]
+  );
+
+  /**
    * What the Download button saves, and how.
    *
    * The gateway's `/v1/download` remuxes an HLS stream to a single MP4 with
@@ -287,15 +392,36 @@ export default function Player({
    * downloader. The `downloadSource` is the upstream stream (not the `/proxy`
    * URL the player itself loads), because the gateway must fetch the segments
    * itself to remux them.
+   *
+   * The title's English track is embedded when one exists, so the saved file
+   * arrives with subtitles rather than bare.
    */
   const saveUrl = useMemo(() => {
-    const source = downloadSource ?? (src ? { url: src, type: sourceType } : null);
-    if (!source?.url || isBackupProvider(activeProvider)) return null;
-    const name = (title || 'video').replace(/[^\w.\- ]+/g, '_').slice(0, 120) || 'video';
-    if (isNetwebEnabled() && downloadSource) return downloadUrlFor(downloadSource, name);
+    if (!selectedQuality?.url || isBackupProvider(activeProvider)) return null;
+    if (isNetwebEnabled() && downloadSource) {
+      return downloadUrlFor(selectedQuality, saveName, {
+        subtitles: hasEnglishSubs,
+        subLang: 'en',
+        identifiers: downloadIdentifiers,
+      });
+    }
     // No gateway: only a plain file container can be saved directly.
     return downloadInfo.canDownload ? downloadInfo.downloadUrl ?? null : null;
-  }, [downloadSource, src, sourceType, title, downloadInfo, activeProvider]);
+  }, [
+    selectedQuality,
+    downloadSource,
+    saveName,
+    hasEnglishSubs,
+    downloadIdentifiers,
+    downloadInfo,
+    activeProvider,
+  ]);
+
+  /**
+   * The English sidecar the save was muxed with, so a player that will not read
+   * an embedded track can still fetch the matching `.srt`.
+   */
+  const subtitleSaveName = hasEnglishSubs ? subtitleFilename(saveName, 'en') : '';
 
   /**
    * Why the Download row is disabled.
@@ -2097,39 +2223,105 @@ export default function Player({
                   </label>
 
                   {/* Download: saves through our own gateway, with no holder
-                      perk and no token gate in front of it. */}
-                  <button
-                    type="button"
+                      perk and no token gate in front of it. The qualities the
+                      gateway resolved are offered as a horizontally scrolling
+                      strip of pills, so the viewer picks the resolution and the
+                      size they want before saving rather than getting whichever
+                      one happened to resolve first. */}
+                  <div
                     data-testid="player-download"
-                    onClick={handleDownload}
-                    disabled={!saveUrl}
-                    title={
-                      saveUrl
-                        ? 'Download direct media file'
-                        : downloadBlockedReason
-                    }
-                    className={`w-full flex items-center justify-between gap-2 p-1.5 rounded-lg transition-colors text-left ${
-                      saveUrl
-                        ? 'text-zinc-300 hover:bg-zinc-900 cursor-pointer'
-                        : 'text-zinc-500 opacity-60 cursor-not-allowed'
-                    }`}
+                    className="w-full flex items-center gap-2 p-1.5 rounded-lg"
                   >
-                    <span className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      data-testid="player-download-button"
+                      onClick={handleDownload}
+                      disabled={!saveUrl}
+                      title={
+                        saveUrl
+                          ? `Download ${saveName}${hasEnglishSubs ? ' (with English subtitles)' : ''}`
+                          : downloadBlockedReason
+                      }
+                      className={`flex items-center gap-2 shrink-0 rounded-lg px-2 py-1 transition-colors ${
+                        saveUrl
+                          ? 'text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer'
+                          : 'text-zinc-500 opacity-60 cursor-not-allowed'
+                      }`}
+                    >
                       <Download className="w-3.5 h-3.5" />
                       <span className="text-[11px]">Download</span>
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] font-mono">
-                      {saveUrl ? (
-                        <span className="text-emerald-400 font-bold">MP4 Available</span>
-                      ) : (
-                        <span className="text-zinc-500">
-                          {downloadInfo.sourceType === 'none'
-                            ? 'Unavailable'
-                            : downloadInfo.sourceType.toUpperCase()}
-                        </span>
-                      )}
-                    </span>
-                  </button>
+                    </button>
+
+                    {saveUrl ? (
+                      <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                        {/* The pill strip. One entry per resolution, best
+                            first, scrolling sideways when they overflow. */}
+                        <div
+                          data-testid="player-download-qualities"
+                          className="flex-1 min-w-0 flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth"
+                        >
+                          {qualities.map((entry) => {
+                            const selected = entry.key === selectedQuality?.key;
+                            return (
+                              <button
+                                key={entry.key}
+                                type="button"
+                                data-testid={`player-download-quality-${entry.key}`}
+                                aria-pressed={selected}
+                                onClick={() => setQualityKey(entry.key)}
+                                title={
+                                  entry.sizeLabel
+                                    ? `${entry.label} · ${entry.sizeLabel}`
+                                    : entry.label
+                                }
+                                className={`shrink-0 flex flex-col items-center leading-none px-2 py-1 rounded-full border text-[10px] font-mono transition-colors cursor-pointer ${
+                                  selected
+                                    ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-300'
+                                    : 'border-white/10 bg-white/[0.03] text-zinc-400 hover:text-zinc-200 hover:border-white/20'
+                                }`}
+                              >
+                                <span className="font-bold">{entry.label}</span>
+                                {/* What the save will weigh, when the extractor
+                                    reported a size for this resolution. */}
+                                {entry.sizeLabel && (
+                                  <span className="text-[9px] opacity-70 mt-0.5">{entry.sizeLabel}</span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Whether the English track rides along with the save. */}
+                        {hasEnglishSubs && (
+                          <span
+                            data-testid="player-download-subs"
+                            title="The English subtitle track is embedded in the saved file"
+                            className="shrink-0 flex items-center gap-1 text-[9px] font-mono text-emerald-400/80"
+                          >
+                            <Subtitles className="w-3 h-3" />
+                            EN
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] font-mono text-zinc-500 truncate">
+                        {downloadInfo.sourceType === 'none'
+                          ? 'Unavailable'
+                          : downloadInfo.sourceType.toUpperCase()}
+                      </span>
+                    )}
+                  </div>
+                  {/* The exact name the device's save dialog will offer, so the
+                      viewer is not surprised by it. */}
+                  {saveUrl && (
+                    <p
+                      data-testid="player-download-filename"
+                      className="px-1.5 -mt-0.5 text-[9px] font-mono text-zinc-600 truncate"
+                      title={saveName}
+                    >
+                      {saveName}
+                    </p>
+                  )}
                 </div>
               )}
             </div>

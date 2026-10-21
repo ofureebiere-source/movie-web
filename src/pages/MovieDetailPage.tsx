@@ -40,7 +40,10 @@ export default function MovieDetailPage() {
   }, [detail?.title, detail?.year]);
 
   const isSaved = useIsInMyList('movie', clean);
-  const warmStream = useWarmStream(clean, 'movie');
+  const warmStream = useWarmStream(clean, 'movie', undefined, undefined, {
+    title: detail?.title,
+    year: detail?.year,
+  });
 
   if (unavailable) return <NotFoundPage />;
   if (isLoading) return <DetailSkeleton />;

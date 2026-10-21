@@ -250,15 +250,24 @@ export function useWarmStream(
   id: string | undefined,
   type: MediaType,
   season?: number,
-  episode?: number
+  episode?: number,
+  meta?: { title?: string; year?: string }
 ) {
   const clean = (id || '').trim();
   const providers = useProviders().data ?? [];
   const providerIds = useMemo(() => providers.map((provider) => provider.id), [providers]);
+  const title = meta?.title;
+  const year = meta?.year;
   return useCallback(() => {
     if (!clean) return;
-    void warmStream(clean, type, { season, episode, providers: providerIds.map((id) => ({ id })) });
-  }, [clean, type, season, episode, providerIds]);
+    void warmStream(clean, type, {
+      season,
+      episode,
+      title,
+      year,
+      providers: providerIds.map((id) => ({ id })),
+    });
+  }, [clean, type, season, episode, title, year, providerIds]);
 }
 
 /** Per-title metadata (title/year/poster). */

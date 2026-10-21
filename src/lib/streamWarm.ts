@@ -1,5 +1,6 @@
 import { getStream, type FxStream, type MediaType } from '@/lib/api';
 import { prefetchStreamSource } from '@/lib/segmentCache';
+import { isNetwebEnabled, proxiedUrl, resolveNetwebSources, type NetwebSource } from '@/lib/netweb';
 
 /**
  * Warming a stream while the trailer plays.
@@ -87,6 +88,77 @@ function stashWarmedStream(
   }
 }
 
+/**
+ * The gateway's own warmed resolution.
+ *
+ * Kept under a separate key from the aggregator's because the two are different
+ * backends, not two answers to the same question: the embed must be able to tell
+ * which one it is holding, since only the gateway's source is served through
+ * `/proxy` and only its segments were prefetched.
+ */
+const NETWEB_PREFIX = 'framextv_warm_netweb:';
+
+function netwebKey(
+  type: MediaType,
+  id: string,
+  season?: number,
+  episode?: number
+): string {
+  const scope = type === 'movie' ? '' : `:${season ?? 1}:${episode ?? 1}`;
+  return `${NETWEB_PREFIX}${type}:${id}${scope}`;
+}
+
+interface NetwebWarmEntry {
+  at: number;
+  sources: NetwebSource[];
+}
+
+function stashWarmedNetwebSources(
+  type: MediaType,
+  id: string,
+  season: number | undefined,
+  episode: number | undefined,
+  sources: NetwebSource[]
+): void {
+  if (typeof window === 'undefined' || !window.sessionStorage) return;
+  try {
+    window.sessionStorage.setItem(
+      netwebKey(type, id, season, episode),
+      JSON.stringify({ at: Date.now(), sources } satisfies NetwebWarmEntry)
+    );
+  } catch {
+    // A warm miss at worst.
+  }
+}
+
+/**
+ * The gateway resolution warmed for this title, if one is still fresh.
+ *
+ * The embed consumes this so it does not repeat the `/v1/stream` round trip the
+ * detail page already paid for. Returning null is the normal cold path.
+ */
+export function readWarmedNetwebSources(
+  type: MediaType,
+  id: string,
+  season?: number,
+  episode?: number
+): NetwebSource[] | null {
+  if (typeof window === 'undefined' || !window.sessionStorage) return null;
+  try {
+    const raw = window.sessionStorage.getItem(netwebKey(type, id, season, episode));
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as NetwebWarmEntry;
+    if (!entry || typeof entry.at !== 'number') return null;
+    if (Date.now() - entry.at > MAX_AGE_MS) {
+      window.sessionStorage.removeItem(netwebKey(type, id, season, episode));
+      return null;
+    }
+    return entry.sources?.length ? entry.sources : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface WarmStreamOptions {
   season?: number;
   episode?: number;
@@ -97,14 +169,25 @@ export interface WarmStreamOptions {
    * under its own key, so switching server in the bar or the player is instant.
    */
   providers?: Array<{ id: string }>;
+  /** Title metadata, so the gateway resolve can be asked for the right title. */
+  title?: string;
+  year?: string;
 }
 
 /**
  * Resolve a title's stream and make it local ahead of playback.
  *
- * Resolves, stashes the result for the embed, and warms the segment cache from
- * the first playable source. Safe to call repeatedly — a redundant call resolves
- * to the same provider list and every already-cached fragment is skipped.
+ * Two resolves happen here, because the watch page can play from either backend
+ * and both have to be ready before the viewer presses play:
+ *
+ *  - the aggregator's stream, stashed for the embed and prefetched;
+ *  - the gateway's stream (`/v1/stream`), which is what the player actually
+ *    loads when the gateway answered — stashed for the embed and prefetched
+ *    *through the proxy*, so the cached segments sit under exactly the URLs the
+ *    player will request.
+ *
+ * Safe to call repeatedly: a redundant call resolves to the same providers and
+ * every already-cached fragment is skipped.
  *
  * When `providers` is supplied the whole server list is pre-resolved: each
  * provider is a separate `/api/stream?provider=` call, stashed under its own
@@ -130,6 +213,14 @@ export async function warmStream(
     if (source) void prefetchStreamSource(source);
   }
 
+  // The gateway is the backend the player prefers, so warming only the
+  // aggregator would leave the expensive resolve — and the whole film's
+  // segments — to be paid at play time. It is warmed here as well, and its
+  // segments are pulled through `/proxy` because that is the URL the player
+  // loads: prefetching the raw CDN URL would fill the cache under keys the
+  // player never asks for, which is a warm cache that helps nobody.
+  void warmGatewayStream(id, type, options);
+
   const providers = options.providers ?? [];
   if (providers.length === 0) return;
 
@@ -149,4 +240,41 @@ export async function warmStream(
       }
     })
   );
+}
+
+/**
+ * Resolve a title through the gateway and make its whole stream local.
+ *
+ * The gateway resolve is stashed so the embed skips its own `/v1/stream` round
+ * trip, and the first source's fragments are prefetched through the proxy so
+ * the segments are already in Cache Storage when playback asks for them. Both
+ * halves matter: the stash removes the resolve wait, the prefetch removes the
+ * buffering wait.
+ *
+ * Never throws: an unreachable gateway is a warm miss, not an error, because
+ * the watch page has its own fallback.
+ */
+async function warmGatewayStream(
+  id: string,
+  type: MediaType,
+  options: WarmStreamOptions
+): Promise<void> {
+  if (!isNetwebEnabled() || !id) return;
+  try {
+    const sources = await resolveNetwebSources(id, type, {
+      season: type === 'movie' ? undefined : options.season,
+      episode: type === 'movie' ? undefined : options.episode,
+      title: options.title,
+      year: options.year,
+    });
+    if (!sources.length) return;
+    stashWarmedNetwebSources(type, id, options.season, options.episode, sources);
+    const source = sources.find((entry) => entry.url);
+    // Proxied, not raw: the player loads the `/proxy` URL, and the playlist that
+    // comes back has its segments rewritten to `/proxy` too, so walking it fills
+    // the cache under exactly the keys the player will ask for.
+    if (source) void prefetchStreamSource({ url: proxiedUrl(source), type: source.type });
+  } catch {
+    // Best-effort: the embed resolves for itself when this misses.
+  }
 }

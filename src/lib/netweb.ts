@@ -95,6 +95,14 @@ export interface NetwebSource {
   type: string;
   /** The extractor's own quality string. */
   quality?: string;
+  /** Resolution height, e.g. `1080`. Drives the download quality picker. */
+  qualityHeight?: number;
+  /** Short label for that resolution, e.g. `1080p`. */
+  qualityLabel?: string;
+  /** Reported size in bytes; `0` when the extractor did not say. */
+  size?: number;
+  /** That size as a short label, e.g. `2.3 GB`; `''` when unknown. */
+  sizeLabel?: string;
   /** Display name, e.g. `frameXTV · bowler · Bowler XVIII`. */
   name?: string;
   provider?: string;
@@ -111,6 +119,10 @@ interface NetwebStreamResponse {
       stream?: string;
       type?: string;
       quality?: string;
+      qualityHeight?: number;
+      qualityLabel?: string;
+      size?: number;
+      sizeLabel?: string;
       provider?: string;
       providerLabel?: string;
       headers?: Record<string, string>;
@@ -152,6 +164,10 @@ export async function resolveNetwebSources(
         url,
         type: (row.data?.type || 'hls').toLowerCase(),
         quality: row.data?.quality,
+        qualityHeight: row.data?.qualityHeight,
+        qualityLabel: row.data?.qualityLabel,
+        size: row.data?.size,
+        sizeLabel: row.data?.sizeLabel,
         name: row.name,
         provider: row.data?.provider,
         providerLabel: row.data?.providerLabel,
@@ -191,11 +207,28 @@ export function proxiedUrl(source: { url: string; headers?: Record<string, strin
  * Navigating to this URL saves the file: the response is an attachment and an
  * HLS stream is remuxed to a single MP4 by ffmpeg on the gateway. There is no
  * wallet check and no client-side downloader in the path.
+ *
+ * `opts.subtitles` embeds the title's English track as a soft subtitle stream,
+ * and `opts.identifiers` gives the gateway what it needs to look that track up.
+ * Both are optional: without them the save is the bare stream, as before.
  */
 export function downloadUrlFor(
   source: { url: string; type?: string; headers?: Record<string, string> },
   filename: string,
-  opts: { referer?: string; origin?: string } = {}
+  opts: {
+    referer?: string;
+    origin?: string;
+    subtitles?: boolean;
+    subLang?: string;
+    identifiers?: {
+      tmdbId?: string;
+      mediaType?: string;
+      season?: number;
+      episode?: number;
+      title?: string;
+      year?: string;
+    };
+  } = {}
 ): string {
   if (!activeBase) return source.url;
   const params = new URLSearchParams({ url: source.url, filename });
@@ -205,5 +238,16 @@ export function downloadUrlFor(
   const origin = opts.origin ?? headers.Origin ?? headers.origin;
   if (referer) params.set('referer', referer);
   if (origin) params.set('origin', origin);
+  if (opts.subtitles) {
+    params.set('subs', '1');
+    if (opts.subLang) params.set('subLang', opts.subLang);
+  }
+  const ids = opts.identifiers;
+  if (ids?.tmdbId) params.set('tmdbId', ids.tmdbId);
+  if (ids?.mediaType) params.set('mediaType', ids.mediaType);
+  if (ids?.season != null) params.set('season', String(ids.season));
+  if (ids?.episode != null) params.set('episode', String(ids.episode));
+  if (ids?.title) params.set('title', ids.title);
+  if (ids?.year) params.set('year', ids.year);
   return `${activeBase}/v1/download?${params.toString()}`;
 }
