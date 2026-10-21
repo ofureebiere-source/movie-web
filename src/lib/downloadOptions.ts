@@ -149,3 +149,108 @@ export function downloadFilename(opts: {
 export function subtitleFilename(videoFilename: string, lang = 'en'): string {
   return `${videoFilename.replace(/\.mp4$/i, '')}.${lang}.srt`;
 }
+
+/**
+ * The variants of an HLS master playlist, best first.
+ *
+ * The gateway returns one source per quality, but not every source is one: an
+ * aggregator source is often a single master playlist that already carries a
+ * rendition per resolution. When the API reports no per-quality rows — which is
+ * exactly what happens on the aggregator fallback — the qualities still exist,
+ * they are just inside the playlist. Reading them here is what lets the picker
+ * offer the real list client-side instead of a lone `Auto`.
+ *
+ * `downloadUrl` is the rendition's own playlist, so saving a pick downloads
+ * that rendition rather than whichever one the remuxer would have chosen. The
+ * entry's `url` stays the master, because that is what the player loads.
+ */
+export function parseMasterPlaylist(text: string, masterUrl: string): DownloadQuality[] {
+  if (!text || !/#EXT-X-STREAM-INF/.test(text)) return [];
+
+  const qualities: DownloadQuality[] = [];
+  const seen = new Set<number>();
+  const lines = text.split('\n');
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (!line.startsWith('#EXT-X-STREAM-INF')) continue;
+
+    // The URI is the next non-comment, non-blank line.
+    let uri = '';
+    for (let next = index + 1; next < lines.length; next += 1) {
+      const candidate = lines[next].trim();
+      if (!candidate || candidate.startsWith('#')) continue;
+      uri = candidate;
+      break;
+    }
+    if (!uri) continue;
+
+    const height = Number(/RESOLUTION=\d+x(\d+)/i.exec(line)?.[1]) || 0;
+    const bandwidth = Number(/BANDWIDTH=(\d+)/i.exec(line)?.[1]) || 0;
+    if (!height || seen.has(height)) continue;
+    seen.add(height);
+
+    let renditionUrl: string;
+    try {
+      renditionUrl = new URL(uri, masterUrl).toString();
+    } catch {
+      continue;
+    }
+    qualities.push({
+      key: String(height),
+      height,
+      label: qualityLabelForHeight(height),
+      size: 0,
+      sizeLabel: '',
+      // The master is what the player loads; the rendition is what gets saved.
+      url: masterUrl,
+      downloadUrl: renditionUrl,
+    });
+    void bandwidth;
+  }
+
+  return qualities.sort((a, b) => b.height - a.height);
+}
+
+/** The label the picker shows for a resolution, matching the gateway's own. */
+function qualityLabelForHeight(height: number): string {
+  if (height >= 2160) return '4K';
+  if (height >= 1440) return '1440p';
+  if (height >= 1080) return '1080p';
+  if (height >= 720) return '720p';
+  if (height >= 480) return '480p';
+  if (height >= 360) return '360p';
+  return `${height}p`;
+}
+
+/**
+ * The best-effort client-side quality list for a source the API did not
+ * describe per quality.
+ *
+ * The master playlist is fetched and parsed; anything that is not a master
+ * (a media playlist, a plain MP4, a CORS refusal) yields an empty list, and the
+ * caller keeps its single `Auto` entry. This never throws: a picker that cannot
+ * learn the qualities must still let the viewer download.
+ *
+ * `fetchUrl` is where the playlist is actually read from — the gateway's
+ * `/proxy` when one is configured, because a CDN that needs a Referer, or that
+ * simply does not send CORS headers, is unreadable from the page directly. It
+ * defaults to the stream's own URL, and relative rendition URIs still resolve
+ * against the real stream URL rather than the proxy's.
+ */
+export async function qualitiesFromSource(
+  source: { url: string; type?: string },
+  fetchUrl?: string
+): Promise<DownloadQuality[]> {
+  if (!source?.url) return [];
+  const looksLikePlaylist =
+    source.type === 'hls' || /\.m3u8($|\?)/i.test(source.url) || /m3u8=/i.test(source.url);
+  if (!looksLikePlaylist) return [];
+  try {
+    const response = await fetch(fetchUrl || source.url, { credentials: 'omit' });
+    if (!response.ok) return [];
+    return parseMasterPlaylist(await response.text(), source.url);
+  } catch {
+    return [];
+  }
+}

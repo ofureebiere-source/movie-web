@@ -131,6 +131,11 @@ export default function EmbedPage() {
         episode: mediaType === 'movie' ? undefined : episodeNumber,
         title: customTitle,
         year: customYear,
+        // The embed is about to paint a player, so it will not hold the spinner
+        // for the warmer's full budget. The usual path never spends this: the
+        // detail page has already stashed the resolution, or is still resolving
+        // and this call joins that in-flight request instead of starting one.
+        timeoutMs: 25_000,
       });
     },
     enabled: Boolean(mediaKey) && !backupMode && isNetwebEnabled(),

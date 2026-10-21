@@ -141,15 +141,74 @@ interface NetwebStreamResponse {
 }
 
 /**
+ * The gateway's own resolution timeout.
+ *
+ * The gateway resolves a title by fanning out to several extractors, so a cold
+ * resolve routinely takes tens of seconds. A 12 s ceiling — the previous value —
+ * was shorter than the gateway's normal answer, so every resolve aborted and
+ * the gateway path never engaged: the quality picker stayed empty, the download
+ * row fell back to naming a container, and playback silently used the
+ * aggregator. It is a budget, not a deadline: a miss still degrades to the
+ * aggregator, so a slow gateway costs a wait rather than a broken page.
+ */
+const NETWEB_RESOLVE_TIMEOUT_MS = 45_000;
+
+/**
+ * In-flight resolves by URL.
+ *
+ * The detail page warms the gateway while the viewer reads the synopsis, and
+ * the embed then asks for the same title. Sharing the promise means the second
+ * caller rides the first request instead of firing a duplicate — and, more
+ * importantly, that the embed inherits a resolve that was started with the
+ * warmer's longer budget rather than racing it with its own shorter one.
+ */
+const inFlightResolves = new Map<string, Promise<NetwebStreamResponse>>();
+
+async function resolveShared(
+  url: string,
+  timeoutMs: number
+): Promise<NetwebStreamResponse | null> {
+  const existing = inFlightResolves.get(url);
+  if (existing) return existing.catch(() => null);
+  const request = (async () => {
+    const response = await fetch(url, {
+      headers: { accept: 'application/json' },
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!response.ok) throw new Error(`gateway answered ${response.status}`);
+    return (await response.json()) as NetwebStreamResponse;
+  })();
+  inFlightResolves.set(url, request);
+  try {
+    return await request;
+  } catch {
+    return null;
+  } finally {
+    inFlightResolves.delete(url);
+  }
+}
+
+/**
  * Resolve playable sources for a title through the gateway.
  *
  * Returns an empty array rather than throwing: the caller falls back to the
  * aggregator, so an unreachable gateway must not break the page.
+ *
+ * `opts.timeoutMs` exists because the two callers have different budgets. The
+ * background warm is nobody's critical path, so it can wait out a slow resolve;
+ * the embed is about to paint a player, so it is bounded tighter. A resolve
+ * that times out is a miss, not an error, and the aggregator fallback covers it.
  */
 export async function resolveNetwebSources(
   tmdbId: string,
   mediaType: string,
-  opts: { season?: number; episode?: number; title?: string; year?: string } = {}
+  opts: {
+    season?: number;
+    episode?: number;
+    title?: string;
+    year?: string;
+    timeoutMs?: number;
+  } = {}
 ): Promise<NetwebSource[]> {
   if (!activeBase || !tmdbId) return [];
   const params = new URLSearchParams({ tmdbId, mediaType: mediaType === 'tv' ? 'tv' : 'movie' });
@@ -158,13 +217,10 @@ export async function resolveNetwebSources(
   if (opts.title) params.set('title', opts.title);
   if (opts.year) params.set('year', opts.year);
 
+  const requestUrl = `${activeBase}/v1/stream?${params.toString()}`;
+  const timeoutMs = opts.timeoutMs ?? NETWEB_RESOLVE_TIMEOUT_MS;
   try {
-    const response = await fetch(`${activeBase}/v1/stream?${params.toString()}`, {
-      headers: { accept: 'application/json' },
-      signal: AbortSignal.timeout(12_000),
-    });
-    if (!response.ok) return [];
-    const body = (await response.json()) as NetwebStreamResponse;
+    const body = await resolveShared(requestUrl, timeoutMs);
     const rows = body?.sources ?? [];
     const sources: NetwebSource[] = [];
     for (const row of rows) {

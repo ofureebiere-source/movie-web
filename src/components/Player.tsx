@@ -48,9 +48,10 @@ import { parseSubtitles, shiftCues, subtitleUrl, type ParsedCue } from '@/lib/su
 import { useCast } from '@/hooks/useCast';
 import { useHolder } from '@/hooks/HolderContext';
 import TokenGateModal, { type TokenGateMode } from '@/components/TokenGateModal';
-import { downloadUrlFor, isNetwebEnabled } from '@/lib/netweb';
+import { downloadUrlFor, isNetwebEnabled, proxiedUrl } from '@/lib/netweb';
 import {
   downloadFilename,
+  qualitiesFromSource,
   subtitleFilename,
   type DownloadQuality,
 } from '@/lib/downloadOptions';
@@ -303,8 +304,41 @@ export default function Player({
    * (the aggregator path, or an embed with no gateway) the row falls back to
    * the single source it does have.
    */
+  const [qualityKey, setQualityKey] = useState<string>('');
+  /**
+   * Qualities read off the stream itself when the caller supplied none.
+   *
+   * The API does not always describe a source per quality — an aggregator
+   * source is one master playlist that already lists every rendition. Probing
+   * it client-side is what puts a real quality pill in front of the viewer on
+   * that path instead of a lone `Auto`, and each pill saves its own rendition.
+   */
+  const [probedQualities, setProbedQualities] = useState<DownloadQuality[]>([]);
+
+  const qualityProbeSource = downloadSource ?? (src ? { url: src, type: sourceType } : null);
+
+  useEffect(() => {
+    // Nothing to probe when the caller already listed the qualities.
+    if (downloadQualities.length || !qualityProbeSource?.url) {
+      setProbedQualities([]);
+      return;
+    }
+    let cancelled = false;
+    // Read through the gateway when one is configured: the CDN may require a
+    // Referer, or may not send CORS headers at all, and the proxy supplies both.
+    const fetchUrl = isNetwebEnabled() ? proxiedUrl(qualityProbeSource) : undefined;
+    void qualitiesFromSource(qualityProbeSource, fetchUrl).then((found) => {
+      if (!cancelled) setProbedQualities(found);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [downloadQualities.length, qualityProbeSource?.url, qualityProbeSource?.type]);
+
   const qualities = useMemo<DownloadQuality[]>(() => {
     if (downloadQualities.length) return downloadQualities;
+    // The master playlist's own renditions beat the single fallback entry.
+    if (probedQualities.length) return probedQualities;
     const source = downloadSource ?? (src ? { url: src, type: sourceType } : null);
     if (!source?.url) return [];
     return [
@@ -319,9 +353,7 @@ export default function Player({
         headers: source.headers,
       },
     ];
-  }, [downloadQualities, downloadSource, src, sourceType]);
-
-  const [qualityKey, setQualityKey] = useState<string>('');
+  }, [downloadQualities, probedQualities, downloadSource, src, sourceType]);
 
   // Follow the list: the first entry is the best resolution, which is what the
   // viewer expects to be preselected, and a re-resolve (new provider, new
