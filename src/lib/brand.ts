@@ -41,12 +41,15 @@ export const APP_RELEASES_URL = 'https://github.com/King-Fisher000/netflix-pro/r
 export const APP_RELEASE_TAG = 'android-latest';
 /**
  * The version-independent alias the release workflow publishes next to the
- * versioned `netflix-pro-<version>.apk`. It always points at the newest build,
+ * versioned `netflix-pro-<version>.aab`. It always points at the newest build,
  * so this URL never goes stale when the version is bumped. The install banner
  * asks the release API for the versioned asset first (src/lib/appRelease.ts)
  * and uses this only as the fallback.
+ *
+ * This is an Android App Bundle — a Play upload artifact, not something a
+ * browser can install. The release page is the actionable destination.
  */
-export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro.apk`;
+export const APP_DOWNLOAD_URL = `${APP_RELEASES_URL}/download/${APP_RELEASE_TAG}/netflix-pro.aab`;
 
 /** Support address shown in the footer / profile. */
 export const SUPPORT_EMAIL = 'support@framextv.xyz';

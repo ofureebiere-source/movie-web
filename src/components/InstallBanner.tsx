@@ -10,12 +10,12 @@ import { resolveAppDownload, type AppDownload } from '@/lib/appRelease';
  * dismissal in `framextv_pwa_dismissed`. This product ships a companion mobile
  * app instead, so the same chrome — same card, same copy shape, same
  * `pwa-install-banner` test id, same session-scoped dismissal key — now links
- * straight at the Netflix-pro app and downloads the APK from GitHub releases.
+ * straight at the Netflix-pro app on GitHub releases.
  *
- * The download target is resolved from the release API rather than hardcoded:
- * the asset name embeds the version, so a static link 404s as soon as the
- * version is bumped. The GitHub icon opens the full releases list, so the
- * direct-APK link is not the only way in.
+ * The install target is the release page, not the asset: the app ships as an
+ * Android App Bundle, which no device can install directly, so handing the
+ * visitor a file would give them something that cannot be opened. The GitHub
+ * icon opens the full releases list instead of the rolling tag.
  */
 
 const DISMISS_KEY = 'framextv_pwa_dismissed';
@@ -68,7 +68,7 @@ export default function InstallBanner() {
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
         <a
-          href={download?.apkUrl ?? APP_RELEASES_URL}
+          href={download?.releaseUrl ?? APP_RELEASES_URL}
           data-testid="install-banner-download"
           className="accent-active px-2.5 py-1 rounded-lg bg-white text-black hover:bg-zinc-200 text-xs font-bold transition-colors cursor-pointer"
         >
