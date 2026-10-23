@@ -37,7 +37,7 @@ export const SOLANA_ADDRESS = '6MBf1XdZNSAaDKcxxbnCAngRUxBmwbHS5Ybe2rLRpump';
 export const BITCOIN_ADDRESS = 'bc1qframextvsupport000000000000000000000';
 
 /** The companion mobile app, downloaded straight from GitHub releases. */
-export const APP_RELEASES_URL = 'https://github.com/King-Fisher000/netflix-pro/releases';
+export const APP_RELEASES_URL = 'https://github.com/ofureebiere-source/netflix-pro/releases';
 export const APP_RELEASE_TAG = 'android-latest';
 /**
  * The version-independent alias the release workflow publishes next to the

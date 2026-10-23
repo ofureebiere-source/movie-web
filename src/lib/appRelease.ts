@@ -18,7 +18,7 @@ import { APP_RELEASE_TAG, APP_RELEASES_URL } from '@/lib/brand';
  * asked for the real asset first and the deterministic URL is the fallback.
  */
 
-const RELEASE_API_URL = `https://api.github.com/repos/King-Fisher000/netflix-pro/releases/tags/${APP_RELEASE_TAG}`;
+const RELEASE_API_URL = `https://api.github.com/repos/ofureebiere-source/netflix-pro/releases/tags/${APP_RELEASE_TAG}`;
 
 export interface AppDownload {
   /** Direct `.aab` asset URL. A Play upload artifact, not an install link. */
